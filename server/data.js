@@ -1,6 +1,7 @@
 const { Sequelize, DataTypes } = require('sequelize')
 
-const sequelize = new Sequelize({ dialect: 'sqlite', storage: 'data.db' })
+let storage = 'data.db'
+const sequelize = new Sequelize({ dialect: 'sqlite', storage })
 
 // platform
 const m_vm = sequelize.define('vm', {
@@ -31,10 +32,6 @@ const m_vm = sequelize.define('vm', {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    code: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
     base_root: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -58,6 +55,9 @@ const m_mode = sequelize.define('mode', {
         type: DataTypes.BLOB,
     },
     stop_script: {
+        type: DataTypes.BLOB,
+    },
+    compilation_script: {
         type: DataTypes.BLOB,
     },
 })

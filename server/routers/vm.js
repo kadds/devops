@@ -30,7 +30,7 @@ router.put('/', async (req, rsp, next) => {
     }
 })
 
-router.post('/', (req, rsp, next) => {
+router.post('/', async (req, rsp, next) => {
     try {
         await m_vm.update(req.body.vm)
     }
@@ -40,7 +40,7 @@ router.post('/', (req, rsp, next) => {
     }
 })
 
-router.get('/all', (req, rsp, next) => {
+router.get('/all', async (req, rsp, next) => {
     try {
         let data = await m_vm.findAll()
         rsp.json(data);
