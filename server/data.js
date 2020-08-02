@@ -60,6 +60,10 @@ const m_mode = sequelize.define('mode', {
     compilation_script: {
         type: DataTypes.BLOB,
     },
+    dev_user: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
 })
 
 // module instance
@@ -137,6 +141,32 @@ const m_pipeline = sequelize.define('pipeline', {
     }
 })
 
+const m_user = sequelize.define('user', {
+    username: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    ctime: {
+        type: DataTypes.TIME,
+        allowNull: false,
+    },
+    avatar: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    mark: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    }
+})
+
+
 const conn = sequelize
 
 async function init() {
@@ -144,6 +174,7 @@ async function init() {
     await m_mode.sync()
     await m_server.sync()
     await m_pipeline.sync()
+    await m_user.sync()
 }
 
 module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, init }
