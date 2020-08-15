@@ -12,7 +12,7 @@ ReactDOM.render(
   <BrowserRouter>
     <Provider store={store}>
       <App>
-        <Route path='/' exact component={Main}></Route>
+        <Route component={Main}></Route>
       </App>
     </Provider>
   </BrowserRouter>,

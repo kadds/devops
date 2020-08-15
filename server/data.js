@@ -17,18 +17,22 @@ const m_vm = sequelize.define('vm', {
         allowNull: false,
     },
     port: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
         allowNull: false,
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: true,
     },
     private_key: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     user: {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    base_root: {
+    base_dir: {
         type: DataTypes.STRING,
         allowNull: false,
     }

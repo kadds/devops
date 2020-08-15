@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Route, Link, Switch, NavLink } from 'react-router-dom'
 import { Layout, Menu, Avatar, Row, Col, Dropdown } from 'antd'
 import { info, logout } from './api/user'
@@ -15,7 +15,10 @@ import {
     GatewayOutlined,
     UnorderedListOutlined,
     ProjectOutlined,
-} from '@ant-design/icons';
+} from '@ant-design/icons'
+import PipeLineList from './view/pipeline/list'
+import VM from './view/vm/vm'
+
 const { Header, Sider, Content } = Layout;
 
 function Main(props) {
@@ -27,7 +30,6 @@ function Main(props) {
     useEffect(() => {
         async function run() {
             const user = await info()
-            console.log(user)
             set_username(user.username)
         }
         run()
@@ -44,9 +46,8 @@ function Main(props) {
     )
 
     return (
-        <Layout>
+        <Layout style={{ height: '100%' }}>
             <Sider trigger={null} collapsible collapsed={collapsed}>
-                <div className="logo" />
                 <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']}>
                     <Menu.SubMenu key="1" title={"Pipeline"} icon={<GatewayOutlined />}>
                         <Menu.ItemGroup>
@@ -68,13 +69,14 @@ function Main(props) {
                         </Menu.ItemGroup>
                     </Menu.SubMenu>
                     <Menu.Item key="2" icon={<GoldOutlined />}>
-                        VM
+                        <NavLink activeClassName="active" className="nav-link" to="/vm">
+                            VM
+                        </NavLink>
                     </Menu.Item>
                     <Menu.Item key="3" icon={<HddOutlined />}>
-                        Module
-                    </Menu.Item>
-                    <Menu.Item key="4" icon={<UserOutlined />}>
-                        User List
+                        <NavLink activeClassName="active" className="nav-link" to="/module">
+                            Module
+                        </NavLink>
                     </Menu.Item>
                 </Menu>
             </Sider>
@@ -105,6 +107,11 @@ function Main(props) {
                         minHeight: 280,
                     }}
                 >
+                    <Switch>
+                        <Route path='/pipeline/list' component={PipeLineList}></Route>
+                        <Route path='/vm' component={VM}></Route>
+                        <Route component={PipeLineList}></Route>
+                    </Switch>
                 </Content>
             </Layout>
         </Layout>

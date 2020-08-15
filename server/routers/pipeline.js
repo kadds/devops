@@ -1,17 +1,21 @@
 const { Router } = require('express')
-const { conn, m_vm } = require('../data')
+const { conn, m_pipeline } = require('../data')
 
 let router = new Router()
 
-router.get('/', (req, rsp, next) => {
-
+router.get('/list', async (req, rsp, next) => {
+    const offset = req.params.off
+    const size = req.params.size
+    const list = await m_pipeline.findAll({})
+    rsp.json({ err: 0, data: list })
 })
 
-router.put('/', (req, rsp, next) => {
-
+router.post('/op', (req, rsp, next) => {
+    // update pipeline
 })
 
 router.post('/', (req, rsp, next) => {
+    // new pipeline
 
 })
 

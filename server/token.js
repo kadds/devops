@@ -1,6 +1,72 @@
-// a string like session
+const fs = require('fs')
+const process = require('process')
 
 let tokens = new Map()
+
+function replacer(key, value) {
+    const originalObject = this[key];
+    if (originalObject instanceof Map) {
+        return {
+            dataType: 'Map',
+            value: Array.from(originalObject.entries()), // or with spread: value: [...originalObject]
+        };
+    } else {
+        return value;
+    }
+}
+
+function reviver(key, value) {
+    if (typeof value === 'object' && value !== null) {
+        if (value.dataType === 'Map') {
+            return new Map(value.value);
+        }
+    }
+    return value;
+}
+
+function save() {
+    const str = JSON.stringify(tokens, replacer)
+    try {
+        if (!fs.existsSync('./temp'))
+            fs.mkdirSync('./temp')
+        fs.writeFileSync('./temp/loginInfo.json', str)
+    }
+    catch (e) {
+        console.log(e)
+    }
+}
+
+if (process.platform === "win32") {
+    var rl = require("readline").createInterface({
+        input: process.stdin,
+        output: process.stdout
+    })
+
+    rl.on("SIGINT", function () {
+        save()
+        process.exit()
+    })
+}
+
+
+// a string like session
+
+
+process.on("SIGINT", function () {
+    //graceful shutdown
+    save()
+    process.exit()
+})
+
+try {
+    const json = fs.readFileSync('./temp/loginInfo.json')
+    if (json !== undefined && json !== null) {
+        tokens = new Map(JSON.parse(json, reviver))
+    }
+}
+catch (e) {
+    console.log(e)
+}
 
 function maketoken() {
     let text = ""
