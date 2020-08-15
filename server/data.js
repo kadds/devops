@@ -24,10 +24,6 @@ const m_vm = sequelize.define('vm', {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    ctime: {
-        type: DataTypes.TIME,
-        allowNull: false,
-    },
     user: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -36,6 +32,11 @@ const m_vm = sequelize.define('vm', {
         type: DataTypes.STRING,
         allowNull: false,
     }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
 })
 
 // module
@@ -46,10 +47,6 @@ const m_mode = sequelize.define('mode', {
         allowNull: false,
         unique: true,
         primaryKey: true,
-    },
-    ctime: {
-        type: DataTypes.TIME,
-        allowNull: false,
     },
     startup_script: {
         type: DataTypes.BLOB,
@@ -64,6 +61,11 @@ const m_mode = sequelize.define('mode', {
         type: DataTypes.STRING,
         allowNull: false
     }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
 })
 
 // module instance
@@ -83,10 +85,6 @@ const m_server = sequelize.define('server', {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    ctime: {
-        type: DataTypes.TIME,
-        allowNull: false,
-    },
     status: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -95,6 +93,11 @@ const m_server = sequelize.define('server', {
         type: DataTypes.TINYINT,
         allowNull: false,
     }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
 })
 
 
@@ -106,10 +109,6 @@ const m_pipeline = sequelize.define('pipeline', {
         unique: true,
         primaryKey: true,
         autoIncrement: true,
-    },
-    ctime: {
-        type: DataTypes.TIME,
-        allowNull: false,
     },
     mode_name: {
         type: DataTypes.STRING,
@@ -139,6 +138,11 @@ const m_pipeline = sequelize.define('pipeline', {
         type: DataTypes.STRING,
         allowNull: false,
     }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
 })
 
 const m_user = sequelize.define('user', {
@@ -152,18 +156,17 @@ const m_user = sequelize.define('user', {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    ctime: {
-        type: DataTypes.TIME,
-        allowNull: false,
-    },
     avatar: {
         type: DataTypes.STRING,
-        allowNull: false,
     },
     mark: {
         type: DataTypes.STRING,
-        allowNull: false,
     }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
 })
 
 
@@ -175,6 +178,9 @@ async function init() {
     await m_server.sync()
     await m_pipeline.sync()
     await m_user.sync()
+    if (await m_user.findByPk('admin') === null) {
+        await m_user.create({ username: 'admin', password: '123' })
+    }
 }
 
-module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, init }
+module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_user, init }

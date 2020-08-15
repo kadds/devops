@@ -15,7 +15,10 @@ function start() {
 
     app.use(express.json())
     app.use('/', (req, rsp, next) => {
-        rsp.set("Content-Type", "application/json")
+        rsp.header("Content-Type", "application/json;charset=utf-8")
+        rsp.header("Access-Control-Allow-Origin", "*")
+        rsp.header("Access-Control-Allow-Method", "*")
+        rsp.header("Access-Control-Allow-Headers", "*")
         next()
     })
     app.use('/', (req, rsp, next) => {

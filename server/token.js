@@ -28,7 +28,7 @@ function create_token(data) {
             continue
         }
         tokens.set(key, { time: Date.now(), data })
-        break
+        return key
     }
 }
 
