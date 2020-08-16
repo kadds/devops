@@ -72,7 +72,7 @@ function maketoken() {
     let text = ""
     const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*.%=@!~`"
 
-    const len = Math.floor(Math.random() * 5) + 15;
+    const len = Math.floor(Math.random() * 5) + 30;
 
     for (var i = 0; i < len; i++)
         text += possible.charAt(Math.floor(Math.random() * possible.length))

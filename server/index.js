@@ -6,6 +6,7 @@ const vm = require('./routers/vm')
 const user = require('./routers/user')
 const { valid_token } = require('./token')
 const { init } = require('./data')
+const process = require('process')
 
 function start() {
     const app = express()
@@ -22,6 +23,7 @@ function start() {
         next()
     })
     app.use('/', (req, rsp, next) => {
+        const t = process.hrtime()
         if (req.path === '/user/login') {
             next()
         }
@@ -36,6 +38,9 @@ function start() {
                 next()
             }
         }
+        const t2 = process.hrtime()
+        const delta = Math.round(t2[0] * 1000 + t2[1] / 1000000 - (t[0] * 1000 + t[1] / 1000000), 1)
+        console.log('request ' + req.originalUrl + ' cost ' + delta)
     })
 
     app.use((err, req, rsp, next) => {
