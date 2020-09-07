@@ -8,7 +8,7 @@ import {
     UserOutlined,
     LogoutOutlined,
     VideoCameraOutlined,
-    UploadOutlined,
+    CloudServerOutlined,
     BuildOutlined,
     HddOutlined,
     GoldOutlined,
@@ -17,7 +17,10 @@ import {
     ProjectOutlined,
 } from '@ant-design/icons'
 import PipeLineList from './view/pipeline/list'
+import PipeLineDetail from './view/pipeline/detail'
+import PipeLineCreate from './view/pipeline/create'
 import VM from './view/vm/vm'
+import Module from './view/module/module'
 
 const { Header, Sider, Content } = Layout;
 
@@ -109,7 +112,11 @@ function Main(props) {
                 >
                     <Switch>
                         <Route path='/pipeline/list' component={PipeLineList}></Route>
+                        <Route path='/pipeline/create' component={PipeLineCreate}></Route>Q
+                        <Route path='/pipeline/detail' component={PipeLineDetail}></Route>
+
                         <Route path='/vm' component={VM}></Route>
+                        <Route path='/module' component={Module}></Route>
                         <Route component={PipeLineList}></Route>
                     </Switch>
                 </Content>

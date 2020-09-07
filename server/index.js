@@ -4,9 +4,11 @@ const pipeline = require('./routers/pipeline')
 const server = require('./routers/server')
 const vm = require('./routers/vm')
 const user = require('./routers/user')
+const update = require('./routers/upload')
 const { valid_token } = require('./token')
 const { init } = require('./data')
 const process = require('process')
+const upload = require('./routers/upload')
 
 function start() {
     const app = express()
@@ -40,7 +42,7 @@ function start() {
         }
         const t2 = process.hrtime()
         const delta = Math.round(t2[0] * 1000 + t2[1] / 1000000 - (t[0] * 1000 + t[1] / 1000000), 1)
-        console.log('request ' + req.originalUrl + ' cost ' + delta)
+        console.log('> request ' + req.originalUrl + ' cost ' + delta)
     })
 
     app.use((err, req, rsp, next) => {
@@ -48,11 +50,12 @@ function start() {
         rsp.json({ err: 500, msg: 'server error. Please retry' })
     })
 
-    app.use('/mode', mode)
+    app.use('/module', mode)
     app.use('/pipeline', pipeline)
     app.use('/vm', vm)
     app.use('/server', server)
     app.use('/user', user)
+    app.use('/upload', upload)
 
     app.listen(8077)
     console.log("start listen")

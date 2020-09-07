@@ -20,5 +20,10 @@ async function info(username) {
     return data.data
 }
 
+async function user_list() {
+    const data = await get('/user/list')
+    return data.list;
+}
 
-export { login, logout, info }
+
+export { login, logout, info, user_list }

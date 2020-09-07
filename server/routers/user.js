@@ -40,9 +40,9 @@ router.post('/logout', async (req, rsp, next) => {
     delete_token(req.get('token'))
 })
 
-router.get('/all', async (req, rsp, next) => {
+router.get('/list', async (req, rsp, next) => {
     const data = await m_user.findAll()
-    rsp.json({ err: 0, data: data.get() })
+    rsp.json({ err: 0, list: data })
 })
 
 const user = router

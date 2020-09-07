@@ -52,17 +52,17 @@ const m_mode = sequelize.define('mode', {
         unique: true,
         primaryKey: true,
     },
-    startup_script: {
-        type: DataTypes.BLOB,
-    },
-    stop_script: {
-        type: DataTypes.BLOB,
-    },
-    compilation_script: {
-        type: DataTypes.BLOB,
+    flag: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     },
     dev_user: {
         type: DataTypes.STRING,
+        allowNull: false
+    },
+    content: {
+        // json
+        type: DataTypes.JSON,
         allowNull: false
     }
 }, {
@@ -89,19 +89,25 @@ const m_server = sequelize.define('server', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    // stop, running, core, restart.
     status: {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
-    is_test: {
-        type: DataTypes.TINYINT,
+    flag: {
+        type: DataTypes.INTEGER,
         allowNull: false,
+    },
+    content: {
+        type: DataTypes.JSON,
+        allowNull: false
     }
 }, {
     sequelize,
     timestamps: true,
     createdAt: 'ctime',
     updatedAt: 'mtime',
+    indexes: [{ fields: ['mode_name'] }, { fields: ['vm_name'] }]
 })
 
 
@@ -119,20 +125,16 @@ const m_pipeline = sequelize.define('pipeline', {
         allowNull: false,
     },
     stage: {
-        // 0 create
-        // 1 upload
-        // 3 grayed
-        // 4 full_upload
-        // 5 full
-        // 6 rollback
-        // 7 finish
+        // create
+        // compilation
+        // upload
 
         type: DataTypes.INTEGER,
         allowNull: false,
     },
     test_server: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     previous_id: {
         type: DataTypes.INTEGER,
@@ -141,12 +143,17 @@ const m_pipeline = sequelize.define('pipeline', {
     mark: {
         type: DataTypes.STRING,
         allowNull: false,
+    },
+    content: {
+        type: DataTypes.JSON,
+        allowNull: false,
     }
 }, {
     sequelize,
     timestamps: true,
     createdAt: 'ctime',
     updatedAt: 'mtime',
+    indexes: [{ fields: ['mode_name'] }]
 })
 
 const m_user = sequelize.define('user', {

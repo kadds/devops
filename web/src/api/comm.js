@@ -32,6 +32,11 @@ instance.interceptors.response.use(rep => {
         message.info('need login')
         return Promise.reject('need login')
     }
+    else if (rep.data.err !== 0) {
+        console.error(rep.data)
+        message.error('server returns ' + rep.data.msg)
+        return Promise.reject('server returns fail ' + rep.data.err)
+    }
     return rep.data
 }, error => {
     console.log(error)
