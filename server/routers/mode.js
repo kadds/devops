@@ -47,12 +47,22 @@ router.post('/', async (req, rsp, next) => {
     rsp.json({ err: 0 })
 })
 
-// get detail
-router.get('/', async (req, rsp, next) => {
-    const module = await m_mode.findByPk(req.params.name);
-    const servers = await m_server.findAll({ where: { mode_name: module.name } })
-})
+router.post('/update', async (req, rsp, next) => {
+    let module = req.body.module
+    let data = {}
+    data.name = module.name
+    data.flag = module.flag
+    data.dev_user = module.dev_user
+    data.flag = 0
+    data.content = {}
+    data.content.run_script = module.run_script
+    data.content.compilation_script = module.compilation_script
+    data.content.env_img = module.env_img
+    data.content.compilation_env_img = module.compilation_env_img
 
+    await m_mode.update(data, { where: { name: module.name } })
+    rsp.json({ err: 0 })
+})
 const mode = router
 
 module.exports = mode

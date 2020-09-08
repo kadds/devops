@@ -9,7 +9,7 @@ async function add_module(data) {
 }
 
 async function update_module(data) {
-    return (await post('/module/update', data))
+    return (await post('/module/update', { module: data }))
 }
 
 export { get_module_list, add_module, update_module }

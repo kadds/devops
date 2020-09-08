@@ -65,7 +65,7 @@ const ScriptSelect = (props) => {
                     <List
                         dataSource={scriptList}
                         renderItem={item => (
-                            <List.Item style={{ cursor: 'pointer' }} onClick={() => listClick(item)} onDoubleClick={() => listDoubleClick(item)}>
+                            <List.Item key={item} style={{ cursor: 'pointer' }} onClick={() => listClick(item)} onDoubleClick={() => listDoubleClick(item)}>
                                 <span style={{ cursor: 'pointer' }} >{item}</span>
                             </List.Item>
                         )}>

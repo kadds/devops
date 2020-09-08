@@ -1,8 +1,9 @@
 import React, { useState, useEffect, createRef } from 'react'
-import { Button, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
+import { Button, Spin, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
 import { add_module, get_module_list, update_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import ScriptSelect from '../compoments/script_select'
+import Server from '../server/server'
 
 const { Option } = Select
 
@@ -10,6 +11,8 @@ const Module = () => {
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
     const [data, setData] = useState([])
     const [userlistData, setUserlistData] = useState([])
+
+    const [detail, setDetail] = useState({ show: false, name: null })
 
     const addModule = () => {
         setState({ ...state, visible: true, type: 0, loading: false })
@@ -87,17 +90,21 @@ const Module = () => {
         setShowSelectVal({ show: true, tag: 'run' })
     }
 
+    const detailClick = (name) => {
+        setDetail({ show: true, name })
+    }
+
     const columns = [
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: text => <span>{text}</span>
+            render: text => <Button type="link" onClick={() => detailClick(text)}>{text}</Button>
         },
         {
             title: 'User',
             dataIndex: 'dev_user',
-            key: 'user',
+            key: 'dev_user',
             render: text => <span>{text}</span>
         },
         {
@@ -136,10 +143,19 @@ const Module = () => {
 
     return (
         <div>
-            <div style={{ textAlign: 'left' }}>
-                <Button type='primary' onClick={addModule}>Add</Button>
-            </div>
-            <Table dataSource={data} columns={columns}></Table>
+            <Row gutter={20}>
+                <Col flex={'1 1 50%'}>
+                    <div style={{ textAlign: 'left' }}>
+                        <Button type='primary' onClick={addModule}>Add</Button>
+                    </div>
+                    <Table dataSource={data} columns={columns}></Table>
+                </Col>
+                {
+                    detail.show && (<Col flex={'1 1 50%'}>
+                        <Server mode_name={detail.name}> </Server>
+                    </Col>)
+                }
+            </Row>
             <Modal
                 visible={state.visible}
                 title='Create/Edit Module'

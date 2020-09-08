@@ -89,7 +89,7 @@ const m_server = sequelize.define('server', {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    // stop, running, core, restart.
+    // init, stop, running, core, restart.
     status: {
         type: DataTypes.INTEGER,
         allowNull: false,

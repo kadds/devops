@@ -21,6 +21,7 @@ import PipeLineDetail from './view/pipeline/detail'
 import PipeLineCreate from './view/pipeline/create'
 import VM from './view/vm/vm'
 import Module from './view/module/module'
+import Server from './view/server/server'
 
 const { Header, Sider, Content } = Layout;
 
@@ -81,6 +82,11 @@ function Main(props) {
                             Module
                         </NavLink>
                     </Menu.Item>
+                    <Menu.Item key="4" icon={<HddOutlined />}>
+                        <NavLink activeClassName="active" className="nav-link" to="/server">
+                            Server
+                        </NavLink>
+                    </Menu.Item>
                 </Menu>
             </Sider>
             <Layout className="site-layout">
@@ -117,6 +123,7 @@ function Main(props) {
 
                         <Route path='/vm' component={VM}></Route>
                         <Route path='/module' component={Module}></Route>
+                        <Route path='/server' component={Server}></Route>
                         <Route component={PipeLineList}></Route>
                     </Switch>
                 </Content>

@@ -60,6 +60,7 @@ router.post('/script', async (req, rsp, next) => {
     const name = req.body.name
     if (name === undefined || name === null || name.indexOf('/') >= 0) {
         jsp.json({ err: 512, msg: 'invalid script name ' + name })
+        return
     }
     await writeFile('./upload/scripts/' + name, req.body.data)
     rsp.json({ err: 0 })
@@ -74,6 +75,7 @@ router.get('/:name', async (req, rsp, next) => {
     const name = req.params.name
     if (name === undefined || name === null || name.indexOf('/') >= 0) {
         rsp.json({ err: 512, msg: 'invalid script name ' + name })
+        return
     }
     let data = await readFile('./upload/scripts/' + name)
     rsp.json({ err: 0, data })
