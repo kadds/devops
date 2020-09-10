@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { conn, m_vm } = require('../data')
-const { check_connect } = require('../utls/vmutls')
+const { check_connection } = require('../utils/vmutils')
 
 let router = new Router()
 
@@ -21,7 +21,7 @@ router.post('/create', async (req, rsp, next) => {
     const vm = req.body.vm
     let ok = false
     try {
-        await check_connect(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+        await check_connection(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
         ok = true
     }
     catch (e) {

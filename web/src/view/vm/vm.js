@@ -111,7 +111,7 @@ const VM = () => {
             <div style={{ textAlign: 'left' }}>
                 <Button type='primary' onClick={addVm}>Add</Button>
             </div>
-            <Table dataSource={data} columns={columns}></Table>
+            <Table rowKey={'name'} dataSource={data} columns={columns}></Table>
             <Modal
                 visible={state.visible}
                 title='Create/Edit VM'

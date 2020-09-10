@@ -38,10 +38,7 @@ router.post('/', async (req, rsp, next) => {
     data.dev_user = module.dev_user
     data.flag = 0
     data.content = {}
-    data.content.run_script = module.run_script
-    data.content.compilation_script = module.compilation_script
-    data.content.env_img = module.env_img
-    data.content.compilation_env_img = module.compilation_env_img
+    data.content.jobs = req.module.jobs
 
     await m_mode.create(data)
     rsp.json({ err: 0 })
@@ -55,10 +52,6 @@ router.post('/update', async (req, rsp, next) => {
     data.dev_user = module.dev_user
     data.flag = 0
     data.content = {}
-    data.content.run_script = module.run_script
-    data.content.compilation_script = module.compilation_script
-    data.content.env_img = module.env_img
-    data.content.compilation_env_img = module.compilation_env_img
 
     await m_mode.update(data, { where: { name: module.name } })
     rsp.json({ err: 0 })

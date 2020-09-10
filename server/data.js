@@ -156,6 +156,33 @@ const m_pipeline = sequelize.define('pipeline', {
     indexes: [{ fields: ['mode_name'] }]
 })
 
+const m_job = sequelize.define('job', {
+    id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    pipeline: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    status: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    result: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+})
+
 const m_user = sequelize.define('user', {
     username: {
         type: DataTypes.STRING,

@@ -1,7 +1,15 @@
 import { get, post, put, set_token, remove_token } from './comm'
 
 async function get_pipelines() {
-    return (await get('/pipeline/list')).data
+    return (await get('/pipeline/list')).list
 }
 
-export { get_pipelines }
+async function get_jobs() {
+    return (await get('/pipeline/jobs')).list
+}
+
+async function jobs_valid(name, param) {
+    return (await post('/pipeline/jobs/valid', { job: { name, param } }, { timeout: 10000000 })).data
+}
+
+export { get_pipelines, get_jobs, jobs_valid }

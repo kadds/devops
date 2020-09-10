@@ -4,6 +4,7 @@ import { add_module, get_module_list, update_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import ScriptSelect from '../compoments/script_select'
 import Server from '../server/server'
+import JobSelect from '../compoments/job_select'
 
 const { Option } = Select
 
@@ -17,6 +18,7 @@ const Module = () => {
     const addModule = () => {
         setState({ ...state, visible: true, type: 0, loading: false })
     }
+    let selectJobs = null
 
     const [form] = Form.useForm()
 
@@ -25,11 +27,16 @@ const Module = () => {
         let val
         try {
             val = await form.validateFields()
+            if (selectJobs === null) {
+                message.error('Please set jobs')
+                return
+            }
         }
         catch (e) {
             setState({ ...state, loading: false })
             return
         }
+        val.jobs = selectJobs
         if (state.type === 0) {
             await add_module(val)
             // ok
@@ -47,29 +54,6 @@ const Module = () => {
         setState({ ...state, visible: false })
     }
 
-
-    const [showSelectVal, setShowSelectVal] = useState({ show: false, tag: '' })
-    const onSelect = (val) => {
-        if (showSelectVal.tag !== 'run') {
-            // compilation
-            form.setFieldsValue({
-                ...form.getFieldValue(),
-                compilation_script: val,
-            })
-        }
-        else {
-            // running
-            form.setFieldsValue({
-                ...form.getFieldValue(),
-                run_script: val,
-            })
-        }
-        setShowSelectVal({ show: false, tag: '' })
-    }
-    const onSelectCancel = () => {
-        setShowSelectVal({ show: false, tag: '' })
-    }
-
     const editClick = (e) => {
         form.setFieldsValue({
             name: e.name,
@@ -82,12 +66,8 @@ const Module = () => {
         setState({ ...state, visible: true, type: 1, loading: false })
     }
 
-    const onComClick = () => {
-        setShowSelectVal({ show: true, tag: 'com' })
-    }
-
-    const onRunClick = () => {
-        setShowSelectVal({ show: true, tag: 'run' })
+    const onChange = (e) => {
+        selectJobs = e
     }
 
     const detailClick = (name) => {
@@ -148,7 +128,7 @@ const Module = () => {
                     <div style={{ textAlign: 'left' }}>
                         <Button type='primary' onClick={addModule}>Add</Button>
                     </div>
-                    <Table dataSource={data} columns={columns}></Table>
+                    <Table rowKey={'name'} dataSource={data} columns={columns}></Table>
                 </Col>
                 {
                     detail.show && (<Col flex={'1 1 50%'}>
@@ -165,10 +145,11 @@ const Module = () => {
                 onCancel={onModalCancel}
                 confirmLoading={state.loading}
                 centered
+                width='80%'
             >
                 <Form form={form}>
                     <Form.Item label='Name' name='name' rules={[{ required: true, message: 'Please input name' }]}>
-                        <Input disabled={state.type != 0} />
+                        <Input disabled={state.type !== 0} />
                     </Form.Item>
                     <Form.Item label='User' name='dev_user' rules={[{ required: true, message: 'Please select dev user' }]}>
                         <Select>
@@ -177,23 +158,12 @@ const Module = () => {
                             ))}
                         </Select>
                     </Form.Item>
-                    <Form.Item label='Compilation docker image' name='compilation_env_img' rules={[{ required: true, message: 'Please input docker image name' }]} >
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label='Run docker image' name='env_img' rules={[{ required: true, message: 'Please input docker image name' }]} >
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label='Compilation script' name='compilation_script' rules={[{ required: true, message: 'Please input docker image name' }]}>
-                        <Input.Search enterButton='Select' onSearch={onComClick}></Input.Search>
-                    </Form.Item>
-                    <Form.Item label='Run script' name='run_script' rules={[{ required: true, message: 'Please input docker image name' }]}>
-                        <Input.Search enterButton='Select' onSearch={onRunClick}></Input.Search>
+                    <Form.Item label='Pipeline jobs' name='pipeline'>
+                        <JobSelect editable={state.type === 0} onJobChange={onChange}></JobSelect>
                     </Form.Item>
                 </Form>
 
             </Modal>
-            <ScriptSelect onSelect={onSelect} visible={showSelectVal.show} onCancel={onSelectCancel}>
-            </ScriptSelect>
         </div>
     )
 }

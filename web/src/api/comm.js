@@ -45,16 +45,16 @@ instance.interceptors.response.use(rep => {
 })
 
 
-async function get(url) {
-    return await instance.get(url)
+async function get(url, opt) {
+    return await instance.get(url, opt)
 }
 
-async function post(url, data) {
-    return await instance.post(url, data)
+async function post(url, data, opt) {
+    return await instance.post(url, data, opt)
 }
 
-async function put(url, data) {
-    return await instance.put(url, data)
+async function put(url, data, opt) {
+    return await instance.put(url, data, opt)
 }
 
 function set_token(token) {

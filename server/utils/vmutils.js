@@ -1,6 +1,6 @@
 const NodeSSH = require('node-ssh').NodeSSH
 
-async function check_connect(ip, port, password, private_key, user) {
+async function check_connection(ip, port, password, private_key, user) {
     let ssh = new NodeSSH()
     await ssh.connect({
         host: ip,
@@ -12,4 +12,4 @@ async function check_connect(ip, port, password, private_key, user) {
     })
 }
 
-module.exports = { check_connect }
+module.exports = { check_connection }
