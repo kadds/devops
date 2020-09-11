@@ -219,9 +219,17 @@ const Server = (props) => {
                         </Col>
                         <Col span={8}>
                             <Card title='Operation'>
-                                <Button>Restart</Button>
-                                <Button icon={<PoweroffOutlined />}>StopRunning</Button>
-                                <Button icon={<CloseOutlined />}>DestroyServer</Button>
+                                <Row gutter={8}>
+                                    <Col>
+                                        <Button>Restart</Button>
+                                    </Col>
+                                    <Col>
+                                        <Button icon={<PoweroffOutlined />}>Stop</Button>
+                                    </Col>
+                                    <Col>
+                                        <Button danger icon={<CloseOutlined />}>Destroy</Button>
+                                    </Col>
+                                </Row>
                             </Card>
                         </Col>
                     </Row>

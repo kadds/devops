@@ -56,6 +56,17 @@ router.post('/update', async (req, rsp, next) => {
     await m_mode.update(data, { where: { name: module.name } })
     rsp.json({ err: 0 })
 })
+
+router.post('/del', async (req, rsp, next) => {
+    const name = req.body.name
+    if (await m_server.count({ where: { mode_name: name } }) > 0) {
+        rsp.json({ err: 101, msg: 'there are servers still under module ' + name + '.' })
+        return
+    }
+    await m_mode.destroy({ where: { name: name } })
+    rsp.json({ err: 0 })
+})
+
 const mode = router
 
 module.exports = mode

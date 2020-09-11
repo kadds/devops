@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createRef } from 'react'
-import { Button, Spin, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
-import { add_module, get_module_list, update_module } from '../../api/module'
+import { Button, Spin, Popconfirm, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
+import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
+import { add_module, get_module_list, update_module, delete_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import ScriptSelect from '../compoments/script_select'
 import Server from '../server/server'
@@ -74,6 +75,18 @@ const Module = () => {
         setDetail({ show: true, name })
     }
 
+    const [isDel, setIsDel] = useState(false)
+    const deleteClick = async (e) => {
+        setIsDel(true)
+        try {
+            await delete_module(e.name)
+        }
+        catch (e) {
+        }
+        setIsDel(false)
+        setState({ ...state, need_update: state.need_update + 1 })
+    }
+
     const columns = [
         {
             title: 'Name',
@@ -102,7 +115,12 @@ const Module = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<span><Button onClick={() => editClick(r)}>Edit</Button></span>)
+            render: (i, r) => (<Row gutter={8}> <Col> <Button icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+                <Col>
+                    <Popconfirm title="Are you sure?" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                        <Button danger loading={isDel}>Delete</Button>
+                    </Popconfirm>
+                </Col> </Row>)
         }
     ]
 

@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { message } from 'antd'
+import React from 'react'
+import { message, Typography } from 'antd'
 import store from '../state/store'
 import { start_login } from '../state/action'
 
@@ -23,7 +24,7 @@ instance.interceptors.request.use(cfg => {
 instance.interceptors.response.use(rep => {
     if (rep.status !== 200) {
         console.error(rep)
-        message.error('server fail')
+        message.error('server fail, please retry.')
         return Promise.reject('server fail')
     }
     if (rep.data.err === 401) {
@@ -34,7 +35,8 @@ instance.interceptors.response.use(rep => {
     }
     else if (rep.data.err !== 0) {
         console.error(rep.data)
-        message.error('server returns ' + rep.data.msg)
+        message.error((<span> <Typography.Text>Server error. </Typography.Text>
+            <Typography.Text type='danger' copyable>{rep.data.msg}</Typography.Text> </span>))
         return Promise.reject('server returns fail ' + rep.data.err)
     }
     return rep.data

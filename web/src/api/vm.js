@@ -13,4 +13,8 @@ async function update_vm(data) {
     return (await post('/vm/update', data)).status
 }
 
-export { add_vm, get_all_vm, update_vm }
+async function delete_vm(name) {
+    return (await post('vm/del', { name }))
+}
+
+export { add_vm, get_all_vm, update_vm, delete_vm }

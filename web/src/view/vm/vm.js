@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createRef } from 'react'
-import { Button, Table, Input, Form, Modal, InputNumber, message } from 'antd'
-import { add_vm, get_all_vm, update_vm } from '../../api/vm'
+import { Button, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message } from 'antd'
+import { add_vm, get_all_vm, update_vm, delete_vm } from '../../api/vm'
+import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
 
 const VM = () => {
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
@@ -61,6 +62,19 @@ const VM = () => {
         })
         setState({ ...state, visible: true, type: 1 })
     }
+
+    const [isDel, setIsDel] = useState(false)
+    const deleteClick = async (e) => {
+        setIsDel(true)
+        try {
+            await delete_vm(e.name)
+        }
+        catch (e) {
+        }
+        setIsDel(false)
+        setState({ ...state, need_update: state.need_update + 1 })
+    }
+
     const columns = [
         {
             title: 'Name',
@@ -94,7 +108,13 @@ const VM = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<span><Button onClick={() => editClick(r)}>Edit</Button></span>)
+            render: (i, r) => (<Row gutter={8}> <Col> <Button icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+                <Col>
+                    <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                        <Button danger loading={isDel}>Delete</Button>
+                    </Popconfirm> </Col>
+            </Row>)
+
         }
     ]
 
@@ -124,10 +144,10 @@ const VM = () => {
             >
                 <Form form={form}>
                     <Form.Item label='Name' name='name' rules={[{ required: true, message: 'Please input vm name' }]}>
-                        <Input disabled={state.type != 0} />
+                        <Input disabled={state.type !== 0} />
                     </Form.Item>
                     <Form.Item label='IP/host' name='ip' rules={[{ required: true, message: 'Please input vm ip address' }]}>
-                        <Input />
+                        <Input disabled={state.type !== 0} />
                     </Form.Item>
                     <Form.Item initialValue={22} label='Port' name='port' rules={[{ required: true, message: 'Please input vm port' }]}>
                         <InputNumber max={65535} />

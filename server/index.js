@@ -1,4 +1,5 @@
 const express = require('express')
+const chalk = require('chalk')
 const mode = require('./routers/mode')
 const pipeline = require('./routers/pipeline')
 const server = require('./routers/server')
@@ -24,7 +25,16 @@ function start() {
         next()
     })
     app.use('/', (req, rsp, next) => {
+        if (req.method === "OPTIONS") {
+            return next()
+        }
         const t = process.hrtime()
+        rsp.on('finish', () => {
+            const t2 = process.hrtime()
+            const delta = Math.round(t2[0] * 1000 + t2[1] / 1000000 - (t[0] * 1000 + t[1] / 1000000), 1)
+            const log = `> ${chalk.bold(req.method)} ${req.originalUrl} ${chalk.green(delta + 'ms')}`
+            console.log(log)
+        })
         if (req.path === '/user/login') {
             next()
         }
@@ -39,9 +49,6 @@ function start() {
                 next()
             }
         }
-        const t2 = process.hrtime()
-        const delta = Math.round(t2[0] * 1000 + t2[1] / 1000000 - (t[0] * 1000 + t[1] / 1000000), 1)
-        console.log('> request ' + req.originalUrl + ' cost ' + delta)
     })
 
     app.use((err, req, rsp, next) => {

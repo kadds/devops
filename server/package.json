@@ -10,10 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chalk": "^4.1.0",
     "docker-cli-js": "^2.7.1",
     "express": "5.0.0-alpha.8",
     "formidable": "^1.2.2",
     "node-ssh": "^11.0.0",
+    "response-time": "^2.3.2",
     "sequelize": "^6.3.5",
     "simple-git": "^2.20.1",
     "sqlite3": "^5.0.0",

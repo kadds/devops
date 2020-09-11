@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { conn, m_vm } = require('../data')
+const { conn, m_vm, m_server } = require('../data')
 const { check_connection } = require('../utils/vmutils')
 
 let router = new Router()
@@ -17,6 +17,7 @@ router.get('/', async (req, rsp, next) => {
 router.post('/create', async (req, rsp, next) => {
     if (req.body.vm.password === undefined && req.body.vm.private_key === undefined) {
         rsp.json({ err: 101, msg: 'invalid param password & private key' })
+        return
     }
     const vm = req.body.vm
     let ok = false
@@ -39,11 +40,13 @@ router.post('/create', async (req, rsp, next) => {
 router.post('/update', async (req, rsp, next) => {
     if (req.body.vm.password === undefined && req.body.vm.private_key === undefined) {
         rsp.json({ err: 101, msg: 'invalid param password & private key' })
+        return
     }
     const vm = req.body.vm
     const vm2 = await m_vm.findByPk(vm.name)
-    if (vm.ip) {
-        vm2.ip = vm.ip
+    if (vm.ip !== vm2.ip) {
+        rsp.json({ err: 102, msg: "can't update ip/host" })
+        return
     }
     if (vm.port) {
         vm2.port = vm.port
@@ -92,6 +95,16 @@ router.get('/list', async (req, rsp, next) => {
         list.push(v)
     }
     rsp.json({ err: 0, list: list });
+})
+
+router.post('/del', async (req, rsp, next) => {
+    const name = req.body.name
+    if (await m_server.count({ where: { vm_name: name } }) > 0) {
+        rsp.json({ err: 101, msg: 'there are servers still use this VM' })
+        return
+    }
+    await m_vm.destroy({ where: { name: name } })
+    rsp.json({ err: 0 })
 })
 
 const vm = router

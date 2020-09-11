@@ -24,6 +24,18 @@ import Module from './view/module/module'
 import Server from './view/server/server'
 
 const { Header, Sider, Content } = Layout;
+const menus = [{
+    name: 'Pipeline', icon: (<GatewayOutlined />), sub: [
+        { name: 'Pipeline List', icon: (<UnorderedListOutlined />), path: '/pipeline/list' },
+        { name: 'Create Pipeline', icon: (<ProjectOutlined />), path: '/pipeline/create' },
+        { name: 'Pipeline Progress', icon: (<BuildOutlined />), path: '/pipeline/detail' },
+    ],
+},
+{ name: 'VM', icon: (<GoldOutlined />), path: '/vm' },
+{ name: 'Module', icon: (<HddOutlined />), path: '/module' },
+{ name: 'Server', icon: (<HddOutlined />), path: '/server' }
+]
+
 
 function Main(props) {
     const [collapsed, set_collapsed] = useState(false)
@@ -53,40 +65,36 @@ function Main(props) {
         <Layout style={{ height: '100%' }}>
             <Sider trigger={null} collapsible collapsed={collapsed}>
                 <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']}>
-                    <Menu.SubMenu key="1" title={"Pipeline"} icon={<GatewayOutlined />}>
-                        <Menu.ItemGroup>
-                            <Menu.Item key="11" icon={<UnorderedListOutlined />}>
-                                <NavLink activeClassName="active" className="nav-link" to="/pipeline/list">
-                                    Pipeline List
-                                </NavLink>
-                            </Menu.Item>
-                            <Menu.Item key="12" icon={<ProjectOutlined />}>
-                                <NavLink activeClassName="active" className="nav-link" to="/pipeline/create">
-                                    Create Pipeline
-                                </NavLink>
-                            </Menu.Item>
-                            <Menu.Item key="13" icon={<BuildOutlined />}>
-                                <NavLink activeClassName="active" className="nav-link" to="/pipeline/detail">
-                                    Pipeline Progress
-                                </NavLink>
-                            </Menu.Item>
-                        </Menu.ItemGroup>
-                    </Menu.SubMenu>
-                    <Menu.Item key="2" icon={<GoldOutlined />}>
-                        <NavLink activeClassName="active" className="nav-link" to="/vm">
-                            VM
-                        </NavLink>
-                    </Menu.Item>
-                    <Menu.Item key="3" icon={<HddOutlined />}>
-                        <NavLink activeClassName="active" className="nav-link" to="/module">
-                            Module
-                        </NavLink>
-                    </Menu.Item>
-                    <Menu.Item key="4" icon={<HddOutlined />}>
-                        <NavLink activeClassName="active" className="nav-link" to="/server">
-                            Server
-                        </NavLink>
-                    </Menu.Item>
+                    {
+                        menus.map(item => {
+                            if (item.sub === undefined) {
+                                return (
+                                    <Menu.Item key={item.name} icon={item.icon}>
+                                        <NavLink activeClassName="active" className="nav-link" to={item.path}>
+                                            {item.name}
+                                        </NavLink>
+                                    </Menu.Item>
+                                )
+                            }
+                            else {
+                                return (
+                                    <Menu.SubMenu key={item.name} icon={item.icon} title={item.name}>
+                                        <Menu.ItemGroup>
+                                            {
+                                                item.sub.map(item => (
+                                                    <Menu.Item key={item.name} icon={item.icon}>
+                                                        <NavLink activeClassName="active" className="nav-link" to={item.path}>
+                                                            {item.name}
+                                                        </NavLink>
+                                                    </Menu.Item>
+                                                ))
+                                            }
+                                        </Menu.ItemGroup>
+                                    </Menu.SubMenu>
+                                )
+                            }
+                        })
+                    }
                 </Menu>
             </Sider>
             <Layout className="site-layout">

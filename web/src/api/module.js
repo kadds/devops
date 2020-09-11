@@ -12,4 +12,8 @@ async function update_module(data) {
     return (await post('/module/update', { module: data }))
 }
 
-export { get_module_list, add_module, update_module }
+async function delete_module(name) {
+    return (await post('/module/del', { name: name }))
+}
+
+export { get_module_list, add_module, update_module, delete_module }
