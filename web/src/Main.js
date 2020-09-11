@@ -64,7 +64,7 @@ function Main(props) {
     return (
         <Layout style={{ height: '100%' }}>
             <Sider trigger={null} collapsible collapsed={collapsed}>
-                <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']}>
+                <Menu theme="dark" mode="inline">
                     {
                         menus.map(item => {
                             if (item.sub === undefined) {

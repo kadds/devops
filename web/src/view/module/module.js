@@ -13,13 +13,18 @@ const Module = () => {
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
     const [data, setData] = useState([])
     const [userlistData, setUserlistData] = useState([])
-
+    const initJobList = { env: [], source: [], build: [], deploy: [] }
+    const [joblist, setJoblist] = useState(initJobList)
     const [detail, setDetail] = useState({ show: false, name: null })
 
     const addModule = () => {
+        setJoblist(initJobList)
+        form.setFieldsValue({
+            name: '',
+            dev_user: '',
+        })
         setState({ ...state, visible: true, type: 0, loading: false })
     }
-    let selectJobs = null
 
     const [form] = Form.useForm()
 
@@ -28,7 +33,7 @@ const Module = () => {
         let val
         try {
             val = await form.validateFields()
-            if (selectJobs === null) {
+            if (!(joblist.env.length > 0 && joblist.source.length > 0 && joblist.build.length && joblist.deploy.length)) {
                 message.error('Please set jobs')
                 return
             }
@@ -37,7 +42,7 @@ const Module = () => {
             setState({ ...state, loading: false })
             return
         }
-        val.jobs = selectJobs
+        val.jobs = joblist
         if (state.type === 0) {
             await add_module(val)
             // ok
@@ -59,16 +64,13 @@ const Module = () => {
         form.setFieldsValue({
             name: e.name,
             dev_user: e.dev_user,
-            compilation_env_img: e.compilation_env_img,
-            env_img: e.env_img,
-            run_script: e.run_script,
-            compilation_script: e.compilation_script,
         })
         setState({ ...state, visible: true, type: 1, loading: false })
+        setJoblist(e.jobs)
     }
 
     const onChange = (e) => {
-        selectJobs = e
+        setJoblist(e)
     }
 
     const detailClick = (name) => {
@@ -177,7 +179,7 @@ const Module = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item label='Pipeline jobs' name='pipeline'>
-                        <JobSelect editable={state.type === 0} onJobChange={onChange}></JobSelect>
+                        <JobSelect editable={state.type === 0} joblist={joblist} onJobChange={onChange}></JobSelect>
                     </Form.Item>
                 </Form>
 

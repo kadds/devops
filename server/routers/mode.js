@@ -13,10 +13,7 @@ router.get('/list', async (req, rsp, next) => {
         it.name = item.name
         it.dev_user = item.dev_user
         it.ctime = item.ctime.valueOf()
-        it.run_script = item.content.run_script
-        it.compilation_script = item.content.compilation_script
-        it.env_img = item.content.env_img
-        it.compilation_env_img = item.content.compilation_env_img
+        it.jobs = item.content.jobs
         const name = it.name
         cnt_req.push(m_server.count({ where: { mode_name: name } }))
         idx++
@@ -38,7 +35,7 @@ router.post('/', async (req, rsp, next) => {
     data.dev_user = module.dev_user
     data.flag = 0
     data.content = {}
-    data.content.jobs = req.module.jobs
+    data.content.jobs = module.jobs
 
     await m_mode.create(data)
     rsp.json({ err: 0 })

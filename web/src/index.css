@@ -13,11 +13,43 @@ code {
 }
 
 .card_normal {
-    border: 1px solid #aaa;
+    border: 1px solid #ccc;
     cursor: pointer;
     max-width: 200px;
+    position: relative;
+}
+
+.card_normal:after {
+    content: ' ';
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    box-shadow: 2px 2px 8px #aaa;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.card_normal:hover:after {
+  opacity: 1;
+}
+
+.card_readonly+:not(.card_selected):hover {
+  box-shadow: none;
+}
+
+.card_readonly { 
+  color: #555;
+  cursor: default;
+}
+
+.card_readonly:hover:after, .card_selected:hover:after {
+  opacity: 0;
 }
 
 .card_selected {
-    box-shadow: 3px 3px 12px #aaa;
+    box-shadow: 4px 4px 15px #aaa;
+    border: 1px solid #999;
 }

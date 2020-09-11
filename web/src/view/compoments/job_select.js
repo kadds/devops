@@ -6,14 +6,65 @@ import { get_jobs, jobs_valid } from '../../api/pipeline'
 const base_style = {
 }
 
+const get_map = (joblist) => {
+    let map = new Map()
+    map.set('env', { readonly: true })
+    map.set('source', { readonly: true })
+    map.set('build', { readonly: true })
+    map.set('deploy', { readonly: true })
+    let cnt = 1
+    let has = false
+    for (let job of joblist.env) {
+        map.set(job.name, { cnt: cnt })
+        has = true
+        cnt++
+    }
+    if (has) {
+        map.set('env', { readonly: true })
+        map.set('source', { readonly: false })
+    }
+    else {
+        map.set('env', { readonly: false })
+    }
+    has = false
+    for (let job of joblist.source) {
+        map.set(job.name, { cnt: cnt })
+        has = true
+        cnt++
+    }
+    if (has) {
+        map.set('build', { readonly: false })
+    }
+    has = false
+    for (let job of joblist.build) {
+        map.set(job.name, { cnt: cnt })
+        has = true
+        cnt++
+    }
+    if (has) {
+        map.set('deploy', { readonly: false })
+    }
+    has = false
+    for (let job of joblist.deploy) {
+        map.set(job.name, { cnt: cnt })
+        has = true
+        cnt++
+    }
+    if (has) {
+        map.set('deploy', { readonly: false })
+    }
+
+    return map
+}
+
 const JobSelect = (props) => {
-    const [jobList, setJobList] = useState({ loading: false })
+    const [avlJob, setAvlJob] = useState({ loading: false })
     const [param, setParam] = useState({ loading: false, visible: false, params: [], name: '' })
-    const [selectJobList, setSelectJobList] = useState({ env: [], source: [], build: [], deploy: [], count: 0 })
+    const selectMap = get_map(props.joblist)
 
     useEffect(() => {
         async function run() {
-            setJobList({ loading: true });
+            setAvlJob({ ...avlJob, loading: true });
             const jobs = await get_jobs()
             let list = {}
             for (const v of jobs) {
@@ -30,7 +81,7 @@ const JobSelect = (props) => {
                     list.deploy = v.job
                 }
             }
-            setJobList({ list })
+            setAvlJob({ ...avlJob, list, loading: false })
         }
         run()
     }, [])
@@ -38,17 +89,26 @@ const JobSelect = (props) => {
     const pform = Form.useForm()[0]
 
     const cardClick = (item) => {
-        if (!props.editable) return
+        if (!props.editable || (selectMap.get(item.type).readonly && !selectMap.get(item.name))) {
+            return
+        }
         setParam({ loading: false, visible: true, params: item.params, name: item.name, item: item })
         let val = {}
-        for (const p of item.params) {
-            if (p.default)
-                val[p.name] = p.default
-            else
-                val[p.name] = ''
+        if (selectMap.get(item.name)) {
+            const job = props.joblist[item.type].find(v => { return v.name === item.name })
+            Object.entries(job.param).forEach((key, value) => { val[key] = value })
+        }
+        else {
+            for (const p of item.params) {
+                if (p.default)
+                    val[p.name] = p.default
+                else
+                    val[p.name] = ''
+            }
         }
         pform.setFieldsValue(val)
     }
+
 
     const onParamOk = async () => {
         setParam({ ...param, loading: true, err: undefined })
@@ -60,23 +120,19 @@ const JobSelect = (props) => {
             setParam({ ...param, loading: false })
             return
         }
-        let has_set = false
-        for (let it of selectJobList[param.item.type]) {
+
+        for (let it of props.joblist[param.item.type]) {
             if (it.name === param.item.name) {
-                has_set = true
                 it.param = val
                 break
             }
         }
-        if (!has_set) {
-            selectJobList.count += 1
-            param.item.selectIdx = selectJobList.count
-            selectJobList[param.item.type].push({ param: val, name: param.name })
+        let joblist = props.joblist
+        if (!selectMap.get(param.item.name)) {
+            joblist[param.item.type].push({ param: val, name: param.name })
         }
         setParam({ ...param, loading: false, visible: false, name: '' })
-        setJobList({ loading: false, list: jobList.list })
-        setSelectJobList(selectJobList)
-        props.onJobChange({ env: selectJobList.env, build: selectJobList.build, source: selectJobList.source, deploy: selectJobList.deploy })
+        props.onJobChange(joblist)
     }
 
     const onParamTest = async () => {
@@ -120,38 +176,31 @@ const JobSelect = (props) => {
         )
     }
 
-    const RenderCardSelect = (props) => {
-        return (
-            <div style={{ marginTop: 12 }}>
-                <Badge count={props.item.selectIdx} >
-                    <Card size='small' onClick={() => { cardClick(props.item) }}
-                        className={'card_normal card_selected'}
-                        title={props.item.name} extra={
-                            <div> {
-                                props.item.tag.map(t => (<Tag key={t}>{t}</Tag>))
-                            }
-                            </div>
-                        } >
-                        <Typography.Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ width: '100%', marginBottom: 0 }}>
-                            {props.item.description}
-                        </Typography.Paragraph>
-                    </Card >
-                </Badge>
-            </div>
-        )
-    }
+    const readonly = !props.editable
 
     const RenderCard = (props) => {
-        if (props.item.selectIdx) {
-            return (
-                <RenderCardSelect item={props.item} />
-            )
-        }
-        else {
-            return (
-                <RenderCardNone item={props.item} />
-            )
-        }
+        return (
+            <div style={{ marginTop: 12 }}>
+                <Card size='small' onClick={() => { cardClick(props.item) }}
+                    className={`card_normal ${selectMap.get(props.item.name) ? 'card_selected' : ''}
+                    ${ readonly || selectMap.get(props.item.type).readonly ? 'card_readonly' : ''}`}
+                    title={props.item.name} extra={
+                        <div> {
+                            props.item.tag.map(t => (<Tag key={t}>{t}</Tag>))
+                        }
+                            {selectMap.get(props.item.name) && (< Badge count={selectMap.get(props.item.name).cnt} >
+                            </Badge>)
+                            }
+                        </div>
+                    }
+                >
+                    <Typography.Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ width: '100%', marginBottom: 0 }}>
+                        {props.item.description}
+                    </Typography.Paragraph>
+                </Card >
+            </div >
+
+        )
     }
 
     return (
@@ -162,8 +211,8 @@ const JobSelect = (props) => {
                 </Typography.Text>
                 <div style={{ margin: '12px 12px 20px 20px' }}>
                     {
-                        jobList.list && jobList.list.env && (
-                            jobList.list.env.map(env => (
+                        avlJob.list && avlJob.list.env && (
+                            avlJob.list.env.map(env => (
                                 <RenderCard key={env.name} item={env}></RenderCard>
                             ))
                         )
@@ -176,8 +225,8 @@ const JobSelect = (props) => {
                 </Typography.Text>
                 <div style={{ margin: '12px 12px 20px 20px' }}>
                     {
-                        jobList.list && jobList.list.source && (
-                            jobList.list.source.map(s => (
+                        avlJob.list && avlJob.list.source && (
+                            avlJob.list.source.map(s => (
                                 <RenderCard key={s.name} item={s}></RenderCard>
                             ))
                         )
@@ -190,8 +239,8 @@ const JobSelect = (props) => {
                 </Typography.Text>
                 <div style={{ margin: '12px 12px 20px 20px' }}>
                     {
-                        jobList.list && jobList.list.build && (
-                            jobList.list.build.map(s => (
+                        avlJob.list && avlJob.list.build && (
+                            avlJob.list.build.map(s => (
                                 <RenderCard key={s.name} item={s}></RenderCard>
                             ))
                         )
@@ -204,8 +253,8 @@ const JobSelect = (props) => {
                 </Typography.Text>
                 <div style={{ margin: '12px 12px 20px 20px' }}>
                     {
-                        jobList.list && jobList.list.deploy && (
-                            jobList.list.deploy.map(s => (
+                        avlJob.list && avlJob.list.deploy && (
+                            avlJob.list.deploy.map(s => (
                                 <RenderCard key={s.name} item={s}></RenderCard>
                             ))
                         )

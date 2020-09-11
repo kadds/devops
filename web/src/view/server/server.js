@@ -6,6 +6,19 @@ import { get_module_list } from '../../api/module'
 import { Button, Spin, Row, Select, Descriptions, Typography, Card, Input, Form, Modal, InputNumber, message, Col, Space, Checkbox, Tag, Badge, Statistic } from 'antd'
 import { FireOutlined, PoweroffOutlined, CloseOutlined } from '@ant-design/icons'
 
+const getServerRunningTime = (t) => {
+    if (t) {
+        const now = new Date().valueOf()
+        const delta = now - t
+        const day = delta / (60 * 60 * 24 * 1000)
+        const hour = delta % (60 * 60 * 1000)
+        return `${day} day(s) ${hour} hour(s)`
+    }
+    else {
+        return 'Never running'
+    }
+}
+
 const Server = (props) => {
     const [listDetail, setListDetail] = useState({ loading: false, data: [] })
     const [state, setState] = useState({ visible: false, loading: false, type: 0 })
@@ -70,7 +83,7 @@ const Server = (props) => {
             setState({ ...state, loading: false })
             return
         }
-        setState({ ...state, loading: false })
+        setState({ ...state, loading: false, visible: false })
     }
 
     const onModalCancel = async () => {
@@ -202,17 +215,23 @@ const Server = (props) => {
                                     </Col>
                                 </Row>
                                 <Row gutter={32} style={{ marginTop: 32 }}>
-                                    <Col span={12}>
+                                    <Col span={8}>
                                         <Typography.Title level={4}>
                                             VM:
                                         </Typography.Title>
                                         {server.vm_name}
                                     </Col>
-                                    <Col span={12}>
+                                    <Col span={8}>
                                         <Typography.Title level={4}>
                                             Module:
                                         </Typography.Title>
                                         {server.mode_name}
+                                    </Col>
+                                    <Col span={8}>
+                                        <Typography.Title level={4}>
+                                            Running Time
+                                        </Typography.Title>
+                                        {getServerRunningTime(server.start_time)}
                                     </Col>
                                 </Row>
                             </Card>

@@ -40,6 +40,7 @@ router.get('', async (req, rsp, next) => {
     ms_server.vm_name = server.vm_name
     ms_server.status = server.status
     ms_server.flag = server.flag
+    ms_server.start_time = server.content.last_start_time
     rsp.json({ err: 0, data: ms_server })
 })
 

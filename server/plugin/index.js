@@ -7,7 +7,7 @@ function get_job_list() {
 let job_map = new Map()
 
 function init() {
-    const jobs = ['./jobs/git_checkout', './jobs/docker_env', './jobs/yarn', './jobs/file_transfer']
+    const jobs = ['./jobs/git_checkout', './jobs/docker_env', './jobs/yarn', './jobs/file_transfer', './jobs/bare_env', './jobs/devops']
     for (let j of jobs) {
         const job = require(j)
         job_map.set(job.name, job)
