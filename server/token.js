@@ -83,6 +83,10 @@ function maketoken() {
 function valid_token(token) {
     const t = tokens.get(token)
     if (t === undefined) return null
+    if (Date.now().valueOf() - t.time.valueOf() > 1000 * 60 * 60 * 24 * 2) {
+        delete_token(token)
+        return null
+    }
     return t
 }
 

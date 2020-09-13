@@ -99,20 +99,26 @@ const Server = (props) => {
         if (server.status === 1) {
             return (<Badge status='Default' text='init'></Badge>)
         }
-        else if (server.status === 2) {
-            return (<Badge status='Warning' text='stop'></Badge>)
-        }
         else if (server.status === 3) {
-            return (<Badge status='Success' text='running'></Badge>)
+            return (<Badge status='Processing' text='stopping'></Badge>)
         }
         else if (server.status === 4) {
-            return (<Badge status='Error' text='core dump'></Badge>)
+            return (<Badge status='Warning' text='stopped'></Badge>)
         }
         else if (server.status === 5) {
-            return (<Badge status='Processing' text='restart'></Badge>)
+            return (<Badge status='Processing' text='starting'></Badge>)
         }
-        else if (server.status === 6) {
-            return (<Badge status='Default' text='destroy'></Badge>)
+        else if (server.status === 10) {
+            return (<Badge status='Success' text='running'></Badge>)
+        }
+        else if (server.status === 12) {
+            return (<Badge status='Processing' text='restarting'></Badge>)
+        }
+        else if (server.status === 21) {
+            return (<Badge status='Default' text='destroying'></Badge>)
+        }
+        else if (server.status === 22) {
+            return (<Badge status='Default' text='destroyed'></Badge>)
         }
         return (<Badge status='Error' text='Unknown'></Badge>)
     }

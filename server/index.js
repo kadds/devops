@@ -9,6 +9,7 @@ const { valid_token } = require('./token')
 const { init } = require('./data')
 const process = require('process')
 const upload = require('./routers/upload')
+const { } = require('./worker/index')
 
 function start() {
     const app = express()

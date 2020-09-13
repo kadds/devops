@@ -72,7 +72,19 @@ router.post('/update', async (req, rsp, next) => {
     rsp.json({ err: 0 })
 })
 
-router.get('/', (req, rsp, next) => {
+router.post('/del', async (req, rsp, next) => {
+
+})
+
+router.post('/restart', async (req, rsp, next) => {
+
+})
+
+router.post('/stop', async (req, rsp, next) => {
+
+})
+
+router.post('/start', async (req, rsp, next) => {
 
 })
 
