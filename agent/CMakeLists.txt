@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.18)
 
-project (agent C CXX)
+project (agent-bin C CXX)
 
 set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/build)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -13,8 +13,22 @@ add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+find_package(libmongocxx REQUIRED)
+find_package(libbsoncxx REQUIRED)
+find_package(Threads)
 
-file(GLOB_RECURSE  DIR_SRCS *.cc *.cpp *.CC *.CPP)
-find_package(Grpc REQUIRED)
+file(GLOB_RECURSE  DIR_SRCS *.cc)
+file(GLOB_RECURSE REMOVE_CMAKE "build/*")
+list(REMOVE_ITEM ${DIR_SRCS} ${REMOVE_CMAKE})
+
 add_executable(agent ${DIR_SRCS})
-target_link_libraries(agent Threads::Threads)
+
+target_include_directories(agent
+  PRIVATE ${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS}
+)
+
+target_compile_definitions(agent
+  PRIVATE ${LIBMONGOCXX_DEFINITIONS} ${LIBBSONCXX_DEFINITIONS}
+)
+
+target_link_libraries(agent Threads::Threads ${LIBMONGOCXX_LIBRARIES} ${LIBBSONCXX_LIBRARIES})
