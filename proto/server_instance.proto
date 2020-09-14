@@ -31,7 +31,7 @@ message DoOpRsp {
     string err = 1;
 }
 
-server ServerInstance {
+service ServerInstance {
     rpc Init(InitReq) returns(InitRsp);
 
     rpc Destroy(DestroyReq) returns(DestroyRsp);

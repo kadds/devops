@@ -1,5 +1,6 @@
 const { Router } = require('express')
 const { conn, m_server, m_mode } = require('../data')
+const { post_task_server_op } = require('./../worker/index')
 const { SVR_STATUS_INIT, SVR_STATUS_STOP, SVR_FLAG_TEST, SVR_FLAG_GRAY } = require('../flags')
 
 let router = new Router()
@@ -57,6 +58,7 @@ router.post('/', async (req, rsp, next) => {
     data.content = {}
 
     await m_server.create(data)
+    post_task_server_op('init', req.server.name)
     rsp.json({ err: 0 })
 })
 
@@ -73,19 +75,23 @@ router.post('/update', async (req, rsp, next) => {
 })
 
 router.post('/del', async (req, rsp, next) => {
-
+    post_task_server_op('destroy', req.name)
+    rsp.json({ err: 0 })
 })
 
 router.post('/restart', async (req, rsp, next) => {
-
+    post_task_server_op('restart', req.name)
+    rsp.json({ err: 0 })
 })
 
 router.post('/stop', async (req, rsp, next) => {
-
+    post_task_server_op('stop', req.name)
+    rsp.json({ err: 0 })
 })
 
 router.post('/start', async (req, rsp, next) => {
-
+    post_task_server_op('start', req.name)
+    rsp.json({ err: 0 })
 })
 
 const server = router
