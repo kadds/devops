@@ -10,14 +10,21 @@
 
 #include "bsoncxx/builder/stream/document.hpp"
 #include "bsoncxx/json.hpp"
+#include "cpptoml.h"
 #include "mongocxx/client.hpp"
 #include "mongocxx/instance.hpp"
 
 using namespace std;
-#define DBNAME "devops_db"
-#define DCOL "monitor"
+string gUri;
+string gDBName;
+string gMonitorCol;
+string gServiceCol;
 
-bool startWith(const string &str, const char *target, const char **out)
+mongocxx::uri gen_uri() { return {gUri}; }
+mongocxx::v_noabi::collection get_monitor_col(mongocxx::client &cli) { return move(cli[gDBName][gMonitorCol]); }
+mongocxx::v_noabi::collection get_service_col(mongocxx::client &cli) { return move(cli[gDBName][gServiceCol]); }
+
+bool startWith(const string &str, const char *target, const char **out = nullptr)
 {
     for (int i = 0; i < str.size(); i++)
     {
@@ -26,7 +33,8 @@ bool startWith(const string &str, const char *target, const char **out)
         target++;
         if (*target == '\0')
         {
-            *out = &str[i];
+            if (out)
+                *out = &str[i];
             return true;
         }
     }
@@ -45,6 +53,11 @@ uint64_t get_line(const char *ptr)
     }
     return strtoul(ptr, 0, 10);
 }
+
+using bsoncxx::builder::stream::close_array;
+using bsoncxx::builder::stream::document;
+using bsoncxx::builder::stream::finalize;
+using bsoncxx::builder::stream::open_array;
 
 void do_full_monitor()
 {
@@ -106,11 +119,11 @@ void do_full_monitor()
     }
     cout << loading << " " << memtotal << " " << memavl << endl;
 
-    // mongocxx::instance inst{};
-    // mongocxx::client conn{mongocxx::uri{"mongodb://admin:123456@localhost/test"}};
-    // bsoncxx::builder::stream::document doc;
-    // auto col = conn[DBNAME][DCOL];
-    // document << loading << memtotal << memavl;
+    mongocxx::client conn{gen_uri()};
+    auto col = get_monitor_col(conn);
+    document doc;
+    auto val = doc << "data" << open_array << loading << (float)memtotal << (float)memavl << close_array << finalize;
+    col.insert_one(val.view());
 }
 
 struct ContainerInfo
@@ -118,27 +131,29 @@ struct ContainerInfo
     string name;
     uint32_t cpu;
     uint64_t memcost;
-    uint64_t netcost;
-    uint64_t blockcost;
+    uint64_t net_in;
+    uint64_t net_out;
+    uint64_t block_in;
+    uint64_t block_out;
 };
 
 uint64_t get_bit_str(const char *start, const char *end)
 {
     char *tmp = const_cast<char *>(end);
-    uint64_t val = strtoul(start, &tmp, 10);
+    float val = strtof(start, &tmp);
     if (end == tmp)
     {
         return val;
     }
-    if (*end == 'B' || *end == 'b')
+    if (*tmp == 'B' || *tmp == 'b')
     {
         val /= 1024;
     }
-    else if (*end == 'M' || *end == 'm')
+    else if (*tmp == 'M' || *tmp == 'm')
     {
         val *= 1024;
     }
-    else if (*end == 'G' || *end == 'g')
+    else if (*tmp == 'G' || *tmp == 'g')
     {
         val *= 1024 * 1024;
     }
@@ -180,9 +195,10 @@ void do_docker_monitor()
         vector<ContainerInfo> vec;
         while (getline(is, s))
         {
-            if (s == "exec fail")
+            cout << s << endl;
+            if (s == "exec fail" || s.find("permission denied") != std::string::npos)
             {
-                cout << "exec fail\n";
+                cout << "Exec docker command fail. Checking permissions\n";
                 return;
             }
             ContainerInfo info;
@@ -210,11 +226,19 @@ void do_docker_monitor()
                     }
                     else if (stage == 5)
                     {
-                        info.netcost = get_bit_str(last, ptr);
+                        info.net_in = get_bit_str(last, ptr);
+                    }
+                    else if (stage == 7)
+                    {
+                        info.net_out = get_bit_str(last, ptr);
                     }
                     else if (stage == 8)
                     {
-                        info.blockcost = get_bit_str(last, ptr);
+                        info.block_in = get_bit_str(last, ptr);
+                    }
+                    else if (stage == 10)
+                    {
+                        info.block_out = get_bit_str(last, ptr);
                     }
                     stage++;
                     last = ptr + 1;
@@ -226,13 +250,73 @@ void do_docker_monitor()
         waitpid(pid, 0, 0);
         for (auto &info : vec)
         {
-            cout << info.name << " cpu " << info.cpu << " mem " << info.memcost << "KiB Net " << info.netcost
-                 << "kb Block " << info.blockcost << endl;
+            cout << info.name << " cpu " << info.cpu << " mem " << info.memcost << "KiB Net " << info.net_in << "/"
+                 << info.net_out << "kb Block " << info.block_in << "/" << info.block_out << "kb" << endl;
+        }
+        mongocxx::client conn{gen_uri()};
+        auto col = get_service_col(conn);
+        for (auto &info : vec)
+        {
+            document doc;
+            auto val = doc << "name" << info.name << "data" << open_array << (float)info.cpu << (float)info.memcost
+                           << (float)info.net_in << (float)info.net_out << (float)info.block_in << (float)info.block_out
+                           << close_array << finalize;
+            col.insert_one(val.view());
         }
     }
 }
 
-int main(int argc, char *argv[])
+void read_config(int argc, char *argv[])
+{
+    string cfg;
+    if (argc < 2)
+    {
+        cfg = "agent.toml";
+    }
+    else
+    {
+        cfg = argv[1];
+    }
+    std::shared_ptr<cpptoml::table> config;
+    try
+    {
+        config = cpptoml::parse_file(cfg);
+    } catch (const std::exception &e)
+    {
+        cout << "can't find config file agent.toml" << endl;
+        exit(-1);
+    }
+    auto uri = config->get_qualified_as<string>("mongodb.uri");
+    if (!uri)
+    {
+        cout << "config mongodb.uri is empty" << endl;
+        exit(-1);
+    }
+    gUri = uri.value_or("");
+    auto dbname = config->get_qualified_as<string>("mongodb.dbname");
+    if (!dbname)
+    {
+        cout << "config mongodb.dbname is empty" << endl;
+        exit(-1);
+    }
+    gDBName = dbname.value_or("");
+    auto monitorCol = config->get_qualified_as<string>("mongodb.monitorColumnName");
+    if (!monitorCol)
+    {
+        cout << "mongodb.monitorColumnName is empty" << endl;
+        exit(-1);
+    }
+    gMonitorCol = monitorCol.value_or("");
+    auto serviceCol = config->get_qualified_as<string>("mongodb.serviceColumnName");
+    if (!serviceCol)
+    {
+        cout << "mongodb.serviceColumnName is empty" << endl;
+        exit(-1);
+    }
+    gServiceCol = serviceCol.value_or("");
+}
+
+void main_loop()
 {
     const int tm = 60;
     timeval last;
@@ -252,5 +336,11 @@ int main(int argc, char *argv[])
         do_docker_monitor();
         last.tv_sec = time(0);
     }
+}
+
+int main(int argc, char *argv[])
+{
+    read_config(argc, argv);
+    main_loop();
     return 0;
 }

@@ -16,6 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(libmongocxx REQUIRED)
 find_package(libbsoncxx REQUIRED)
 find_package(Threads)
+find_package(cpptoml REQUIRED)
 
 file(GLOB_RECURSE  DIR_SRCS *.cc)
 file(GLOB_RECURSE REMOVE_CMAKE "build/*")
