@@ -35,6 +35,10 @@ const m_vm = sequelize.define('vm', {
     base_dir: {
         type: DataTypes.STRING,
         allowNull: false,
+    },
+    flag: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     sequelize,
@@ -125,10 +129,6 @@ const m_pipeline = sequelize.define('pipeline', {
         allowNull: false,
     },
     stage: {
-        // create
-        // compilation
-        // upload
-
         type: DataTypes.INTEGER,
         allowNull: false,
     },

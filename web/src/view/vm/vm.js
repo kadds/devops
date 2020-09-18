@@ -1,13 +1,13 @@
 import React, { useState, useEffect, createRef } from 'react'
-import { Button, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message } from 'antd'
-import { add_vm, get_all_vm, update_vm, delete_vm } from '../../api/vm'
+import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message } from 'antd'
+import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm } from '../../api/vm'
 import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
 
 const VM = () => {
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
     const [data, setData] = useState([])
     const addVm = () => {
-        setState({ ...state, visible: true, type: 0 })
+        setState({ ...state, visible: true, type: 0, loading: false })
     }
     const [form] = Form.useForm()
 
@@ -60,7 +60,7 @@ const VM = () => {
             private_key: '',
             base_dir: e.base_dir
         })
-        setState({ ...state, visible: true, type: 1 })
+        setState({ ...state, visible: true, type: 1, loading: false })
     }
 
     const [isDel, setIsDel] = useState(false)
@@ -75,12 +75,17 @@ const VM = () => {
         setState({ ...state, need_update: state.need_update + 1 })
     }
 
+    const redoClick = async (name) => {
+        await do_prepare_vm(name)
+        message.success('Redo preparing.')
+    }
+
     const columns = [
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: text => <span>{text}</span>
+            render: (text, r) => <Badge status={r.flag !== 1 ? 'processing' : 'success'} text={text}></Badge>
         },
         {
             title: 'IP/host',
@@ -94,7 +99,7 @@ const VM = () => {
             key: 'port',
         },
         {
-            title: 'Base dir',
+            title: 'Base directory',
             dataIndex: 'base_dir',
             key: 'base_dir',
         },
@@ -109,6 +114,9 @@ const VM = () => {
             dataIndex: 'name',
             key: 'name',
             render: (i, r) => (<Row gutter={8}> <Col> <Button icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+                <Col>
+                    <Button onClick={() => redoClick(r.name)}>Sync</Button>
+                </Col>
                 <Col>
                     <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                         <Button danger loading={isDel}>Delete</Button>

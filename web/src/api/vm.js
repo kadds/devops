@@ -17,4 +17,8 @@ async function delete_vm(name) {
     return (await post('vm/del', { name }))
 }
 
-export { add_vm, get_all_vm, update_vm, delete_vm }
+async function do_prepare_vm(name) {
+    return (await post('vm/prepare', { name }))
+}
+
+export { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm }
