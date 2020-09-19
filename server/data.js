@@ -128,15 +128,8 @@ const m_pipeline = sequelize.define('pipeline', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    // 0 1 2 3 4
     stage: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    test_server: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    previous_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
     },

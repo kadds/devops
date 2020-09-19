@@ -18,22 +18,19 @@ import {
 } from '@ant-design/icons'
 import PipeLineList from './view/pipeline/list'
 import PipeLineDetail from './view/pipeline/detail'
-import PipeLineCreate from './view/pipeline/create'
 import VM from './view/vm/vm'
 import Module from './view/module/module'
 import Server from './view/server/server'
+import P404 from './view/P404'
 
 const { Header, Sider, Content } = Layout;
-const menus = [{
-    name: 'Pipeline', icon: (<GatewayOutlined />), sub: [
-        { name: 'Pipeline List', icon: (<UnorderedListOutlined />), path: '/pipeline/list' },
-        { name: 'Create Pipeline', icon: (<ProjectOutlined />), path: '/pipeline/create' },
-        { name: 'Pipeline Progress', icon: (<BuildOutlined />), path: '/pipeline/detail' },
-    ],
-},
-{ name: 'VM', icon: (<GoldOutlined />), path: '/vm' },
-{ name: 'Module', icon: (<HddOutlined />), path: '/module' },
-{ name: 'Server', icon: (<HddOutlined />), path: '/server' }
+const menus = [
+    { name: 'Pipeline List', icon: (<UnorderedListOutlined />), path: '/pipeline/list' },
+    { name: 'VM', icon: (<GoldOutlined />), path: '/vm' },
+    { name: 'Module', icon: (<HddOutlined />), path: '/module' },
+    { name: 'Server', icon: (<BuildOutlined />), path: '/server' },
+    { name: 'Monitor', icon: (<ProjectOutlined />), path: 'monitor' },
+    { name: 'Log', icon: (<GatewayOutlined />), path: '/log' }
 ]
 
 
@@ -126,13 +123,12 @@ function Main(props) {
                 >
                     <Switch>
                         <Route path='/pipeline/list' component={PipeLineList}></Route>
-                        <Route path='/pipeline/create' component={PipeLineCreate}></Route>Q
                         <Route path='/pipeline/detail' component={PipeLineDetail}></Route>
 
                         <Route path='/vm' component={VM}></Route>
                         <Route path='/module' component={Module}></Route>
                         <Route path='/server' component={Server}></Route>
-                        <Route component={PipeLineList}></Route>
+                        <Route component={P404}></Route>
                     </Switch>
                 </Content>
             </Layout>

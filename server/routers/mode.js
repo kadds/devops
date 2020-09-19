@@ -48,7 +48,6 @@ router.post('/update', async (req, rsp, next) => {
     data.flag = module.flag
     data.dev_user = module.dev_user
     data.flag = 0
-    data.content = {}
 
     await m_mode.update(data, { where: { name: module.name } })
     rsp.json({ err: 0 })

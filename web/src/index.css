@@ -53,3 +53,26 @@ code {
     box-shadow: 4px 4px 15px #aaa;
     border: 1px solid #999;
 }
+
+.step {
+  font-size: 20px;
+  color: #777;
+}
+
+.step_active {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f8407d;
+  text-shadow: 1px 1px 3px rgb(236, 91, 91);
+}
+
+pre.output {
+  padding: 4px 6px;
+  color: #eee;
+  background: #222;
+  height: 100%;
+  width: 100%;
+  min-height: 100%;
+  text-align: left;
+  overflow-y: scroll;
+}
