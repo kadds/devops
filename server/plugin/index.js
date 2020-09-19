@@ -17,6 +17,7 @@ function init() {
         job_def.tag = job.tag
         job_def.type = job.type
         job_def.params = job.params
+        job_def.pipeline_params = job.pipeline_params
         jobs_define.push(job_def)
     }
 }

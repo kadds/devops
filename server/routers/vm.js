@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { conn, m_vm, m_server } = require('../data')
-const { check_connection, copy_to_vm } = require('../utils/vmutils')
+const { check_connection, copy_to_vm, clear_vm } = require('../utils/vmutils')
 const { VM_FLAG_READY } = require('../flags')
 
 let router = new Router()
@@ -18,6 +18,7 @@ router.get('/', async (req, rsp, next) => {
 })
 
 async function do_sync(vm) {
+    await m_vm.update({ flag: 0 }, { where: { name: vm.name } })
     await copy_to_vm(__dirname + '/../upload/vm/', vm.ip, vm.port, vm.password, vm.private_key, vm.user, vm.base_dir)
     await m_vm.update({ flag: VM_FLAG_READY }, { where: { name: vm.name } })
 }
@@ -132,7 +133,10 @@ router.post('/del', async (req, rsp, next) => {
         rsp.json({ err: 101, msg: 'there are servers still use this VM' })
         return
     }
+
+    const vm2 = await m_vm.findByPk(vm.name)
     await m_vm.destroy({ where: { name: name } })
+    clear_vm(vm2.ip, vm2.port, vm2.password, vm2.private_key, vm2.user)
     rsp.json({ err: 0 })
 })
 

@@ -20,4 +20,6 @@ const params = [
     { name: 'path', label: 'path', type: 'string', default: './' }
 ]
 
-module.exports = { entry, name: 'file-transfer', description: 'Transfer build result file to ssh target', tag: ['ssh'], type: 'deploy', params }
+const pipeline_params = []
+
+module.exports = { entry, name: 'file-transfer', description: 'Transfer build result file to ssh target', tag: ['ssh'], type: 'deploy', params, pipeline_params }

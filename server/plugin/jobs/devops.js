@@ -15,4 +15,7 @@ async function entry(request, param) {
 const params = [
 ]
 
-module.exports = { entry, name: 'devops', description: 'Resilient deployment of microservice systems', tag: ['devops'], type: 'deploy', params }
+const pipeline_params = [
+]
+
+module.exports = { entry, name: 'devops', description: 'Resilient deployment of microservice systems', tag: ['devops'], type: 'deploy', params, pipeline_params }

@@ -9,5 +9,6 @@ async function entry(request, param) {
 }
 
 const params = [{ name: 'command', label: 'command', type: 'string', default: 'yarn build' }]
+const pipeline_params = []
 
-module.exports = { entry, name: 'yarn', description: 'build nodejs project by yarn', tag: ['yarn', 'nodejs'], type: 'build', params }
+module.exports = { entry, name: 'yarn', description: 'build nodejs project by yarn', tag: ['yarn', 'nodejs'], type: 'build', params, pipeline_params }

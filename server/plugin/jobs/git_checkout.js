@@ -46,4 +46,7 @@ const params = [
     { name: 'branch', label: 'branch', type: 'string', default: 'master' }
 ]
 
-module.exports = { entry, name: 'git-checkout', description: 'clone git repository code to local', tag: ['git'], type: 'source', params }
+const pipeline_params = [
+]
+
+module.exports = { entry, name: 'git-checkout', description: 'clone git repository code to local', tag: ['git'], type: 'source', params, pipeline_params }
