@@ -14,6 +14,7 @@ router.get('/list', async (req, rsp, next) => {
         it.dev_user = item.dev_user
         it.ctime = item.ctime.valueOf()
         it.jobs = item.content.jobs
+        it.port = item.content.res.port
         const name = it.name
         cnt_req.push(m_server.count({ where: { mode_name: name } }))
         idx++
@@ -36,6 +37,8 @@ router.post('/', async (req, rsp, next) => {
     data.flag = 0
     data.content = {}
     data.content.jobs = module.jobs
+    data.content.res = {}
+    data.content.res.port = module.res_port
 
     await m_mode.create(data)
     rsp.json({ err: 0 })

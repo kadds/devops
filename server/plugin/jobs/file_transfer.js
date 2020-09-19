@@ -1,22 +1,15 @@
-const { check_connection } = require('../../utils/vmutils')
+const { m_vm } = require('../../data')
 async function entry(request, param) {
     if (request === 'valid') {
-        try {
-            await check_connection(param.ssh_host, 22, param.ssh_password, param.ssh_pkey, param.ssh_user)
+        if (await m_vm.findByPk(param.vm_name)) {
+            return ''
         }
-        catch (e) {
-            console.log(e)
-            return '' + e
-        }
-        return ''
+        return 'vm not exist'
     }
 }
 
 const params = [
-    { name: 'ssh_host', label: 'ssh host', type: 'string' },
-    { name: 'ssh_password', label: 'ssh password', type: 'string' },
-    { name: 'ssh_pkey', label: 'ssh private_key', type: 'string' },
-    { name: 'ssh_user', label: 'ssh user', type: 'string', default: 'root' },
+    { name: 'vm_name', label: 'VM', type: 'select VM' },
     { name: 'path', label: 'path', type: 'string', default: './' }
 ]
 

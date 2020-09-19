@@ -10,11 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@grpc/proto-loader": "^0.5.5",
     "chalk": "^4.1.0",
     "express": "5.0.0-alpha.8",
     "formidable": "^1.2.2",
-    "grpc": "^1.24.3",
     "node-ssh": "^11.0.0",
     "response-time": "^2.3.2",
     "sequelize": "^6.3.5",

@@ -178,6 +178,9 @@ const Module = () => {
                             ))}
                         </Select>
                     </Form.Item>
+                    <Form.Item label='Port' name='res_port' rules={[{ required: true, message: 'Please input res port' }]}>
+                        <InputNumber disabled={state.type !== 0}></InputNumber>
+                    </Form.Item>
                     <Form.Item label='Pipeline jobs' name='pipeline'>
                         <JobSelect editable={state.type === 0} joblist={joblist} onJobChange={onChange}></JobSelect>
                     </Form.Item>

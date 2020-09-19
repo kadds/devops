@@ -1,6 +1,7 @@
 const { Router } = require('express')
 const { conn, m_pipeline, m_mode } = require('../data')
 const { get_job_list, job_param_valid } = require('../plugin/index')
+const { do_pipeline_op } = require('../worker/index')
 
 let router = new Router()
 
@@ -37,7 +38,8 @@ router.post('/', async (req, rsp, next) => {
     pipeline.stage = 0
     pipeline.content = {}
     pipeline.content.jobs = module.content.jobs
-    await m_pipeline.create(pipeline)
+    const id = await m_pipeline.create(pipeline).id
+    do_pipeline_op('run', id)
     rsp.json({ err: 0 })
 })
 
