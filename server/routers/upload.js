@@ -1,22 +1,7 @@
 const { Router } = require('express')
-const formidable = require('formidable')
 const fs = require('fs')
 
 let router = new Router()
-
-router.post('/', (req, rsp, next) => {
-    // new upload
-    const form = formidable({ multiples: false })
-    form.parse(req, (err, fields, files) => {
-        if (err) {
-            next(err)
-            return
-        }
-        console.log({ fields, files })
-        rsp.json({ err: 0 })
-    })
-})
-
 
 function writeFile(filename, data) {
     return new Promise((resolve, reject) => {

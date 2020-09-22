@@ -1,22 +1,44 @@
-import React, { useState, useEffect } from 'react'
-import { get_server_list, add_server, update_server, get_server } from '../../api/server'
+import React, { useState, useEffect, useRef } from 'react'
+import { get_server_list, add_server, get_server, destroy_server, stop_server, start_server, restart_server } from '../../api/server'
 import { get_all_vm } from '../../api/vm'
 import { get_module_list } from '../../api/module'
 
-import { Button, Spin, Row, Select, Descriptions, Typography, Card, Input, Form, Modal, InputNumber, message, Col, Space, Checkbox, Tag, Badge, Statistic } from 'antd'
-import { FireOutlined, PoweroffOutlined, CloseOutlined } from '@ant-design/icons'
+import { Button, Spin, Row, Select, Descriptions, Popconfirm, Typography, Card, Input, Form, Modal, InputNumber, message, Col, Space, Checkbox, Tag, Badge, Statistic } from 'antd'
+import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 
-const getServerRunningTime = (t) => {
-    if (t) {
-        const now = new Date().valueOf()
-        const delta = now - t
-        const day = delta / (60 * 60 * 24 * 1000)
-        const hour = delta % (60 * 60 * 1000)
-        return `${day} day(s) ${hour} hour(s)`
+const getServerRunningTime = (delta) => {
+    if (delta) {
+        let rest = delta
+        const day = Math.floor(rest / (60 * 60 * 24))
+        rest -= day * (60 * 60 * 24)
+        const hour = Math.floor(rest / (60 * 60))
+        rest -= hour * 60 * 60
+        const minute = Math.floor(rest / 60)
+        rest -= minute * 60;
+        const second = Math.floor(rest)
+        return `${day ? day + 'd ' : ''}${hour ? hour + 'h ' : ''}${minute ? minute + 'm ' : ''}${second}s`
     }
     else {
-        return 'Never running'
+        return 'It\'s not running'
     }
+}
+
+function useInterval(callback, delay) {
+    const savedCallback = useRef();
+
+    useEffect(() => {
+        savedCallback.current = callback;
+    });
+
+    useEffect(() => {
+        function tick() {
+            savedCallback.current();
+        }
+        if (delay !== null) {
+            let id = setInterval(tick, delay);
+            return () => clearInterval(id);
+        }
+    }, [delay]);
 }
 
 const Server = (props) => {
@@ -25,14 +47,39 @@ const Server = (props) => {
     const [moduleList, setModuleList] = useState({ loading: false, data: [] })
     const [vmList, setVmList] = useState({ loading: false, data: [] })
     const [server, setServer] = useState(null)
+    const [needUpdate, setNeedUpdate] = useState(0)
 
+    const onServerChange = async (server_name) => {
+        setListDetail({ ...listDetail, select: server_name })
+        try {
+            let server = await get_server(server_name)
+            server.current_time = (new Date()).valueOf()
+            setServer(server)
+        }
+        catch (e) {
+            setServer(null)
+        }
+    }
     useEffect(() => {
         async function run() {
+            const select = listDetail.select
+            let has_find = false
             setListDetail({ loading: true, data: [] })
             let data = await get_server_list(props.mode_name)
             if (props.mode_name) {
                 data.sort((a, b) => { return a.ctime > b.ctime })
-                setListDetail({ loading: false, data })
+                if (select)
+                    if (data.find(select) >= 0) {
+                        has_find = true
+                    }
+                if (has_find) {
+                    onServerChange(listDetail.select)
+                    setListDetail({ loading: false, data, select })
+                }
+                else {
+                    setListDetail({ loading: false, data, select: null })
+                    setServer(null)
+                }
             }
             else {
                 let group = {}
@@ -40,14 +87,31 @@ const Server = (props) => {
                     if (group[d.mode_name] === undefined) {
                         group[d.mode_name] = []
                     }
+                    if (select)
+                        if (d.name === select) {
+                            has_find = true
+                        }
                     group[d.mode_name].push(d)
                 }
-                console.log(group)
-                setListDetail({ loading: false, group })
+                if (listDetail.select) {
+                    if (has_find) {
+                        setListDetail({ loading: false, group, select })
+                        onServerChange(select)
+                    }
+                    else {
+                        setListDetail({ loading: false, group, select: null })
+                        setServer(null)
+                    }
+                }
+                else {
+                    setListDetail({ loading: false, group, select: null })
+                    setServer(null)
+                }
             }
         }
         run()
-    }, [props.mode_name])
+    }, [props.mode_name, needUpdate])
+
 
     const [form] = Form.useForm()
     const onNewClick = async () => {
@@ -84,44 +148,114 @@ const Server = (props) => {
             return
         }
         setState({ ...state, loading: false, visible: false })
+        setTimeout(() => {
+            setNeedUpdate(needUpdate + 1)
+        }, 500)
     }
 
     const onModalCancel = async () => {
         setState({ ...state, loading: true, visible: false })
     }
-    const onServerChange = async (server_name) => {
-        setListDetail({ ...listDetail, select: server_name })
-        const server = await get_server(server_name)
-        setServer(server)
-    }
 
     const StatusRender = () => {
         if (server.status === 1) {
-            return (<Badge status='Default' text='init'></Badge>)
+            return (<Badge status='default' text='Init'></Badge>)
         }
         else if (server.status === 3) {
-            return (<Badge status='Processing' text='stopping'></Badge>)
+            return (<Badge status='processing' text='Stopping'></Badge>)
         }
         else if (server.status === 4) {
-            return (<Badge status='Warning' text='stopped'></Badge>)
+            return (<Badge status='warning' text='Stopped'></Badge>)
         }
         else if (server.status === 5) {
-            return (<Badge status='Processing' text='starting'></Badge>)
+            return (<Badge status='processing' text='Starting'></Badge>)
         }
         else if (server.status === 10) {
-            return (<Badge status='Success' text='running'></Badge>)
+            return (<Badge status='success' text='Running'></Badge>)
         }
         else if (server.status === 12) {
-            return (<Badge status='Processing' text='restarting'></Badge>)
+            return (<Badge status='processing' text='Restarting'></Badge>)
         }
         else if (server.status === 21) {
-            return (<Badge status='Default' text='destroying'></Badge>)
+            return (<Badge status='default' text='Destroying'></Badge>)
         }
         else if (server.status === 22) {
-            return (<Badge status='Default' text='destroyed'></Badge>)
+            return (<Badge status='default' text='Destroyed'></Badge>)
         }
-        return (<Badge status='Error' text='Unknown'></Badge>)
+        return (<Badge status='error' text='Unknown'></Badge>)
     }
+    const startClick = async (name) => {
+        await start_server(name)
+        setTimeout(() => {
+            setNeedUpdate(needUpdate + 1)
+        }, 500)
+    }
+
+    const stopClick = async (name) => {
+        await stop_server(name)
+        setTimeout(() => {
+            setNeedUpdate(needUpdate + 1)
+        }, 500)
+    }
+
+    const restartClick = async (name) => {
+        await restart_server(name)
+        setTimeout(() => {
+            setNeedUpdate(needUpdate + 1)
+        }, 500)
+    }
+
+    const destroyClick = async (name) => {
+        await destroy_server(name)
+        setTimeout(() => {
+            setNeedUpdate(needUpdate + 1)
+        }, 500)
+    }
+
+    const OperationButtons = (props) => {
+        if (props.server.status === 1) {
+            return (<div></div>)
+        }
+        else if (props.server.status === 4) {
+            return (
+                <Row gutter={8}>
+                    <Col>
+                        <Button onClick={() => startClick(props.server.name)} icon={<PoweroffOutlined />} type='primary'>Start</Button>
+                    </Col>
+                    <Popconfirm title="Are you sure?" onConfirm={() => destroyClick(props.server.name)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                        <Button danger icon={<CloseOutlined />}>Destroy</Button>
+                    </Popconfirm>
+                </Row>
+            )
+        }
+        else if (props.server.status === 10) {
+            return (
+                <Row gutter={8}>
+                    <Col>
+                        <Button onClick={() => restartClick(props.server.name)}>Restart</Button>
+                    </Col>
+                    <Col>
+                        <Button danger onClick={() => stopClick(props.server.name)} icon={<PoweroffOutlined />}>Stop</Button>
+                    </Col>
+                </Row>
+            )
+        }
+        else if (props.server.status !== 22) {
+            return (
+                <Row gutter={8}>
+                    <Col>
+                        <Popconfirm title="Are you sure?" onConfirm={() => destroyClick(props.server.name)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                            <Button danger icon={<CloseOutlined />}>Destroy</Button>
+                        </Popconfirm>
+                    </Col>
+                </Row>
+            )
+        }
+        else {
+            return ''
+        }
+    }
+
 
     const FlagRender = () => {
         if (server.flag & 1) {
@@ -143,7 +277,7 @@ const Server = (props) => {
     const ReaderSelectGroup = () => {
         if (listDetail.group) {
             return (
-                <Select style={{ minWidth: '120px' }} onChange={onServerChange} value={listDetail.select}>
+                <Select style={{ minWidth: '220px' }} onChange={onServerChange} value={listDetail.select}>
                     {
                         Object.entries(listDetail.group).map(([name, it]) => (
                             <Select.OptGroup label={name} key={name}>
@@ -162,7 +296,7 @@ const Server = (props) => {
         }
         else {
             return (
-                <Select style={{ minWidth: '120px' }} onChange={onServerChange} value={listDetail.select}>
+                <Select style={{ minWidth: '220px' }} onChange={onServerChange} value={listDetail.select}>
                     {
                         listDetail.data.map(item =>
                             (
@@ -173,6 +307,24 @@ const Server = (props) => {
                 </Select>
             )
         }
+    }
+
+    const RunningTime = (props) => {
+        const [serverDetailTime, setServerDetailTime] = useState(
+            props.server && props.server.status === 10 ? Math.floor(((new Date()).valueOf() - server.start_time) / 1000) : null)
+        useInterval(() => {
+            if (props.server && serverDetailTime !== null) {
+                setServerDetailTime(serverDetailTime + 1)
+            }
+            else {
+                setServerDetailTime(null)
+            }
+        }, 1000)
+
+        return <span>
+            {getServerRunningTime(serverDetailTime)}
+        </span>
+
     }
 
     return (
@@ -237,24 +389,16 @@ const Server = (props) => {
                                         <Typography.Title level={4}>
                                             Running Time
                                         </Typography.Title>
-                                        {getServerRunningTime(server.start_time)}
+                                        <RunningTime server={server}></RunningTime>
                                     </Col>
                                 </Row>
                             </Card>
                         </Col>
                         <Col span={8}>
                             <Card title='Operation'>
-                                <Row gutter={8}>
-                                    <Col>
-                                        <Button>Restart</Button>
-                                    </Col>
-                                    <Col>
-                                        <Button icon={<PoweroffOutlined />}>Stop</Button>
-                                    </Col>
-                                    <Col>
-                                        <Button danger icon={<CloseOutlined />}>Destroy</Button>
-                                    </Col>
-                                </Row>
+                                <OperationButtons server={server}>
+
+                                </OperationButtons>
                             </Card>
                         </Col>
                     </Row>

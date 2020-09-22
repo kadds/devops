@@ -19,4 +19,20 @@ async function get_server(server_name) {
     return (await get('/server?name=' + server_name)).data
 }
 
-export { get_server_list, add_server, update_server, get_server }
+async function start_server(server_name) {
+    return (await post('/server/start', { name: server_name }))
+}
+
+async function stop_server(server_name) {
+    return (await post('/server/stop', { name: server_name }))
+}
+
+async function restart_server(server_name) {
+    return (await post('/server/restart', { name: server_name }))
+}
+
+async function destroy_server(server_name) {
+    return (await post('/server/destroy', { name: server_name }))
+}
+
+export { get_server_list, add_server, update_server, get_server, start_server, stop_server, restart_server, destroy_server }

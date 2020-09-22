@@ -9,9 +9,12 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <sys/epoll.h>
+#include <sys/inotify.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
@@ -24,6 +27,9 @@ string gBindAddress;
 uint16_t gPort;
 uint64_t gMaxLogSize;
 string gLogCol;
+bool gNeedUpdate = true;
+unordered_set<string> gServers;
+string gVmName;
 
 mongocxx::uri gen_uri() { return {gUri}; }
 mongocxx::v_noabi::collection get_monitor_col(mongocxx::client &cli) { return move(cli[gDBName][gMonitorCol]); }
@@ -129,8 +135,8 @@ void do_full_monitor()
         mongocxx::client conn{gen_uri()};
         auto col = get_monitor_col(conn);
         document doc;
-        auto val = doc << "data" << open_array << loading << (float)memtotal << (float)memavl << close_array
-                       << finalize;
+        auto val = doc << "name" << gVmName << "data" << open_array << loading << (float)memtotal << (float)memavl
+                       << close_array << finalize;
         col.insert_one(val.view());
     } catch (std::exception e)
     {
@@ -269,6 +275,10 @@ void do_docker_monitor()
         vector<bsoncxx::document::value> docs;
         for (auto &info : vec)
         {
+            if (gServers.count(info.name) == 0)
+            {
+                continue;
+            }
             document doc;
             auto val = doc << "name" << info.name << "data" << open_array << (float)info.cpu << (float)info.memcost
                            << (float)info.net_in << (float)info.net_out << (float)info.block_in << (float)info.block_out
@@ -280,7 +290,6 @@ void do_docker_monitor()
             mongocxx::client conn{gen_uri()};
             auto col = get_service_col(conn);
             col.insert_many(docs);
-
         } catch (std::exception e)
         {
             cout << "err to connect mongodb " << e.what() << endl;
@@ -297,7 +306,7 @@ void read_config(int argc, char *argv[])
     }
     else
     {
-        cfg = argv[1];
+        cfg = argv[argc - 1];
     }
     std::shared_ptr<cpptoml::table> config;
     try
@@ -544,8 +553,75 @@ void log_loop()
     context.run();
 }
 
+void do_servers_update()
+{
+    if (!gNeedUpdate)
+    {
+        return;
+    }
+    cout << "reloading" << endl;
+    ifstream fs("./agent_servers.txt");
+    gServers.clear();
+    string ss;
+    getline(fs, ss, '\n');
+    if (ss == "")
+    {
+        cout << "error get agent_servers.txt" << endl;
+        exit(-1);
+    }
+    gVmName = ss;
+    while (getline(fs, ss, '\n'))
+    {
+        if (!ss.empty())
+            gServers.insert(ss);
+    }
+    gNeedUpdate = false;
+}
+
+int notify_servers_file()
+{
+    int fd = inotify_init();
+    if (fd < 0)
+    {
+        fd = errno;
+        cout << "init inotify fail ret " << fd << endl;
+        return -1;
+    }
+    int ret = inotify_add_watch(fd, "./agent_servers.txt", IN_CREATE | IN_MODIFY);
+    if (ret < 0)
+    {
+        ret = errno;
+        cout << "inotify add watch fail ret " << ret << endl;
+        return -1;
+    }
+    return fd;
+}
+
+void update_notify_info(int fd)
+{
+    unique_ptr<char[]> buf = unique_ptr<char[]>(new char[4096]);
+    int len = read(fd, buf.get(), 4096);
+    int pos = 0;
+    while (pos < len)
+    {
+        inotify_event *event = (inotify_event *)&buf[pos];
+        gNeedUpdate = true;
+        return;
+    }
+}
+
 void main_loop()
 {
+    int fd = notify_servers_file();
+    int evfd = epoll_create(1);
+    if (fd > 0)
+    {
+        epoll_event ev;
+        memset(&ev, 0, sizeof(ev));
+        ev.events = EPOLLIN;
+        ev.data.fd = fd;
+        epoll_ctl(evfd, EPOLL_CTL_ADD, fd, &ev);
+    }
     const int tm = 60;
     timeval last;
     last.tv_sec = time(0) - tm;
@@ -554,12 +630,18 @@ void main_loop()
         time_t now = time(0);
         if (now - last.tv_sec < tm)
         {
-            timeval tv;
-            tv.tv_sec = (now - last.tv_sec);
-            tv.tv_usec = 0;
-            select(0, 0, 0, 0, &tv);
+            epoll_event event;
+            if (epoll_wait(evfd, &event, 1, (now - last.tv_sec) * 1000) == 1)
+            {
+                update_notify_info(fd);
+            }
             continue;
         }
+        if (fd < 0)
+        {
+            gNeedUpdate = true; // fallback
+        }
+        do_servers_update();
         do_full_monitor();
         do_docker_monitor();
         last.tv_sec = time(0);
@@ -571,19 +653,29 @@ void at_exit() { unlink("./agent.pid"); }
 
 int main(int argc, char *argv[])
 {
-    atexit(at_exit);
+    if (argc >= 2 && string(argv[1]) == "-d")
     {
-        auto f = fopen("./agent.pid", "w");
-        auto pid_str = to_string(getpid());
-        fwrite(pid_str.c_str(), pid_str.size(), pid_str.size(), f);
-        fflush(f);
-        fclose(f);
+        daemon(1, 0);
     }
+    else if (argc >= 2 && string(argv[1]) == "-h")
+    {
+        cout << R"(./agent [option] config_path
+options:
+    -d run as daemon
+    -h show this help message
+)";
+        return 0;
+    }
+
+    read_config(argc, argv);
+    atexit(at_exit);
+    ofstream fs("./agent.pid");
+    fs << getpid();
+    fs.flush();
 
     signal(SIGINT, sig_func);
     signal(SIGTERM, sig_func);
-
-    read_config(argc, argv);
+    signal(SIGSEGV, sig_func);
     std::thread thd(log_loop);
     main_loop();
     return 0;

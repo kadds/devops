@@ -18,9 +18,14 @@ router.get('/', async (req, rsp, next) => {
 })
 
 async function do_sync(vm) {
-    await m_vm.update({ flag: 0 }, { where: { name: vm.name } })
-    await copy_to_vm(__dirname + '/../upload/vm/', vm.ip, vm.port, vm.password, vm.private_key, vm.user, vm.base_dir)
-    await m_vm.update({ flag: VM_FLAG_READY }, { where: { name: vm.name } })
+    try {
+        await m_vm.update({ flag: 0 }, { where: { name: vm.name } })
+        await copy_to_vm(__dirname + '/../upload/vm/', vm.ip, vm.port, vm.password, vm.private_key, vm.user, vm.base_dir)
+        await m_vm.update({ flag: VM_FLAG_READY }, { where: { name: vm.name } })
+    }
+    catch (e) {
+        console.error(e)
+    }
 }
 
 router.post('/prepare', async (req, rsp, next) => {
@@ -29,7 +34,7 @@ router.post('/prepare', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'vm not find' })
         return
     }
-    do_sync(vm)
+    await do_sync(vm)
     rsp.json({ err: 0 })
 })
 
@@ -40,6 +45,11 @@ router.post('/create', async (req, rsp, next) => {
     }
     if (req.body.vm.base_dir.startsWith('~') || req.body.vm.base_dir.startsWith('/')) {
         rsp.json({ err: 102, msg: 'base directory invalid. Don\'t start with ~ or /' })
+        return
+    }
+    const re = /[\n\b=+\\\/\(\)\[\]\{\}]+/
+    if (req.body.vm.name.match(re)) {
+        rsp.json({ err: 101, msg: 'invalid vm name' })
         return
     }
     const vm = req.body.vm
@@ -58,7 +68,7 @@ router.post('/create', async (req, rsp, next) => {
     req.body.vm.flag = 0
 
     await m_vm.create(req.body.vm)
-    do_sync(vm) // async
+    do_sync(vm) // sync
     rsp.json({ err: 0, status: 0 })
 })
 
@@ -107,6 +117,7 @@ router.post('/update', async (req, rsp, next) => {
     }
 
     await vm2.save()
+    do_sync(vm) // sync
     rsp.json({ err: 0, status: 0 })
 })
 
@@ -134,9 +145,9 @@ router.post('/del', async (req, rsp, next) => {
         return
     }
 
-    const vm2 = await m_vm.findByPk(vm.name)
+    const vm2 = await m_vm.findByPk(name)
     await m_vm.destroy({ where: { name: name } })
-    clear_vm(vm2.ip, vm2.port, vm2.password, vm2.private_key, vm2.user)
+    clear_vm(vm2.ip, vm2.port, vm2.password, vm2.private_key, vm2.user, vm2.base_dir)
     rsp.json({ err: 0 })
 })
 

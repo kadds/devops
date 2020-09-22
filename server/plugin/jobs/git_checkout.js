@@ -1,4 +1,3 @@
-const simpleGit = require('simple-git');
 const tmp = require('tmp');
 
 async function tmp_dir() {
@@ -14,20 +13,12 @@ async function tmp_dir() {
     })
 }
 
-async function git_checkout(url, branch, path) {
-    const git = simpleGit()
-    const init = await git.init()
-    const res = await git.clone(url, path, ['--bare', '--single-branch', '--depth=1', '--branch=' + branch])
-    return
-}
-
 async function entry(request, param) {
     if (request === 'valid') {
         let removeCallback = null
         try {
             const { name, remove } = await tmp_dir()
             removeCallback = remove
-            await git_checkout(param.url, param.branch, name)
             removeCallback()
             return ''
         }

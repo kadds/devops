@@ -113,9 +113,9 @@ const VM = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<Row gutter={8}> <Col> <Button icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+            render: (i, r) => (<Row gutter={8}> <Col> <Button disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
                 <Col>
-                    <Button onClick={() => redoClick(r.name)}>Sync</Button>
+                    <Button disabled={isDel} onClick={() => redoClick(r.name)}>Sync</Button>
                 </Col>
                 <Col>
                     <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
@@ -154,7 +154,7 @@ const VM = () => {
                     <Form.Item label='Name' name='name' rules={[{ required: true, message: 'Please input vm name' }]}>
                         <Input disabled={state.type !== 0} />
                     </Form.Item>
-                    <Form.Item label='IP/host' name='ip' rules={[{ required: true, message: 'Please input vm ip address' }]}>
+                    <Form.Item label='IP' name='ip' rules={[{ required: true, message: 'Please input vm ip address' }]}>
                         <Input disabled={state.type !== 0} />
                     </Form.Item>
                     <Form.Item initialValue={22} label='Port' name='port' rules={[{ required: true, message: 'Please input vm port' }]}>
