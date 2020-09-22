@@ -123,13 +123,19 @@ void do_full_monitor()
             memavl = get_line(out);
         }
     }
-    cout << loading << " " << memtotal << " " << memavl << endl;
-
-    mongocxx::client conn{gen_uri()};
-    auto col = get_monitor_col(conn);
-    document doc;
-    auto val = doc << "data" << open_array << loading << (float)memtotal << (float)memavl << close_array << finalize;
-    col.insert_one(val.view());
+    // cout << loading << " " << memtotal << " " << memavl << endl;
+    try
+    {
+        mongocxx::client conn{gen_uri()};
+        auto col = get_monitor_col(conn);
+        document doc;
+        auto val = doc << "data" << open_array << loading << (float)memtotal << (float)memavl << close_array
+                       << finalize;
+        col.insert_one(val.view());
+    } catch (std::exception e)
+    {
+        cout << "err to connect mongodb " << e.what() << endl;
+    }
 }
 
 struct ContainerInfo
@@ -255,13 +261,11 @@ void do_docker_monitor()
             vec.emplace_back(move(info));
         }
         waitpid(pid, 0, 0);
-        for (auto &info : vec)
-        {
-            cout << info.name << " cpu " << info.cpu << " mem " << info.memcost << "KiB Net " << info.net_in << "/"
-                 << info.net_out << "kb Block " << info.block_in << "/" << info.block_out << "kb" << endl;
-        }
-        mongocxx::client conn{gen_uri()};
-        auto col = get_service_col(conn);
+        // for (auto &info : vec)
+        // {
+        //     cout << info.name << " cpu " << info.cpu << " mem " << info.memcost << "KiB Net " << info.net_in << "/"
+        //          << info.net_out << "kb Block " << info.block_in << "/" << info.block_out << "kb" << endl;
+        // }
         vector<bsoncxx::document::value> docs;
         for (auto &info : vec)
         {
@@ -271,7 +275,16 @@ void do_docker_monitor()
                            << close_array << finalize;
             docs.emplace_back(move(val.view()));
         }
-        col.insert_many(docs);
+        try
+        {
+            mongocxx::client conn{gen_uri()};
+            auto col = get_service_col(conn);
+            col.insert_many(docs);
+
+        } catch (std::exception e)
+        {
+            cout << "err to connect mongodb " << e.what() << endl;
+        }
     }
 }
 
@@ -361,8 +374,6 @@ void read_config(int argc, char *argv[])
 void send_log(std::shared_ptr<char[]> data, vector<pair<size_t, size_t>> ranges)
 {
     cout << "post ranges " << ranges.size() << endl;
-    mongocxx::client conn{gen_uri()};
-    auto col = get_logger_col(conn);
     vector<bsoncxx::document::value> docs;
     for (auto &range : ranges)
     {
@@ -409,7 +420,17 @@ void send_log(std::shared_ptr<char[]> data, vector<pair<size_t, size_t>> ranges)
         docs.emplace_back(move(val.view()));
     }
     if (docs.size() > 0)
-        col.insert_many(docs);
+    {
+        try
+        {
+            mongocxx::client conn{gen_uri()};
+            auto col = get_logger_col(conn);
+            col.insert_many(docs);
+        } catch (std::exception e)
+        {
+            cout << "err to connect mongodb " << e.what() << endl;
+        }
+    }
 }
 
 struct client_data
@@ -545,8 +566,23 @@ void main_loop()
     }
 }
 
+void sig_func(int sig) { exit(-1); }
+void at_exit() { unlink("./agent.pid"); }
+
 int main(int argc, char *argv[])
 {
+    atexit(at_exit);
+    {
+        auto f = fopen("./agent.pid", "w");
+        auto pid_str = to_string(getpid());
+        fwrite(pid_str.c_str(), pid_str.size(), pid_str.size(), f);
+        fflush(f);
+        fclose(f);
+    }
+
+    signal(SIGINT, sig_func);
+    signal(SIGTERM, sig_func);
+
     read_config(argc, argv);
     std::thread thd(log_loop);
     main_loop();
