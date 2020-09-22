@@ -26,7 +26,6 @@ router.post('/register', async (req, rsp, next) => {
 })
 
 router.post('/login', async (req, rsp, next) => {
-    console.log(req.body)
     const item = await m_user.findByPk(req.body.username)
     if (item === null) {
         rsp.json({ err: 201, msg: 'password error' })
