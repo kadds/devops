@@ -69,7 +69,7 @@ const Server = (props) => {
             if (props.mode_name) {
                 data.sort((a, b) => { return a.ctime > b.ctime })
                 if (select)
-                    if (data.find(select) >= 0) {
+                    if (data.find((v) => { return v.name === select })) {
                         has_find = true
                     }
                 if (has_find) {
