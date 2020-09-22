@@ -67,12 +67,12 @@ code {
 }
 
 pre.output {
+  min-height: 50px;
   padding: 4px 6px;
   color: #eee;
   background: #222;
   height: 100%;
   width: 100%;
-  min-height: 100%;
   text-align: left;
   overflow-y: scroll;
 }

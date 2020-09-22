@@ -351,7 +351,7 @@ const Server = (props) => {
                 server && (
                     <Row gutter={8} style={{ marginTop: 30 }}>
                         <Col span={16}>
-                            <Card title={'Information Of ' + server.name}>
+                            <Card title={'Information of ' + server.name}>
                                 <Row gutter={32}>
                                     <Col span={8}>
                                         <Typography.Title level={4}>
@@ -387,7 +387,7 @@ const Server = (props) => {
                                     </Col>
                                     <Col span={8}>
                                         <Typography.Title level={4}>
-                                            Running Time
+                                            Running Time:
                                         </Typography.Title>
                                         <RunningTime server={server}></RunningTime>
                                     </Col>

@@ -213,12 +213,11 @@ void do_docker_monitor()
         vector<ContainerInfo> vec;
         while (getline(is, s))
         {
-            cout << s << endl;
             if (s == "exec fail" || s.find("permission denied") != std::string::npos ||
                 s.find("Cannot connect to") != std::string::npos)
             {
                 cout << "Exec docker command fail. Checking permissions\n";
-                return;
+                break;
             }
             ContainerInfo info;
             const char *ptr = s.c_str(), *last;
@@ -287,9 +286,12 @@ void do_docker_monitor()
         }
         try
         {
-            mongocxx::client conn{gen_uri()};
-            auto col = get_service_col(conn);
-            col.insert_many(docs);
+            if (docs.size() > 0)
+            {
+                mongocxx::client conn{gen_uri()};
+                auto col = get_service_col(conn);
+                col.insert_many(docs);
+            }
         } catch (std::exception e)
         {
             cout << "err to connect mongodb " << e.what() << endl;
