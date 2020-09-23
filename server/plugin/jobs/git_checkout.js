@@ -40,4 +40,8 @@ const params = [
 const pipeline_params = [
 ]
 
-module.exports = { entry, name: 'git-checkout', description: 'clone git repository code to local', tag: ['git'], type: 'source', params, pipeline_params }
+const deps = [
+    'git'
+]
+
+module.exports = { entry, name: 'git-checkout', description: 'clone git repository code to local', tag: ['git'], type: 'source', params, pipeline_params, deps }

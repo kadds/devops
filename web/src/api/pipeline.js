@@ -24,4 +24,8 @@ async function get_pipeline(id) {
     return (await get('/pipeline?id=' + id)).data
 }
 
-export { get_pipelines, get_jobs, jobs_valid, create_pipeline, delete_pipeline, get_pipeline }
+async function get_pipeline_log_id(id) {
+    return (await post('/pipeline/log', { id })).data
+}
+
+export { get_pipelines, get_jobs, jobs_valid, create_pipeline, delete_pipeline, get_pipeline, get_pipeline_log_id }

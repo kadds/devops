@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { conn, m_pipeline, m_mode } = require('../data')
 const { get_job_list, job_param_valid } = require('../plugin/index')
 const { post_pipeline_op } = require('../worker/index')
+const { new_ws_id } = require('../ws')
 
 let router = new Router()
 
@@ -21,10 +22,6 @@ router.get('/list', async (req, rsp, next) => {
     rsp.json({ err: 0, list: ls })
 })
 
-router.post('/op', (req, rsp, next) => {
-    // update pipeline next stage
-})
-
 router.post('/', async (req, rsp, next) => {
     // new pipeline
     let module = null
@@ -38,12 +35,14 @@ router.post('/', async (req, rsp, next) => {
     pipeline.stage = 0
     pipeline.content = {}
     pipeline.content.jobs = module.content.jobs
-    const id = await m_pipeline.create(pipeline).id
-    post_pipeline_op('run', id)
+    const res = await m_pipeline.create(pipeline)
+    post_pipeline_op('run', res.id)
     rsp.json({ err: 0 })
 })
 
 router.post('/del', async (req, rsp, next) => {
+    // wait del
+    await post_pipeline_op('stop', req.body.id)
     await m_pipeline.destroy({ where: { id: req.body.id } })
     rsp.json({ err: 0 })
 })
@@ -60,6 +59,16 @@ router.get('', async (req, rsp, next) => {
     data.mtime = pipeline.mtime.valueOf()
     data.stage = pipeline.stage
     rsp.json({ err: 0, data: data })
+})
+
+router.post('/log', async (req, rsp, next) => {
+    const pipeline = await m_pipeline.findByPk(req.body.id)
+    if (!pipeline) {
+        rsp.json({ err: 404, msg: 'pipeline not found' })
+        return
+    }
+    const id = new_ws_id(req.body.id)
+    rsp.json({ err: 0, data: { id } })
 })
 
 router.get('/jobs', async (req, rsp, next) => {

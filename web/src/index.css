@@ -75,4 +75,6 @@ pre.output {
   width: 100%;
   text-align: left;
   overflow-y: scroll;
+  font-size: 13px;
+  font-family: 'Courier New', Courier, monospace;
 }

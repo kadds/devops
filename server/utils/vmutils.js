@@ -94,7 +94,7 @@ async function clear_vm(ip, port, password, private_key, user, dir) {
     await ssh.execCommand('rm -f ./agent ./agent.toml ./agent_servers.txt ./agent.pid', { cwd: dir + '/agent' })
 }
 
-async function exec_shell(shell_code, ip, port, password, private_key, user) {
+async function connect_shell(ip, port, password, private_key, user) {
     let ssh = new NodeSSH()
     await ssh.connect({
         host: ip,
@@ -104,7 +104,7 @@ async function exec_shell(shell_code, ip, port, password, private_key, user) {
         username: user,
         readyTimeout: 2000
     })
-    await ssh.execCommand('cat | sh', { stdin: shell_code })
+    return ssh
 }
 
 async function update_vm_servers(servers, vm_name, ip, port, password, private_key, user, dir) {
@@ -125,4 +125,4 @@ async function update_vm_servers(servers, vm_name, ip, port, password, private_k
     console.log('update agent_servers.txt done')
 }
 
-module.exports = { check_connection, copy_to_vm, restart_agent, clear_vm, exec_shell, update_vm_servers }
+module.exports = { check_connection, copy_to_vm, restart_agent, clear_vm, connect_shell, update_vm_servers }

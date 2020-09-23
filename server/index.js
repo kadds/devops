@@ -12,6 +12,12 @@ const { init } = require('./data')
 const process = require('process')
 const upload = require('./routers/upload')
 const { } = require('./worker/index')
+const { listen_log } = require('./worker/pipeline')
+const WebSocket = require('ws')
+const { Server } = require('ws-promise')
+const url = require('url')
+const { valid_ws_id } = require('./ws')
+
 
 function start() {
     const app = express()
@@ -72,6 +78,49 @@ function start() {
     console.log("start listen")
 }
 
+function start_ws() {
+    const wss = new WebSocket.Server({
+        port: 8078,
+        perMessageDeflate: {
+            zlibDeflateOptions: {
+                chunkSize: 1024,
+                memLevel: 7,
+                level: 3
+            },
+            zlibInflateOptions: {
+                chunkSize: 10 * 1024
+            },
+            clientNoContextTakeover: true,
+            serverNoContextTakeover: true,
+            serverMaxWindowBits: 10,
+            concurrencyLimit: 10,
+            threshold: 1024
+        }
+    });
+    wss.on('connection', (ws, req) => {
+        ws.on('close', () => {
+        })
+        const log = `> ${chalk.bold('ws')} ${req.url}`
+        console.log(log)
+        const URI = new url.URL('ws://' + req.headers.host + req.url)
+        const id = URI.searchParams.get('id')
+        const pipeline_id = valid_ws_id(id)
+        if (pipeline_id === null) {
+            console.log('error connect ws id')
+            ws.close()
+            return
+        }
+        listen_log(pipeline_id, (msg, callback) => {
+            ws.send(msg, (err) => {
+                callback(err)
+            })
+        }, () => {
+            ws.close()
+        })
+    })
+}
+
 init().then(() => {
     start()
+    start_ws()
 })

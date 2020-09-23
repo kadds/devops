@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation } from "react-router-dom";
-import PipeLineStageEnv from './stages/env'
-import PipeLineStageSource from './stages/source'
-import PipeLineStageBuild from './stages/build'
-import PipeLineStageDeploy from './stages/deploy'
+import PipeLineStageComm from './stages/comm'
 import PipeLineStageDone from './stages/done'
-import { get_pipeline } from './../../api/pipeline'
+import { get_pipeline, get_pipeline_log_id } from './../../api/pipeline'
 import { Row, Progress, Divider, Col, Input, Typography } from 'antd';
 
 const PipeLineDetail = () => {
@@ -22,17 +19,8 @@ const PipeLineDetail = () => {
     }, [location])
 
     function PipeLineComp(props) {
-        if (pipeline.data.stage === 0) {
-            return (<PipeLineStageEnv pipeline={pipeline.data} />)
-        }
-        else if (pipeline.data.stage === 1) {
-            return (<PipeLineStageSource pipeline={pipeline.data} />)
-        }
-        else if (pipeline.data.stage === 2) {
-            return (<PipeLineStageBuild pipeline={pipeline.data} />)
-        }
-        else if (pipeline.data.stage === 3) {
-            return (<PipeLineStageDeploy pipeline={pipeline.data} />)
+        if (pipeline.data.stage < 4) {
+            return (<PipeLineStageComm pipeline={pipeline.data} />)
         }
         else if (pipeline.data.stage == 4) {
             return (<PipeLineStageDone pipeline={pipeline.data} />)

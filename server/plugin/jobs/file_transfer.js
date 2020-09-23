@@ -14,5 +14,6 @@ const params = [
 ]
 
 const pipeline_params = []
+const deps = ['openssh']
 
-module.exports = { entry, name: 'file-transfer', description: 'Transfer build result file to ssh target', tag: ['ssh'], type: 'deploy', params, pipeline_params }
+module.exports = { entry, name: 'file-transfer', description: 'Transfer build result file to ssh target', tag: ['ssh'], type: 'deploy', params, pipeline_params, deps }

@@ -30,10 +30,22 @@ async function job_param_valid(job_name, param) {
     return 'job not find'
 }
 
-async function run_job(job_name, param) {
+async function run_job(job_name, param, opt) {
+    const job = job_map.get(job_name)
+    if (job) {
+        return await job.entry('run', param, opt)
+    }
+    throw 'job not find'
+}
 
+async function get_job_deps(job_name) {
+    const job = job_map.get(job_name)
+    if (job) {
+        return await job.deps
+    }
+    throw 'job not find'
 }
 
 init()
 
-module.exports = { get_job_list, job_param_valid, run_job }
+module.exports = { get_job_list, job_param_valid, run_job, get_job_deps }

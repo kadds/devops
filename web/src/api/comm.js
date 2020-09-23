@@ -4,8 +4,12 @@ import { message, Typography } from 'antd'
 import store from '../state/store'
 import { start_login } from '../state/action'
 
+
+const base_url = 'http://localhost:8077'
+const base_ws_url = 'ws://localhost:8078'
+
 let instance = axios.create({
-    baseURL: 'http://localhost:8077',
+    baseURL: base_url,
     timeout: 2000,
     headers: { 'Content-Type': 'application/json' },
 })
@@ -66,5 +70,5 @@ function set_token(token) {
 function remove_token() {
     window.localStorage.removeItem('token')
 }
-export { get, post, put, set_token, remove_token }
+export { get, post, put, set_token, remove_token, base_url, base_ws_url }
 

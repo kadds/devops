@@ -22,6 +22,9 @@ async function post_pipeline_op(op, id) {
     if (op === 'run') {
         await pipeline.run(id)
     }
+    else if (op === 'stop') {
+        await pipeline.stop(id)
+    }
 }
 
 module.exports = { post_task_server_op, post_pipeline_op }

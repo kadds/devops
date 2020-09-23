@@ -33,3 +33,4 @@ scripts/
 vm/
 
 *.pid
+log/
