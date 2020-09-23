@@ -1,35 +1,35 @@
 import React, { useEffect, useState } from 'react'
-import { useLocation } from "react-router-dom";
+import { useLocation, withRouter } from "react-router-dom";
 import PipeLineStageComm from './stages/comm'
 import PipeLineStageDone from './stages/done'
 import { get_pipeline, get_pipeline_log_id } from './../../api/pipeline'
 import { Row, Progress, Divider, Col, Input, Typography } from 'antd';
+import queryString from 'query-string'
 
-const PipeLineDetail = () => {
-    const location = useLocation()
+function PipeLineComp(props) {
+    if (props.pipeline.data.stage < 4) {
+        return (<PipeLineStageComm pipeline={props.pipeline.data} />)
+    }
+    else if (props.pipeline.data.stage == 4) {
+        return (<PipeLineStageDone pipeline={props.pipeline.data} />)
+    }
+    return 'unknown'
+}
+
+const PipeLineDetail = (props) => {
     const [pipeline, setPipeline] = useState({ loading: false, data: null })
     useEffect(() => {
         async function run() {
+            const id = queryString.parse(props.location.search).id
             setPipeline({ loading: true, data: null })
-            const p = await get_pipeline(location.id)
+            const p = await get_pipeline(id)
             setPipeline({ loading: false, data: p })
-            console.log(p)
         }
         run()
-    }, [location])
-
-    function PipeLineComp(props) {
-        if (pipeline.data.stage < 4) {
-            return (<PipeLineStageComm pipeline={pipeline.data} />)
-        }
-        else if (pipeline.data.stage == 4) {
-            return (<PipeLineStageDone pipeline={pipeline.data} />)
-        }
-        return 'unknown'
-    }
+    }, [props.location])
 
     return (
-        <div>
+        <div className='page'>
             {
                 pipeline.data && (
                     <Row justify='space-between' style={{ position: 'relative' }}>
@@ -65,11 +65,11 @@ const PipeLineDetail = () => {
             <Divider />
             {
                 pipeline.data && (
-                    <PipeLineComp />
+                    <PipeLineComp pipeline={pipeline} />
                 )
             }
         </div>
     )
 }
 
-export default PipeLineDetail
+export default withRouter(PipeLineDetail)

@@ -13,6 +13,7 @@
     "chalk": "^4.1.0",
     "express": "5.0.0-alpha.8",
     "node-ssh": "^11.1.0",
+    "query-string": "^6.13.2",
     "sequelize": "^6.3.5",
     "sqlite3": "^5.0.0",
     "tmp": "^0.2.1",

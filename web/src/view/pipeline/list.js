@@ -8,7 +8,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons'
 
 const PipeLineList = props => {
     const goClick = (id) => {
-        props.history.push({ pathname: '/pipeline/detail/', id: id })
+        props.history.push({ pathname: '/pipeline/detail', search: '?id=' + id })
     }
     const [isDel, setIsDel] = useState(false)
     const [data, setData] = useState([])
@@ -92,7 +92,7 @@ const PipeLineList = props => {
         setState({ loading: false, visible: false })
     }
     return (
-        <div>
+        <div className='page'>
             <Row><Col>
                 <Button onClick={addClick} type='primary'>Add</Button></Col> </Row>
             <Table rowKey='id' dataSource={data} columns={columns}>

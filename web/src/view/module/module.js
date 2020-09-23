@@ -142,7 +142,7 @@ const Module = () => {
     }, [state.need_update])
 
     return (
-        <div>
+        <div className='page'>
             <Row gutter={20}>
                 <Col flex={'1 1 50%'}>
                     <div style={{ textAlign: 'left' }}>

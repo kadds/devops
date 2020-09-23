@@ -135,7 +135,7 @@ const VM = () => {
     }, [state.need_update])
 
     return (
-        <div>
+        <div className='page'>
             <div style={{ textAlign: 'left' }}>
                 <Button type='primary' onClick={addVm}>Add</Button>
             </div>

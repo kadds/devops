@@ -98,7 +98,12 @@ function start_ws() {
         }
     });
     wss.on('connection', (ws, req) => {
+        const t = process.hrtime()
         ws.on('close', () => {
+            const t2 = process.hrtime()
+            const delta = Math.round(t2[0] * 1000 + t2[1] / 1000000 - (t[0] * 1000 + t[1] / 1000000), 1)
+            const log = `> ${chalk.bold('ws')} ${req.url} ${chalk.whiteBright('closed')} ${chalk.green(delta + 'ms')}`
+            console.log(log)
         })
         const log = `> ${chalk.bold('ws')} ${req.url}`
         console.log(log)

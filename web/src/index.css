@@ -78,3 +78,50 @@ pre.output {
   font-size: 13px;
   font-family: 'Courier New', Courier, monospace;
 }
+
+.page {
+  position: absolute;
+  width: 100%;
+  transition: transform 300ms cubic-bezier(0.23, 0.72, 0.41, 0.98), opacity 300ms ease-in-out;
+  transform-origin: left top;
+  opacity: 1;
+}
+
+.content-page-par {
+  margin: 24px 16px;
+  padding: 24px;
+}
+
+.content-page {
+  min-height: 280px;
+  position: relative;
+}
+
+.page-enter, .page-appear {
+    opacity: 0;
+    transform: scale(1.5, 1.5) translate(50px, 100%);
+}
+
+.page-enter-active, .page-appear-active { 
+    opacity: 1;
+    transform: scale(1, 1) translate(0, 0);
+}
+
+.page-enter-done {
+    opacity: 1;
+}
+
+.page-exit {
+    opacity: 1;
+    z-index: 1000;
+    transform: scale(1, 1) translate(0, 0);
+}
+
+.page-exit-active {
+    opacity: 0;
+    transform: scale(0.5, 0.5) translate(-50px, -100%);
+}
+
+.page-exit-done {
+    opacity: 0;
+}

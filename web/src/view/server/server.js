@@ -328,7 +328,7 @@ const Server = (props) => {
     }
 
     return (
-        <div>
+        <div className='page'>
             <Row>
                 <Col>
                     <Space>

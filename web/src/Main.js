@@ -22,6 +22,10 @@ import VM from './view/vm/vm'
 import Module from './view/module/module'
 import Server from './view/server/server'
 import P404 from './view/P404'
+import { CSSTransition, TransitionGroup } from 'react-transition-group'
+import { withRouter } from 'react-router-dom'
+
+
 
 const { Header, Sider, Content } = Layout;
 const menus = [
@@ -29,12 +33,28 @@ const menus = [
     { name: 'VM', icon: (<GoldOutlined />), path: '/vm' },
     { name: 'Module', icon: (<HddOutlined />), path: '/module' },
     { name: 'Server', icon: (<BuildOutlined />), path: '/server' },
-    { name: 'Monitor', icon: (<ProjectOutlined />), path: 'monitor' },
+    { name: 'Monitor', icon: (<ProjectOutlined />), path: '/monitor' },
     { name: 'Log', icon: (<GatewayOutlined />), path: '/log' }
 ]
 
 
+
 function Main(props) {
+    const contents = [
+        { path: '/pipeline/list', component: PipeLineList },
+        { path: '/pipeline/detail', component: PipeLineDetail },
+        { path: '/vm', component: VM },
+        { path: '/module', component: Module },
+        { path: '/server', component: Server },
+        { path: '/monitor', component: P404 },
+        { path: '/log', component: P404 },
+        { component: P404 }
+    ]
+    // useEffect(() => {
+    //     props.history.listen((val) => {
+
+    //     })
+    // }, [])
     const [collapsed, set_collapsed] = useState(false)
     const toggle = () => {
         set_collapsed(!collapsed)
@@ -57,44 +77,49 @@ function Main(props) {
             </Menu.Item>
         </Menu>
     )
+    const MenuRender = (props) => {
+        return (
+            <Menu selectedKeys={[props.location.pathname]} style={{ height: '100%', overflowY: 'auto' }} theme="dark" mode="inline">
+                {
+                    menus.map(item => {
+                        if (item.sub === undefined) {
+                            return (
+                                <Menu.Item key={item.path} icon={item.icon}>
+                                    <NavLink activeClassName="active" className="nav-link" to={item.path}>
+                                        {item.name}
+                                    </NavLink>
+                                </Menu.Item>
+                            )
+                        }
+                        else {
+                            return (
+                                <Menu.SubMenu key={item.path} icon={item.icon} title={item.name}>
+                                    <Menu.ItemGroup>
+                                        {
+                                            item.sub.map(item => (
+                                                <Menu.Item key={item.path} icon={item.icon}>
+                                                    <NavLink activeClassName="active" className="nav-link" to={item.path}>
+                                                        {item.name}
+                                                    </NavLink>
+                                                </Menu.Item>
+                                            ))
+                                        }
+                                    </Menu.ItemGroup>
+                                </Menu.SubMenu>
+                            )
+                        }
+                    })
+                }
+            </Menu>
+        )
+    }
 
     return (
         <Layout style={{ height: '100%' }}>
             <Sider trigger={null} collapsible collapsed={collapsed}>
-                <Menu theme="dark" mode="inline">
-                    {
-                        menus.map(item => {
-                            if (item.sub === undefined) {
-                                return (
-                                    <Menu.Item key={item.name} icon={item.icon}>
-                                        <NavLink activeClassName="active" className="nav-link" to={item.path}>
-                                            {item.name}
-                                        </NavLink>
-                                    </Menu.Item>
-                                )
-                            }
-                            else {
-                                return (
-                                    <Menu.SubMenu key={item.name} icon={item.icon} title={item.name}>
-                                        <Menu.ItemGroup>
-                                            {
-                                                item.sub.map(item => (
-                                                    <Menu.Item key={item.name} icon={item.icon}>
-                                                        <NavLink activeClassName="active" className="nav-link" to={item.path}>
-                                                            {item.name}
-                                                        </NavLink>
-                                                    </Menu.Item>
-                                                ))
-                                            }
-                                        </Menu.ItemGroup>
-                                    </Menu.SubMenu>
-                                )
-                            }
-                        })
-                    }
-                </Menu>
+                <MenuRender location={props.location}></MenuRender>
             </Sider>
-            <Layout className="site-layout">
+            <Layout className="site-layout" style={{ overflowX: 'visible' }}>
                 <Header className="site-layout-background" style={{ padding: 0 }}>
                     <Row justify='space-between'>
                         <Col span={2}>
@@ -114,26 +139,31 @@ function Main(props) {
                 </Header>
 
                 <Content
-                    className="site-layout-background"
-                    style={{
-                        margin: '24px 16px',
-                        padding: 24,
-                        minHeight: 280,
-                    }}
+                    className="site-layout-background content-page-par"
                 >
-                    <Switch>
-                        <Route path='/pipeline/list' component={PipeLineList}></Route>
-                        <Route path='/pipeline/detail' component={PipeLineDetail}></Route>
-
-                        <Route path='/vm' component={VM}></Route>
-                        <Route path='/module' component={Module}></Route>
-                        <Route path='/server' component={Server}></Route>
-                        <Route component={P404}></Route>
-                    </Switch>
+                    <TransitionGroup className='content-page'>
+                        <CSSTransition
+                            timeout={300}
+                            classNames='page'
+                            mountOnEnter
+                            unmountOnExit
+                            appear
+                            key={props.location.pathname}>
+                            <Switch location={props.location}>
+                                {
+                                    contents.map((v, index) => {
+                                        return (
+                                            <Route key={index} path={v.path} component={v.component}></Route>
+                                        )
+                                    })
+                                }
+                            </Switch>
+                        </CSSTransition>
+                    </TransitionGroup>
                 </Content>
             </Layout>
         </Layout>
     );
 }
 
-export default Main;
+export default withRouter(Main);
