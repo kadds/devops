@@ -16,7 +16,7 @@ const params = [
 ]
 
 const pipeline_params = [
-    { name: 'test_svr', label: 'Server to test', type: 'select Server' }
+    { name: 'test_svr', label: 'Test server', description: 'Which server will be upgraded first for testing?', type: 'select Server' }
 ]
 
 const deps = []

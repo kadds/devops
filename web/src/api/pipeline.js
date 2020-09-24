@@ -12,8 +12,8 @@ async function jobs_valid(name, param) {
     return (await post('/pipeline/jobs/valid', { job: { name, param } }, { timeout: 10000000 })).data
 }
 
-async function create_pipeline(mode_name, mark) {
-    return (await post('/pipeline/', { pipeline: { mark, mode_name } }))
+async function create_pipeline(pipeline) {
+    return (await post('/pipeline/', { pipeline }))
 }
 
 async function delete_pipeline(id) {

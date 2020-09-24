@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react'
-import { Table, Button, Popconfirm, Modal, Row, Col, Form, Select, Input } from 'antd'
+import React, { useState, useEffect, Fragment } from 'react'
+import { Table, Tag, Button, Popconfirm, Modal, Row, Col, Form, Select, Input, Tooltip } from 'antd'
 import { get_pipelines, delete_pipeline, create_pipeline } from './../../api/pipeline'
 import { withRouter } from 'react-router-dom';
-import { get_module_list } from '../../api/module'
+import { get_module_list, get_module } from '../../api/module'
+import { get_all_vm } from '../../api/vm'
+import { get_server_list } from '../../api/server'
 import { QuestionCircleOutlined } from '@ant-design/icons'
+import ScriptSelect from './../compoments/script_select'
 
 
 const PipeLineList = props => {
@@ -81,9 +84,13 @@ const PipeLineList = props => {
             setState({ ...state, loading: false })
             return
         }
-        if (!val.mode_name) val.mode_name = ''
-        if (!val.mark) val.mark = ''
-        await create_pipeline(val.mode_name, val.mark)
+
+        for (let f of Object.entries(val)) {
+            if (f[1] === undefined) {
+                val[f[0]] = ''
+            }
+        }
+        await create_pipeline(val)
         setState({ loading: false, visible: false })
         setNeedUpdate(needUpdate + 1)
     }
@@ -91,6 +98,121 @@ const PipeLineList = props => {
     const onModalCancel = async () => {
         setState({ loading: false, visible: false })
     }
+
+    const [createData, setCreateData] = useState(null)
+    const [createLoading, setCreateLoading] = useState(false)
+    const [serverList, setServerList] = useState([])
+    const [vmList, setVmList] = useState([])
+
+    const onModuleSelect = async (name) => {
+        setCreateLoading(true)
+        try {
+            const [module_data, vm_list, server_list] = await (Promise.all([
+                get_module(name), get_all_vm(), get_server_list()]
+            ))
+            setCreateData(module_data.pipeline_params)
+            setVmList(vm_list)
+            setServerList(server_list)
+        }
+        catch (e) {
+        }
+        finally {
+            setCreateLoading(false)
+        }
+    }
+
+    const [select, setSelect] = useState({ visible: false })
+
+    const onSearch = (name) => {
+        setSelect({ visible: true, name })
+    }
+
+    const onCancel = () => {
+        setSelect({ visible: false })
+    }
+
+    const onSelect = (script) => {
+        setSelect({ visible: false })
+        let obj = {}
+        obj[select.name] = script
+        form.setFieldsValue(obj)
+    }
+
+    const ItemRender = (list) => {
+        return (
+            list.map(l => {
+                if (l.param.length > 0) return (<Form.Item key={l.name}>
+                    <div>
+                        <span className='form_items_label'>
+                            <Tag color='#108ee9'>
+                                {l.name}
+                            </Tag>
+                        </span>
+                        <div className='form_items'>
+                            {
+                                l.param.map(p => {
+                                    if (p.type === 'string') {
+                                        return (
+                                            <Form.Item key={p.name} name={p.name} label={
+                                                <span>{p.label} &nbsp;
+                                                    <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
+                                                </span>
+                                            }>
+                                                <Input></Input>
+                                            </Form.Item>
+                                        )
+                                    }
+                                    else if (p.type === 'script') {
+                                        return (
+                                            <Form.Item key={p.name} name={p.name} label={
+                                                <span>{p.label} &nbsp;
+                                                    <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
+                                                </span>
+                                            }>
+                                                <Input.Search enterButton='Get' name={p.name} onSearch={() => onSearch(p.name)} />
+                                            </Form.Item>
+                                        )
+                                    }
+                                    else if (p.type === 'select VM') {
+                                        return (
+                                            <Form.Item key={p.name} name={p.name} label={
+                                                <span>{p.label} &nbsp;
+                                                    <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
+                                                </span>
+                                            }>
+                                                <Select style={{ minWidth: 200, textAlign: 'left' }}>
+                                                    {vmList.map(v => (<Select.Option key={v.name}>{v.name}</Select.Option>))}
+                                                </Select>
+                                            </Form.Item>
+                                        )
+                                    }
+                                    else if (p.type === 'select Server') {
+                                        return (
+                                            <Form.Item key={p.name} name={p.name} label={
+                                                <span>{p.label} &nbsp;
+                                                    <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
+                                                </span>
+                                            }>
+                                                <Select style={{ minWidth: 200, textAlign: 'left' }}>
+                                                    {serverList.map(v => (<Select.Option key={v.name}>{v.name}</Select.Option>))}
+                                                </Select>
+                                            </Form.Item>
+                                        )
+                                    }
+                                    else {
+                                        return (<div key={p.name}>unknown </div>)
+                                    }
+                                })
+                            }
+                        </div>
+                    </div>
+
+                </Form.Item >)
+                else return null
+            }
+            ))
+    }
+
     return (
         <div className='page'>
             <Row><Col>
@@ -104,20 +226,31 @@ const PipeLineList = props => {
                 cancelText='Cancel'
                 onOk={onModalOk}
                 onCancel={onModalCancel}
-                confirmLoading={state.loading}
+                confirmLoading={state.loading || createLoading}
                 centered
             >
-                <Form labelCol={{ span: 6 }} wrapperCol={{ flex: 1 }} form={form}>
+                <Form form={form}>
                     <Form.Item label='Module name' name='mode_name' rules={[{ required: true, message: 'Please input module name' }]}>
-                        <Select style={{ minWidth: 200, textAlign: 'left' }}>
+                        <Select onSelect={onModuleSelect} style={{ minWidth: 200, textAlign: 'left' }}>
                             {moduleList.list.map(v => (<Select.Option key={v.name}>{v.name}</Select.Option>))}
                         </Select>
                     </Form.Item>
+                    {
+                        createData && (
+                            <Fragment>
+                                {ItemRender(createData.env)}
+                                {ItemRender(createData.source)}
+                                {ItemRender(createData.build)}
+                                {ItemRender(createData.deploy)}
+                            </Fragment>
+                        )
+                    }
                     <Form.Item label='Mark' name='mark'>
                         <Input.TextArea autoSize={{ minRows: 5, maxRows: 20 }}></Input.TextArea>
                     </Form.Item>
                 </Form>
             </Modal>
+            <ScriptSelect visible={select.visible} onCancel={onCancel} onSelect={onSelect} />
         </div>
     )
 }

@@ -33,8 +33,8 @@ async function entry(request, param) {
 }
 
 const params = [
-    { name: 'url', label: 'git repository address', type: 'string' },
-    { name: 'branch', label: 'branch', type: 'string', default: 'master' }
+    { name: 'url', label: 'url', description: 'The git repository address', type: 'string' },
+    { name: 'branch', label: 'branch name', description: 'Which branch contains source code for building?', type: 'string', default: 'master' }
 ]
 
 const pipeline_params = [

@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react'
-import { Button, Row, Tag, Input, Form, Modal, message, Col, Typography, Alert, Card, Badge } from 'antd'
+import { Button, Row, Tag, Input, Form, Modal, message, Col, Typography, Alert, Card, Badge, Tooltip } from 'antd'
+import { QuestionCircleOutlined } from '@ant-design/icons'
 import { get_jobs, jobs_valid } from '../../api/pipeline'
 
 const get_map = (joblist) => {
@@ -264,14 +265,18 @@ const JobSelect = (props) => {
             >
                 <Form form={pform}>
                     {param.params.map(p => (
-                        <Form.Item key={p.name} label={p.label} name={p.name}>
+                        <Form.Item key={p.name} name={p.name} label={
+                            <span>{p.label} &nbsp;
+                                <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
+                            </span>
+                        }>
                             <Input></Input>
                         </Form.Item>
                     ))}
                 </Form>
                 {param.err && <Alert message='Error' description={param.err} type='error' showIcon />}
             </Modal>
-        </Row>
+        </Row >
     )
 
 }

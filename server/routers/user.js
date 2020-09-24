@@ -16,6 +16,8 @@ router.get('/', async (req, rsp, next) => {
     }
     else {
         item.password = undefined
+        item.ctime = item.ctime.valueOf()
+        item.mtime = undefined
         rsp.json({ err: 0, data: item.get() })
     }
 })
@@ -41,7 +43,15 @@ router.post('/logout', async (req, rsp, next) => {
 
 router.get('/list', async (req, rsp, next) => {
     const data = await m_user.findAll()
-    rsp.json({ err: 0, list: data })
+    let list = []
+    for (const it of data) {
+        let dt = {}
+        dt.username = it.username
+        dt.avatar = it.avatar
+        dt.ctime = it.ctime.valueOf()
+        list.push(dt)
+    }
+    rsp.json({ err: 0, list })
 })
 
 const user = router

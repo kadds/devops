@@ -1,5 +1,6 @@
 const { Router } = require('express')
 const { conn, m_mode, m_server } = require('../data')
+const { get_job_pipeline_params } = require('../plugin/index')
 
 let router = new Router()
 
@@ -13,7 +14,6 @@ router.get('/list', async (req, rsp, next) => {
         it.name = item.name
         it.dev_user = item.dev_user
         it.ctime = item.ctime.valueOf()
-        it.jobs = item.content.jobs
         it.port = item.content.res.port
         const name = it.name
         cnt_req.push(m_server.count({ where: { mode_name: name } }))
@@ -25,6 +25,35 @@ router.get('/list', async (req, rsp, next) => {
         data[i].num = num_cnt[i]
     }
     rsp.json({ err: 0, list: data })
+})
+
+router.get('', async (req, rsp, next) => {
+    const name = req.query.name
+    const data = await m_mode.findByPk(name)
+    if (!data) {
+        rsp.json({ err: 404, msg: 'not find module name ' + name })
+        return
+    }
+    let dt = {}
+    dt.name = data.name
+    dt.dev_user = data.dev_user
+    dt.ctime = data.ctime.valueOf()
+    dt.jobs = data.content.jobs
+    dt.port = data.content.res.port
+    dt.pipeline_params = { env: [], source: [], build: [], deploy: [] }
+    for (const { name } of dt.jobs.env) {
+        dt.pipeline_params.env.push({ name, param: await get_job_pipeline_params(name) })
+    }
+    for (const { name } of dt.jobs.source) {
+        dt.pipeline_params.source.push({ name, param: await get_job_pipeline_params(name) })
+    }
+    for (const { name } of dt.jobs.build) {
+        dt.pipeline_params.build.push({ name, param: await get_job_pipeline_params(name) })
+    }
+    for (const { name } of dt.jobs.deploy) {
+        dt.pipeline_params.deploy.push({ name, param: await get_job_pipeline_params(name) })
+    }
+    rsp.json({ err: 0, data: dt })
 })
 
 // create module

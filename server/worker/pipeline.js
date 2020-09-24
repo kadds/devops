@@ -71,8 +71,10 @@ async function run(id) {
 
 async function stop(id) {
     let v = pipes.get(id)
-    v.close = true
-    pipes.set(id, v)
+    if (v) {
+        v.close = true
+        pipes.set(id, v)
+    }
     await remove(id)
 }
 

@@ -33,8 +33,8 @@ async function entry(request, param, opt) {
 }
 
 const params = []
-const pipeline_params = [{ name: 'vm_name', label: 'Vm to execute', type: 'select VM' },
-{ name: 'post_install_script', label: 'Post-install script', type: 'script' }]
+const pipeline_params = [{ name: 'vm_name', label: 'Vm to run', description: 'Which virtual machine is ready to run the pipeline?', type: 'select VM' },
+{ name: 'post_install_script', label: 'Post-install script', description: 'The script is executed when environment is ready.', type: 'script' }]
 
 module.exports = {
     entry, name: 'bare-env', description: 'virtual machine environment', tag: [], type: 'env',

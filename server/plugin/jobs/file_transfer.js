@@ -9,8 +9,8 @@ async function entry(request, param) {
 }
 
 const params = [
-    { name: 'vm_name', label: 'VM', type: 'select VM' },
-    { name: 'path', label: 'path', type: 'string', default: './' }
+    { name: 'vm_name', label: 'VM', type: 'select VM', description: 'Transform target.' },
+    { name: 'path', label: 'path', type: 'string', default: './', description: 'Target machine pathname.' }
 ]
 
 const pipeline_params = []

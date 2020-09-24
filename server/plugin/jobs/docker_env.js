@@ -24,9 +24,9 @@ async function entry(request, param, opt) {
     }
 }
 
-const params = [{ name: 'dockerimg', label: 'docker image name', type: 'string', default: 'archlinux:latest' }]
-const pipeline_params = [{ name: 'vm_name', label: 'Vm to execute', type: 'select VM' },
-{ name: 'post_install_script', label: 'Post-install script', type: 'script' }]
+const params = [{ name: 'dockerimg', label: 'docker image name', type: 'string', default: 'archlinux:latest', description: 'Docket base image for environment.' }]
+const pipeline_params = [{ name: 'vm_name', label: 'Vm to run', description: 'Which virtual machine is ready to run the pipeline?', type: 'select VM' },
+{ name: 'post_install_script', label: 'Post-install script', description: 'The script is executed when the environment is ready.', type: 'script' }]
 
 module.exports = {
     entry, name: 'docker-env', description: 'pull docker image and startup base environment', tag: ['docker'], type: 'env',

@@ -46,6 +46,14 @@ async function get_job_deps(job_name) {
     throw 'job not find'
 }
 
+async function get_job_pipeline_params(job_name) {
+    const job = job_map.get(job_name)
+    if (job) {
+        return await job.pipeline_params
+    }
+    throw 'job not find'
+}
+
 init()
 
-module.exports = { get_job_list, job_param_valid, run_job, get_job_deps }
+module.exports = { get_job_list, job_param_valid, run_job, get_job_deps, get_job_pipeline_params }

@@ -1,45 +1,7 @@
 const { Router } = require('express')
-const fs = require('fs')
+const fs = require('fs').promises
 
 let router = new Router()
-
-function writeFile(filename, data) {
-    return new Promise((resolve, reject) => {
-        fs.writeFile(filename, data, (err, data) => {
-            if (err) {
-                reject(err);
-            }
-            resolve()
-        });
-    })
-}
-
-
-function readFile(filename) {
-    return new Promise((resolve, reject) => {
-        fs.readFile(filename, 'utf-8', (err, data) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(data)
-            }
-        })
-    })
-}
-
-function readdir(dir) {
-    return new Promise((resolve, reject) => {
-        fs.readdir(dir, {}, (err, files) => {
-            if (err) {
-                reject(err)
-            }
-            else {
-                resolve(files)
-            }
-        })
-    })
-}
-
 
 router.post('/script', async (req, rsp, next) => {
     const name = req.body.name
@@ -47,13 +9,24 @@ router.post('/script', async (req, rsp, next) => {
         jsp.json({ err: 512, msg: 'invalid script name ' + name })
         return
     }
-    await writeFile('./upload/scripts/' + name, req.body.data)
+    await fs.writeFile(__dirname + '/../upload/scripts/' + name, req.body.data)
     rsp.json({ err: 0 })
 })
 
 router.get('/list', async (req, rsp, next) => {
-    let list = await readdir('./upload/scripts')
-    rsp.json({ err: 0, list })
+    try {
+        let list = await fs.readdir(__dirname + '/../upload/scripts')
+        rsp.json({ err: 0, list })
+        return
+    }
+    catch (e) {
+        console.error(e)
+        try {
+            await fs.mkdir(__dirname + '/../upload/scripts')
+        }
+        catch (e) { }
+        rsp.json({ err: 0, list: [] })
+    }
 })
 
 router.get('/:name', async (req, rsp, next) => {
@@ -62,8 +35,8 @@ router.get('/:name', async (req, rsp, next) => {
         rsp.json({ err: 512, msg: 'invalid script name ' + name })
         return
     }
-    let data = await readFile('./upload/scripts/' + name)
-    rsp.json({ err: 0, data })
+    let data = await fs.readFile(__dirname + '/../upload/scripts/' + name)
+    rsp.json({ err: 0, data: data.toString() })
 })
 
 const upload = router

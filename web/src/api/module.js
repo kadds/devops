@@ -16,4 +16,8 @@ async function delete_module(name) {
     return (await post('/module/del', { name: name }))
 }
 
-export { get_module_list, add_module, update_module, delete_module }
+async function get_module(name) {
+    return (await get('/module?name=' + encodeURIComponent(name))).data
+}
+
+export { get_module_list, add_module, update_module, delete_module, get_module }

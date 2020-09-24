@@ -125,3 +125,14 @@ pre.output {
 .page-exit-done {
     opacity: 0;
 }
+
+.form_items {
+  padding: 20px;
+  border: 1px dashed #108ee9;
+}
+
+.form_items_label {
+  position: relative; 
+  top: 10px;
+  left: 5px;
+}

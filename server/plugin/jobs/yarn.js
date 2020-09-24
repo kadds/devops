@@ -8,7 +8,7 @@ async function entry(request, param) {
     }
 }
 
-const params = [{ name: 'command', label: 'command', type: 'string', default: 'yarn build' }]
+const params = [{ name: 'command', label: 'command', type: 'string', default: 'yarn build', description: 'Build command.' }]
 const pipeline_params = []
 const deps = ['nodejs', 'yarn']
 

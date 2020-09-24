@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { Button, Spin, List, Row, Layout, Input, Form, Modal, InputNumber, message, Col, Typography, Collapse, Alert } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Spin, List, Row, Input, Form, Modal, Col, Collapse, Alert } from 'antd'
 import { get_scripts, get_script, upload_script } from '../../api/upload'
 const TextArea = Input.TextArea;
-const { Header, Footer, Sider, Content } = Layout;
 
 
 const ScriptSelect = (props) => {

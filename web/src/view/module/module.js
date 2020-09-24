@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button, Popconfirm, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
 import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
-import { add_module, get_module_list, update_module, delete_module } from '../../api/module'
+import { add_module, get_module_list, update_module, delete_module, get_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import Server from '../server/server'
 import JobSelect from '../compoments/job_select'
@@ -15,14 +15,17 @@ const Module = () => {
     const initJobList = { env: [], source: [], build: [], deploy: [] }
     const [joblist, setJoblist] = useState(initJobList)
     const [detail, setDetail] = useState({ show: false, name: null })
+    const [editLoading, setEditLoading] = useState(false)
 
-    const addModule = () => {
+    const addModule = async () => {
         setJoblist(initJobList)
         form.setFieldsValue({
             name: '',
             dev_user: '',
+            res_port: ''
         })
         setState({ ...state, visible: true, type: 0, loading: false })
+        setUserlistData(await user_list())
     }
 
     const [form] = Form.useForm()
@@ -59,13 +62,24 @@ const Module = () => {
         setState({ ...state, visible: false })
     }
 
-    const editClick = (e) => {
-        form.setFieldsValue({
-            name: e.name,
-            dev_user: e.dev_user,
-        })
-        setState({ ...state, visible: true, type: 1, loading: false })
-        setJoblist(e.jobs)
+    const editClick = async (e) => {
+        setEditLoading(true)
+        try {
+            const mode = await get_module(e.name)
+            form.setFieldsValue({
+                name: mode.name,
+                dev_user: mode.dev_user,
+                res_port: mode.port,
+            })
+            setState({ ...state, visible: true, type: 1, loading: false })
+            setJoblist(mode.jobs)
+            setUserlistData(await user_list())
+        }
+        catch (e) {
+        }
+        finally {
+            setEditLoading(false)
+        }
     }
 
     const onChange = (e) => {
@@ -102,6 +116,11 @@ const Module = () => {
             render: text => <span>{text}</span>
         },
         {
+            title: 'Port',
+            dataIndex: 'port',
+            key: 'port',
+        },
+        {
             title: 'Server count',
             dataIndex: 'num',
             key: 'num',
@@ -116,7 +135,7 @@ const Module = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<Row gutter={8}> <Col> <Button disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+            render: (i, r) => (<Row gutter={8}> <Col> <Button loading={editLoading} disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
                 <Col>
                     <Popconfirm title="Are you sure?" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                         <Button danger loading={isDel}>Delete</Button>
@@ -133,12 +152,6 @@ const Module = () => {
         run()
     }, [state.need_update])
 
-    useEffect(() => {
-        async function run() {
-            setUserlistData(await user_list())
-        }
-        run()
-    }, [state.need_update])
 
     return (
         <div className='page'>
