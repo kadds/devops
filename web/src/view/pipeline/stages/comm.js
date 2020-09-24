@@ -15,7 +15,7 @@ const TagRender = (props) => {
     else if (props.loading === 1) {
 
         return (
-            <Tag icon={<SyncOutlined />} color="processing">
+            <Tag icon={<SyncOutlined spin />} color="processing">
                 processing
             </Tag>
         )

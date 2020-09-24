@@ -5,7 +5,7 @@ import { withRouter } from 'react-router-dom';
 import { get_module_list, get_module } from '../../api/module'
 import { get_all_vm } from '../../api/vm'
 import { get_server_list } from '../../api/server'
-import { QuestionCircleOutlined } from '@ant-design/icons'
+import { QuestionCircleOutlined, SyncOutlined, CloseCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import ScriptSelect from './../compoments/script_select'
 
 
@@ -22,6 +22,26 @@ const PipeLineList = props => {
         await delete_pipeline(id)
         setIsDel(false)
         setNeedUpdate(needUpdate + 1)
+    }
+    const RenderStage = (props) => {
+        if (props.stage === 0) {
+            return <Tag color='processing' icon={<SyncOutlined spin />}>Prepare</Tag>
+        }
+        else if (props.stage === 1) {
+            return <Tag color='processing' icon={<SyncOutlined spin />}>Source</Tag>
+        }
+        else if (props.stage === 2) {
+            return <Tag color='processing' icon={<SyncOutlined spin />}>Build</Tag>
+        }
+        else if (props.stage === 3) {
+            return <Tag color='processing' icon={<SyncOutlined spin />}>Deploy</Tag>
+        }
+        else if (props.stage === 4) {
+            return <Tag color='success' icon={<CheckCircleOutlined />}>Done</Tag>
+        }
+        else {
+            return <Tag color='error' icon={<CloseCircleOutlined />}>Error</Tag>
+        }
     }
     const columns = [
         {
@@ -41,6 +61,12 @@ const PipeLineList = props => {
             render: text => <span>{text}</span>
         },
         {
+            title: 'Status',
+            dataIndex: 'stage',
+            key: 'stage',
+            render: text => <RenderStage stage={text} />
+        },
+        {
             title: 'Create time',
             dataIndex: 'ctime',
             key: 'ctime',
@@ -50,8 +76,15 @@ const PipeLineList = props => {
             title: 'Operation',
             dataIndex: 'id',
             key: 'id',
-            render: id => (<Popconfirm title="Are you sure？" onConfirm={() => deleteClick(id)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                <Button danger loading={isDel}>Delete</Button></Popconfirm>)
+            render: id => (<Row gutter={8}> <Col>
+                <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(id)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                    <Button danger loading={isDel}>Delete</Button></Popconfirm>
+            </Col>
+                <Col>
+                    <Button onClick={() => goClick(id)} >View Detail</Button>
+                </Col>
+            </Row>
+            )
         }
     ]
 
@@ -141,73 +174,74 @@ const PipeLineList = props => {
     const ItemRender = (list) => {
         return (
             list.map(l => {
-                if (l.param.length > 0) return (<Form.Item key={l.name}>
-                    <div>
-                        <span className='form_items_label'>
-                            <Tag color='#108ee9'>
-                                {l.name}
-                            </Tag>
-                        </span>
-                        <div className='form_items'>
-                            {
-                                l.param.map(p => {
-                                    if (p.type === 'string') {
-                                        return (
-                                            <Form.Item key={p.name} name={p.name} label={
-                                                <span>{p.label} &nbsp;
+                if (l.param.length > 0) return (
+                    <Form.Item key={l.name}>
+                        <div>
+                            <span className='form_items_label'>
+                                <Tag color='#108ee9'>
+                                    {l.name}
+                                </Tag>
+                            </span>
+                            <div className='form_items'>
+                                {
+                                    l.param.map(p => {
+                                        if (p.type === 'string') {
+                                            return (
+                                                <Form.Item key={p.name} name={p.name} label={
+                                                    <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
-                                                </span>
-                                            }>
-                                                <Input></Input>
-                                            </Form.Item>
-                                        )
-                                    }
-                                    else if (p.type === 'script') {
-                                        return (
-                                            <Form.Item key={p.name} name={p.name} label={
-                                                <span>{p.label} &nbsp;
+                                                    </span>
+                                                }>
+                                                    <Input></Input>
+                                                </Form.Item>
+                                            )
+                                        }
+                                        else if (p.type === 'script') {
+                                            return (
+                                                <Form.Item key={p.name} name={p.name} label={
+                                                    <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
-                                                </span>
-                                            }>
-                                                <Input.Search enterButton='Get' name={p.name} onSearch={() => onSearch(p.name)} />
-                                            </Form.Item>
-                                        )
-                                    }
-                                    else if (p.type === 'select VM') {
-                                        return (
-                                            <Form.Item key={p.name} name={p.name} label={
-                                                <span>{p.label} &nbsp;
+                                                    </span>
+                                                }>
+                                                    <Input.Search enterButton='Get' name={p.name} onSearch={() => onSearch(p.name)} />
+                                                </Form.Item>
+                                            )
+                                        }
+                                        else if (p.type === 'select VM') {
+                                            return (
+                                                <Form.Item key={p.name} name={p.name} label={
+                                                    <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
-                                                </span>
-                                            }>
-                                                <Select style={{ minWidth: 200, textAlign: 'left' }}>
-                                                    {vmList.map(v => (<Select.Option key={v.name}>{v.name}</Select.Option>))}
-                                                </Select>
-                                            </Form.Item>
-                                        )
-                                    }
-                                    else if (p.type === 'select Server') {
-                                        return (
-                                            <Form.Item key={p.name} name={p.name} label={
-                                                <span>{p.label} &nbsp;
+                                                    </span>
+                                                }>
+                                                    <Select style={{ minWidth: 200, textAlign: 'left' }}>
+                                                        {vmList.map(v => (<Select.Option key={v.name}>{v.name}</Select.Option>))}
+                                                    </Select>
+                                                </Form.Item>
+                                            )
+                                        }
+                                        else if (p.type === 'select Server') {
+                                            return (
+                                                <Form.Item key={p.name} name={p.name} label={
+                                                    <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
-                                                </span>
-                                            }>
-                                                <Select style={{ minWidth: 200, textAlign: 'left' }}>
-                                                    {serverList.map(v => (<Select.Option key={v.name}>{v.name}</Select.Option>))}
-                                                </Select>
-                                            </Form.Item>
-                                        )
-                                    }
-                                    else {
-                                        return (<div key={p.name}>unknown </div>)
-                                    }
-                                })
-                            }
+                                                    </span>
+                                                }>
+                                                    <Select style={{ minWidth: 200, textAlign: 'left' }}>
+                                                        {serverList.map(v => (<Select.Option key={v.name}>{v.name}</Select.Option>))}
+                                                    </Select>
+                                                </Form.Item>
+                                            )
+                                        }
+                                        else {
+                                            return (<div key={p.name}>unknown </div>)
+                                        }
+                                    })
+                                }
+                            </div>
                         </div>
-                    </div>
-
-                </Form.Item >)
+                    </Form.Item >
+                )
                 else return null
             }
             ))

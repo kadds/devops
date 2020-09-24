@@ -127,12 +127,30 @@ pre.output {
 }
 
 .form_items {
-  padding: 20px;
-  border: 1px dashed #108ee9;
+    padding: 20px;
+    border: 1px dashed #108ee9;
 }
 
 .form_items_label {
-  position: relative; 
-  top: 10px;
-  left: 5px;
+    position: relative; 
+    top: 10px;
+    left: 5px;
+}
+
+.select_script_list {
+    padding: 5px 10px;
+    min-height: 100%;
+    margin: 0 20px 5px 0;
+}
+
+.select_script_list_item {
+    cursor: pointer;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 5px;
+    transition: background-color 400ms ease;
+}
+
+.select_script_list_item:hover {
+    background-color: #eee;
 }

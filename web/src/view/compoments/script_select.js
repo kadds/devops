@@ -62,9 +62,10 @@ const ScriptSelect = (props) => {
             <Row>
                 <Col span={4}>
                     <List
+                        className='select_script_list'
                         dataSource={scriptList}
                         renderItem={item => (
-                            <List.Item key={item} style={{ cursor: 'pointer' }} onClick={() => listClick(item)} onDoubleClick={() => listDoubleClick(item)}>
+                            <List.Item className='select_script_list_item' key={item} onClick={() => listClick(item)} onDoubleClick={() => listDoubleClick(item)}>
                                 <span style={{ cursor: 'pointer' }} >{item}</span>
                             </List.Item>
                         )}>
@@ -77,7 +78,7 @@ const ScriptSelect = (props) => {
                         </Form.Item>
                         <Spin spinning={contentLoading}>
                             <Form.Item label="text" name="content">
-                                <TextArea autoSize={{ minRows: 5 }}>
+                                <TextArea autoSize={{ minRows: 10 }}>
                                 </TextArea>
                             </Form.Item>
                         </Spin>
@@ -86,11 +87,7 @@ const ScriptSelect = (props) => {
             </Row>
             <Row>
 
-                <Collapse ghost>
-                    <Collapse.Panel header="Note message">
-                        <Alert type="warning" message="TODO:"></Alert>
-                    </Collapse.Panel>
-                </Collapse>
+                <Alert type="warning" message="Note: Modifying an existing script affects all systems that use that script."></Alert>
             </Row>
         </Modal >
     )
