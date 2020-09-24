@@ -1,7 +1,8 @@
 const { conn, m_pipeline, m_server, m_mode, m_vm } = require('../data')
-const { run_job, get_job_deps } = require('../plugin/index')
+const { run_job, get_job_deps, close_job } = require('../plugin/index')
 const { LogStream, remove, log_path } = require('../utils/log_stream')
 const fs = require('fs').promises
+const FLAGS = require('../flags')
 
 async function init_log(id) {
     const logger = new LogStream(id)
@@ -10,6 +11,10 @@ async function init_log(id) {
 }
 
 let pipes = new Map()
+
+async function update_flag(id, flag) {
+    await m_pipeline.update({ stage: flag }, { where: { id: id } })
+}
 
 async function run(id) {
     const pipeline = await m_pipeline.findByPk(id)
@@ -27,45 +32,74 @@ async function run(id) {
     let logger = await init_log(id)
     let pip = { close: false, logger }
     pipes.set(id, pip)
+    let ssh = null
     try {
         if (pip.close) {
             throw 'stop by user'
         }
         await logger.split('environment')
-        const ssh = await run_job(env_job.name, env_job.param, { deps, logger })
+        ssh = await run_job(env_job.name, env_job.param, { deps, logger, id })
         if (pip.close) {
             throw 'stop by user'
         }
         await logger.split('source')
+        await update_flag(id, FLAGS.PIPE_STAGE_SOURCE)
         for (const job of pipeline.content.jobs.source) {
-            await run_job(job.name, job.param, { ssh, logger })
+            await run_job(job.name, job.param, { ssh, logger, id })
         }
         if (pip.close) {
             throw 'stop by user'
         }
         await logger.split('build')
+        await update_flag(id, FLAGS.PIPE_STAGE_BUILD)
         for (const job of pipeline.content.jobs.build) {
-            await run_job(job.name, job.param, { ssh, logger })
+            await run_job(job.name, job.param, { ssh, logger, id })
         }
         if (pip.close) {
             throw 'stop by user'
         }
         await logger.split('deploy')
+        await update_flag(id, FLAGS.PIPE_STAGE_DEPLOY)
         for (const job of pipeline.content.jobs.deploy) {
-            await run_job(job.name, job.param, { ssh, logger })
+            await run_job(job.name, job.param, { ssh, logger, id })
         }
+        await update_flag(id, FLAGS.PIPE_STAGE_DONE)
+        await logger.split('cleanup')
     }
     catch (e) {
-        console.error(e)
         try {
             await logger.write(e + '\n')
         }
         catch (e2) {
+            console.error(e2)
+        }
+        try {
+            const pipeline = await m_pipeline.findByPk(id)
+            let stage = FLAGS.PIPE_STAGE_ERR_UNKNOWN
+            if (pipeline.stage === FLAGS.PIPE_STAGE_ENV)
+                stage = FLAGS.PIPE_STAGE_ERR_ENV
+            else if (pipeline.stage === FLAGS.PIPE_STAGE_BUILD)
+                stage = FLAGS.PIPE_STAGE_ERR_BUILD
+            else if (pipeline.stage === FLAGS.PIPE_STAGE_SOURCE)
+                stage = FLAGS.PIPE_STAGE_ERR_SOURCE
+            else if (pipeline.stage === FLAGS.PIPE_STAGE_DEPLOY)
+                stage = FLAGS.PIPE_STAGE_ERR_DEPLOY
+            await update_flag(id, stage)
+        }
+        catch (e3) {
+            console.error(e3)
         }
     }
     finally {
-        pipes.delete(id)
-        await logger.close()
+        try {
+            await close_job(env_job.name, env_job.param, { logger, id, ssh })
+        }
+        catch (e) { console.error(e) }
+        try {
+            pipes.delete(id)
+            await logger.close()
+        }
+        catch (e) { console.error(e) }
     }
 }
 
@@ -116,7 +150,46 @@ async function listen_log(id, send, close) {
         }
     }
     else {
+        const listener = async (v) => {
+            try {
+                if (v === null) {
+                    throw new Error(v)
+                }
+                await do_ws_send(send, v)
+            }
+            catch (e) {
+                logger.rm_listener(listener)
+                close()
+            }
+        }
         const logger = v.logger
+        const path = log_path(id)
+        const file = await fs.open(path, 'r')
+        let buf = Buffer.allocUnsafe(4096)
+        try {
+            while (1) {
+                const { bytesRead } = await file.read(buf, 0, 4096)
+                if (bytesRead === 0) {
+                    // rest
+                    break;
+                }
+                await do_ws_send(send, buf.toString('utf8', 0, bytesRead))
+            }
+        }
+        catch (e) {
+            console.error(e)
+        }
+        finally {
+            file.close()
+        }
+        try {
+            await do_ws_send(send, logger.get_buf())
+        }
+        catch (e) {
+            close()
+            return
+        }
+        logger.add_listener(listener)
     }
 }
 

@@ -116,7 +116,7 @@ function Main(props) {
             <Sider trigger={null} collapsible collapsed={collapsed}>
                 <MenuRender location={props.location}></MenuRender>
             </Sider>
-            <Layout className="site-layout" style={{ overflowX: 'visible' }}>
+            <Layout className="site-layout" id='rightPanel' style={{ overflowX: 'visible', overflowY: 'auto' }}>
                 <Header className="site-layout-background" style={{ padding: 0 }}>
                     <Row justify='space-between'>
                         <Col span={2}>

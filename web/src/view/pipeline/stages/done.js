@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState, Fragment } from 'react'
 import { withRouter } from 'react-router-dom'
-import { Result, Button } from 'antd';
+import { Result, Button, Row, Col, Divider } from 'antd';
+import PipeLineStageComm from './comm'
 
 const PipeLineStageDone = (props) => {
+    const [showLog, setShowLog] = useState(false)
     return (
         <div>
             <Result
@@ -10,9 +12,24 @@ const PipeLineStageDone = (props) => {
                 title="Successfully Execute pipeline"
                 subTitle={`Pipeline id ${props.pipeline.id} module name ${props.pipeline.mode_name} is already finish`}
                 extra={[
-                    <Button onClick={() => { props.history.push('/pipeline/list') }}>Return list</Button>,
+                    <Row key={1} gutter={8} justify='center'>
+                        <Col>
+                            <Button onClick={() => { props.history.push('/pipeline/list') }}>Return list</Button>
+                        </Col>
+                        <Col>
+                            <Button type='primary' disabled={showLog} onClick={() => { setShowLog(true) }}>Show log</Button>
+                        </Col>
+                    </Row>
                 ]}
             />
+            {
+                showLog && (
+                    <Fragment>
+                        <Divider />
+                        <PipeLineStageComm pipeline={props.pipeline} />
+                    </Fragment>
+                )
+            }
         </div>
     )
 }

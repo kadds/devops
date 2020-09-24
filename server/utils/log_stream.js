@@ -58,19 +58,18 @@ class LogStream {
                 str_pos += len
             }
             else {
-                this.timer = setTimeout(() => {
-                    this.flush()
-                }, 2000)
+                // this.timer = setTimeout(() => {
+                //     this.flush()
+                // }, 2000)
                 return
             }
         }
     }
 
     async split(type) {
-        await this.write('========\n')
+        await this.write('==================\n')
         await this.write(type)
-        await this.write('\n========\n')
-        console.log(type)
+        await this.write('\n==================\n')
     }
 
     async close() {
@@ -80,6 +79,10 @@ class LogStream {
             fn(null)
         }
         await this.file.close()
+    }
+
+    get_buf() {
+        return this.buf.toString('utf8', 0, this.pos)
     }
 
     add_listener(fn) {

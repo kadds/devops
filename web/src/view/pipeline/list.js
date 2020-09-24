@@ -24,19 +24,19 @@ const PipeLineList = props => {
         setNeedUpdate(needUpdate + 1)
     }
     const RenderStage = (props) => {
-        if (props.stage === 0) {
+        if (props.stage === 1) {
             return <Tag color='processing' icon={<SyncOutlined spin />}>Prepare</Tag>
         }
-        else if (props.stage === 1) {
+        else if (props.stage === 2) {
             return <Tag color='processing' icon={<SyncOutlined spin />}>Source</Tag>
         }
-        else if (props.stage === 2) {
+        else if (props.stage === 3) {
             return <Tag color='processing' icon={<SyncOutlined spin />}>Build</Tag>
         }
-        else if (props.stage === 3) {
+        else if (props.stage === 4) {
             return <Tag color='processing' icon={<SyncOutlined spin />}>Deploy</Tag>
         }
-        else if (props.stage === 4) {
+        else if (props.stage === 100) {
             return <Tag color='success' icon={<CheckCircleOutlined />}>Done</Tag>
         }
         else {
@@ -167,7 +167,14 @@ const PipeLineList = props => {
     const onSelect = (script) => {
         setSelect({ visible: false })
         let obj = {}
-        obj[select.name] = script
+        let last = obj, p = null
+        for (const it of select.name) {
+            let o = {}
+            last[it] = o
+            p = last
+            last = o
+        }
+        p[select.name[select.name.length - 1]] = script
         form.setFieldsValue(obj)
     }
 
@@ -187,7 +194,7 @@ const PipeLineList = props => {
                                     l.param.map(p => {
                                         if (p.type === 'string') {
                                             return (
-                                                <Form.Item key={p.name} name={p.name} label={
+                                                <Form.Item key={p.name} name={['param', l.name, p.name]} label={
                                                     <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
                                                     </span>
@@ -198,18 +205,18 @@ const PipeLineList = props => {
                                         }
                                         else if (p.type === 'script') {
                                             return (
-                                                <Form.Item key={p.name} name={p.name} label={
+                                                <Form.Item key={p.name} name={['param', l.name, p.name]} label={
                                                     <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
                                                     </span>
                                                 }>
-                                                    <Input.Search enterButton='Get' name={p.name} onSearch={() => onSearch(p.name)} />
+                                                    <Input.Search enterButton='Get' name={p.name} onSearch={() => onSearch(['param', l.name, p.name])} />
                                                 </Form.Item>
                                             )
                                         }
                                         else if (p.type === 'select VM') {
                                             return (
-                                                <Form.Item key={p.name} name={p.name} label={
+                                                <Form.Item key={p.name} name={['param', l.name, p.name]} label={
                                                     <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
                                                     </span>
@@ -222,7 +229,7 @@ const PipeLineList = props => {
                                         }
                                         else if (p.type === 'select Server') {
                                             return (
-                                                <Form.Item key={p.name} name={p.name} label={
+                                                <Form.Item key={p.name} name={['param', l.name, p.name]} label={
                                                     <span>{p.label} &nbsp;
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
                                                     </span>

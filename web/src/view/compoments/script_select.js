@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Spin, List, Row, Input, Form, Modal, Col, Collapse, Alert } from 'antd'
+import { Spin, List, Row, Input, Form, Modal, Col, Alert } from 'antd'
 import { get_scripts, get_script, upload_script } from '../../api/upload'
 const TextArea = Input.TextArea;
 

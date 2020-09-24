@@ -1,26 +1,51 @@
-const { connect_shell } = require('./../../utils/vmutils')
+const { connect_shell, exec } = require('./../../utils/vmutils')
 const { m_vm } = require('../../data')
 const { install_deps } = require('./comm/install')
+const fs = require('fs').promises
 
 async function entry(request, param, opt) {
     if (request === 'valid') {
         return ''
     }
     else if (request === 'run') {
-        const docker_name = opt.id
+        const docker_name = 'pipe_' + opt.id
         const logger = opt.logger
-        await logger.write('startup bare environment\n')
+        await logger.write('- startup bare environment\n')
+        await logger.write('- target vm is ' + param.vm_name + '\n')
         const vm = await m_vm.findByPk(param.vm_name)
-        await logger.write('try connect environment\n')
+        await logger.write('- connecting environment\n')
         const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
-        await logger.write('pull docker image\n')
-        await ssh.execCommand('docker pull ' + param.dockerimg)
-        await ssh.execCommand('docker run -it --name ' + docker_name + ' ' + param.dockerimg + ' /bin/bash')
-        await logger.write('try connect docker environment\n')
-        await logger.write('try install deps\n')
+        await logger.write('- pulling docker image\n')
+        await exec(ssh, 'docker pull ' + param.dockerimg, null, logger)
+        await exec(ssh, 'docker run -d --name ' + docker_name + ' ' + param.dockerimg + ' /bin/tail -f', null, logger)
+        await logger.write('- connecting docker environment\n')
+        await logger.write('- installing deps\n')
+        ssh.docker_name = docker_name
         await install_deps(ssh, opt.deps, logger)
-        await logger.write('try do post install script\n')
-        await ssh.execCommand('cat | sh', { stdin: param.post_install_script })
+        if (param.post_install_script) {
+            await logger.write('- do post install script\n')
+            const sc = await fs.readFile(__dirname + '/../../upload/scripts/' + param.post_install_script)
+            await exec(ssh, 'sh', sc.toString(), logger)
+        }
+        else {
+            await logger.write('- no need to execute post install script\n')
+        }
+        return ssh
+    }
+    else if (request === 'close') {
+        const logger = opt.logger
+        const ssh = opt.ssh
+        try {
+            const name = ssh.docker_name
+            ssh.docker_name = null
+            await exec(ssh, 'docker stop ' + name, null, logger)
+            await exec(ssh, 'docker rm ' + name, null, logger)
+        }
+        catch (e) {
+        }
+        finally {
+            ssh.dispose()
+        }
     }
 }
 

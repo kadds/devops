@@ -33,20 +33,20 @@ code {
 }
 
 .card_normal:hover:after {
-  opacity: 1;
+    opacity: 1;
 }
 
 .card_readonly+:not(.card_selected):hover {
-  box-shadow: none;
+    box-shadow: none;
 }
 
 .card_readonly { 
-  color: #555;
-  cursor: default;
+    color: #555;
+    cursor: default;
 }
 
 .card_readonly:hover:after, .card_selected:hover:after {
-  opacity: 0;
+    opacity: 0;
 }
 
 .card_selected {
@@ -55,49 +55,51 @@ code {
 }
 
 .step {
-  font-size: 20px;
-  color: #777;
+    font-size: 20px;
+    color: #777;
 }
 
 .step_active {
-  font-size: 20px;
-  font-weight: bold;
-  color: #f8407d;
-  text-shadow: 1px 1px 3px rgb(236, 91, 91);
+    font-size: 20px;
+    font-weight: bold;
+    color: #f8407d;
+    text-shadow: 1px 1px 3px rgb(236, 91, 91);
 }
 
 pre.output {
-  min-height: 50px;
-  padding: 4px 6px;
-  color: #eee;
-  background: #222;
-  height: 100%;
-  width: 100%;
-  text-align: left;
-  overflow-y: scroll;
-  font-size: 13px;
-  font-family: 'Courier New', Courier, monospace;
+    min-height: 50px;
+    padding: 6px 12px;
+    color: #eee;
+    background: #222;
+    height: 100%;
+    width: 100%;
+    text-align: left;
+    overflow-y: auto;
+    overflow-x: auto;
+    font-size: 13px;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .page {
-  position: absolute;
-  width: 100%;
-  transition: transform 300ms cubic-bezier(0.23, 0.72, 0.41, 0.98), opacity 300ms ease-in-out;
-  transform-origin: left top;
-  opacity: 1;
+    width: 100%;
+    transition: transform 300ms cubic-bezier(0.23, 0.72, 0.41, 0.98), opacity 300ms ease-in-out;
+    transform-origin: left top;
+    opacity: 1;
 }
 
 .content-page-par {
-  margin: 24px 16px;
-  padding: 24px;
+    margin: 12px 12px 8px 12px;
+    padding: 18px 12px 0 12px;
+    min-height: initial;
 }
 
 .content-page {
-  min-height: 280px;
-  position: relative;
+    position: relative;
+    min-height: 100%;
 }
 
 .page-enter, .page-appear {
+    position: absolute;
     opacity: 0;
     transform: scale(1.5, 1.5) translate(50px, 100%);
 }
@@ -115,6 +117,7 @@ pre.output {
     opacity: 1;
     z-index: 1000;
     transform: scale(1, 1) translate(0, 0);
+    position: absolute;
 }
 
 .page-exit-active {
@@ -129,12 +132,13 @@ pre.output {
 .form_items {
     padding: 20px;
     border: 1px dashed #108ee9;
+    border-radius: 2px;
 }
 
 .form_items_label {
     position: relative; 
     top: 10px;
-    left: 5px;
+    left: 10px;
 }
 
 .select_script_list {

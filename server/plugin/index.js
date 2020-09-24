@@ -38,6 +38,14 @@ async function run_job(job_name, param, opt) {
     throw 'job not find'
 }
 
+async function close_job(job_name, param, opt) {
+    const job = job_map.get(job_name)
+    if (job) {
+        return await job.entry('close', param, opt)
+    }
+    throw 'job not find'
+}
+
 async function get_job_deps(job_name) {
     const job = job_map.get(job_name)
     if (job) {
@@ -56,4 +64,4 @@ async function get_job_pipeline_params(job_name) {
 
 init()
 
-module.exports = { get_job_list, job_param_valid, run_job, get_job_deps, get_job_pipeline_params }
+module.exports = { get_job_list, job_param_valid, run_job, get_job_deps, get_job_pipeline_params, close_job }

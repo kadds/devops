@@ -125,4 +125,31 @@ async function update_vm_servers(servers, vm_name, ip, port, password, private_k
     console.log('update agent_servers.txt done')
 }
 
-module.exports = { check_connection, copy_to_vm, restart_agent, clear_vm, connect_shell, update_vm_servers }
+async function exec(ssh, cmd, stdin, logger) {
+    await logger.write('$-> ')
+    await logger.write(cmd)
+    await logger.write('\n')
+    if (stdin) {
+        await logger.write(stdin)
+        await logger.write('\n')
+    }
+    if (ssh.docker_name) {
+        if (stdin) {
+            cmd = 'docker exec -i -w /root ' + ssh.docker_name + ' ' + cmd
+        }
+        else {
+            cmd = 'docker exec -w /root ' + ssh.docker_name + ' ' + cmd
+        }
+    }
+    const res = await ssh.execCommand(cmd, { stdin: stdin })
+    console.log(res)
+    if (res.code) {
+        throw 'code ' + res.code + '\n' + res.stdout + (res.stderr ? ('\n' + res.stderr) : '')
+    }
+    else {
+        logger.write(res.stdout + '\n')
+        return res.stdout
+    }
+}
+
+module.exports = { check_connection, copy_to_vm, restart_agent, clear_vm, connect_shell, update_vm_servers, exec }

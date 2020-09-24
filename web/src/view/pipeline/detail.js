@@ -7,10 +7,10 @@ import { Row, Divider, Col, Typography } from 'antd';
 import queryString from 'query-string'
 
 function PipeLineComp(props) {
-    if (props.pipeline.data.stage < 4) {
+    if (props.pipeline.data.stage !== 100) {
         return (<PipeLineStageComm pipeline={props.pipeline.data} />)
     }
-    else if (props.pipeline.data.stage === 4) {
+    else if (props.pipeline.data.stage === 100) {
         return (<PipeLineStageDone pipeline={props.pipeline.data} />)
     }
     return 'unknown'
@@ -33,19 +33,19 @@ const PipeLineDetail = (props) => {
             {
                 pipeline.data && (
                     <Row justify='space-between' style={{ position: 'relative' }}>
-                        <Col className={`${pipeline.data.stage === 0 ? 'step_active' : 'step'}`}>
+                        <Col className={`${Math.abs(pipeline.data.stage) === 1 ? 'step_active' : 'step'}`}>
                             Environment
                         </Col>
-                        <Col className={`${pipeline.data.stage === 1 ? 'step_active' : 'step'}`}>
+                        <Col className={`${Math.abs(pipeline.data.stage) === 2 ? 'step_active' : 'step'}`}>
                             Source code
                 </Col>
-                        <Col className={`${pipeline.data.stage === 2 ? 'step_active' : 'step'}`}>
+                        <Col className={`${Math.abs(pipeline.data.stage) === 3 ? 'step_active' : 'step'}`}>
                             Build
                 </Col>
-                        <Col className={`${pipeline.data.stage === 3 ? 'step_active' : 'step'}`}>
+                        <Col className={`${Math.abs(pipeline.data.stage) === 3 ? 'step_active' : 'step'}`}>
                             Deploy
                 </Col>
-                        <Col className={`${pipeline.data.stage === 4 ? 'step_active' : 'step'}`}>
+                        <Col className={`${pipeline.data.stage === 100 ? 'step_active' : 'step'}`}>
                             Done
                 </Col>
                     </Row>
@@ -55,7 +55,7 @@ const PipeLineDetail = (props) => {
             {
                 pipeline.data && (
                     <div style={{ textAlign: 'left' }}>
-                        <Typography.Title level={3}>Mark: </Typography.Title>
+                        <Typography.Title level={5}>Mark: </Typography.Title>
                         <Typography.Text>
                             {pipeline.data.mark}
                         </Typography.Text>

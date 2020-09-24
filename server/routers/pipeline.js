@@ -3,6 +3,7 @@ const { conn, m_pipeline, m_mode } = require('../data')
 const { get_job_list, job_param_valid } = require('../plugin/index')
 const { post_pipeline_op } = require('../worker/index')
 const { new_ws_id } = require('../ws')
+const FLAGS = require('../flags')
 
 let router = new Router()
 
@@ -32,9 +33,28 @@ router.post('/', async (req, rsp, next) => {
     let pipeline = {}
     pipeline.mark = req.body.pipeline.mark
     pipeline.mode_name = req.body.pipeline.mode_name
-    pipeline.stage = 0
+    pipeline.stage = FLAGS.PIPE_STAGE_ENV
     pipeline.content = {}
     pipeline.content.jobs = module.content.jobs
+    const param = req.body.pipeline.param
+    for (const v of pipeline.content.jobs.env) {
+        if (param[v.name])
+            v.param = { ...v.param, ...param[v.name] }
+        console.log(v.param)
+    }
+    for (const v of pipeline.content.jobs.source) {
+        if (param[v.name])
+            v.param = { ...v.param, ...param[v.name] }
+    }
+    for (const v of pipeline.content.jobs.build) {
+        if (param[v.name])
+            v.param = { ...v.param, ...param[v.name] }
+    }
+    for (const v of pipeline.content.jobs.deploy) {
+        if (param[v.name])
+            v.param = { ...v.param, ...param[v.name] }
+    }
+
     const res = await m_pipeline.create(pipeline)
     post_pipeline_op('run', res.id)
     rsp.json({ err: 0 })
