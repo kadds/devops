@@ -106,7 +106,7 @@ function start_ws() {
             const log = `> ${chalk.bold('WS')} ${req.url} ${chalk.whiteBright('closed')} ${chalk.green(delta + 'ms')} bytes ${chalk.yellow(bytes)}`
             console.log(log)
         })
-        const log = `> ${chalk.bold('ws')} ${req.url}`
+        const log = `> ${chalk.bold('WS')} ${req.url}`
         console.log(log)
         const URI = new url.URL('ws://' + req.headers.host + req.url)
         const id = URI.searchParams.get('id')

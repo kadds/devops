@@ -142,7 +142,6 @@ async function exec(ssh, cmd, stdin, logger) {
         }
     }
     const res = await ssh.execCommand(cmd, { stdin: stdin })
-    console.log(res)
     if (res.code) {
         throw 'code ' + res.code + '\n' + res.stdout + (res.stderr ? ('\n' + res.stderr) : '')
     }

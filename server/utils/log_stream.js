@@ -20,6 +20,9 @@ class LogStream {
         this.file = null
         this.closed = true
         this.listener = []
+        this.in_flush = false
+        this.flush_funcs = { next: null, back: null }
+        this.flush_funcs.back = this.flush_funcs
     }
 
     async init() {
@@ -34,12 +37,34 @@ class LogStream {
     }
 
     async flush() {
-        if (this.closed) return
+        if (this.closed || this.in_flush) return
         if (this.timer) {
             clearTimeout(this.timer)
         }
+        this.in_flush = true
         await this.file.write(this.buf, 0, this.pos)
         this.pos = 0
+        this.in_flush = false
+        this.wake_up()
+    }
+
+    wake_up() {
+        if (this.flush_funcs.next) {
+            const node = this.flush_funcs.next
+            this.flush_funcs.next = node.next
+            if (this.flush_funcs.next === null) {
+                this.flush_funcs.back = this.flush_funcs
+            }
+            // wake up
+            node.fn()
+        }
+    }
+
+    async wait_flush() {
+        return new Promise((resolve, reject) => {
+            this.flush_funcs.back.next = { next: null, fn: resolve }
+            this.flush_funcs.back = this.flush_funcs.back.next
+        })
     }
 
     async write(str) {
@@ -50,6 +75,9 @@ class LogStream {
         let str_pos = 0
         // console.log('write ' + str)
         while (1) {
+            while (this.in_flush) {
+                await this.wait_flush()
+            }
             const len = this.buf.write(str.substr(str_pos, str.length - str_pos), this.pos)
             this.pos += len
             // console.log(this.pos, len, str_pos)
@@ -58,9 +86,11 @@ class LogStream {
                 str_pos += len
             }
             else {
-                // this.timer = setTimeout(() => {
-                //     this.flush()
-                // }, 2000)
+                this.timer = setTimeout(() => {
+                    this.flush()
+                }, 2000)
+                if (!this.in_flush)
+                    this.wake_up()
                 return
             }
         }
@@ -90,8 +120,11 @@ class LogStream {
     }
     rm_listener(fn) {
         const idx = this.listener.findIndex((v) => { return v === fn })
-        if (idx >= 0)
+        if (idx >= 0) {
             this.listener.splice(idx, 1)
+            return
+        }
+        throw 'not find fn'
     }
 }
 
