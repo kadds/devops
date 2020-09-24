@@ -3,7 +3,7 @@ import { get_server_list, add_server, get_server, destroy_server, stop_server, s
 import { get_all_vm } from '../../api/vm'
 import { get_module_list } from '../../api/module'
 
-import { Button, Spin, Row, Select, Descriptions, Popconfirm, Typography, Card, Input, Form, Modal, InputNumber, message, Col, Space, Checkbox, Tag, Badge, Statistic } from 'antd'
+import { Button, Spin, Row, Select, Popconfirm, Typography, Card, Input, Form, Modal, Col, Space, Tag, Badge } from 'antd'
 import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 
 const getServerRunningTime = (delta) => {
@@ -60,9 +60,11 @@ const Server = (props) => {
             setServer(null)
         }
     }
+    const ref = useRef()
+    ref.current = { listDetail, onServerChange }
     useEffect(() => {
         async function run() {
-            const select = listDetail.select
+            const select = ref.current.listDetail.select
             let has_find = false
             setListDetail({ loading: true, data: [] })
             let data = await get_server_list(props.mode_name)
@@ -73,7 +75,7 @@ const Server = (props) => {
                         has_find = true
                     }
                 if (has_find) {
-                    onServerChange(listDetail.select)
+                    ref.current.onServerChange(select)
                     setListDetail({ loading: false, data, select })
                 }
                 else {
@@ -93,10 +95,10 @@ const Server = (props) => {
                         }
                     group[d.mode_name].push(d)
                 }
-                if (listDetail.select) {
+                if (select) {
                     if (has_find) {
                         setListDetail({ loading: false, group, select })
-                        onServerChange(select)
+                        ref.current.onServerChange(select)
                     }
                     else {
                         setListDetail({ loading: false, group, select: null })
@@ -416,7 +418,7 @@ const Server = (props) => {
             >
                 <Form labelCol={{ span: 6 }} wrapperCol={{ flex: 1 }} form={form}>
                     <Form.Item label='Name' name='name' rules={[{ required: true, message: 'Please input server name' }]}>
-                        <Input disabled={state.type != 0} />
+                        <Input disabled={state.type !== 0} />
                     </Form.Item>
                     <Form.Item label='Module' name='mode_name' rules={[{ required: true, message: 'Please select module' }]}>
                         <Select >

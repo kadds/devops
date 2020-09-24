@@ -1,4 +1,4 @@
-import { get, post, put, set_token, remove_token } from './comm'
+import { get, post, set_token, remove_token } from './comm'
 
 async function login(username, password) {
     const data = await post('/user/login', { username, password })

@@ -1,7 +1,6 @@
 import React, { useState, createRef } from 'react'
-import ReactDOM from 'react-dom';
 import { login } from '../api/user'
-import { Form, Input, Button, Checkbox, Modal, message } from 'antd'
+import { Form, Input, Modal, message } from 'antd'
 
 
 function Login({ show, close_login_modal }) {

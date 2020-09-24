@@ -1,10 +1,7 @@
 
-import React, { useEffect, useState, useRef } from 'react'
-import { Button, Spin, List, Row, Tag, Layout, Input, Form, Modal, InputNumber, message, Col, Typography, Collapse, Alert, Card, Badge } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Button, Row, Tag, Input, Form, Modal, message, Col, Typography, Alert, Card, Badge } from 'antd'
 import { get_jobs, jobs_valid } from '../../api/pipeline'
-
-const base_style = {
-}
 
 const get_map = (joblist) => {
     let map = new Map()
@@ -64,7 +61,7 @@ const JobSelect = (props) => {
 
     useEffect(() => {
         async function run() {
-            setAvlJob({ ...avlJob, loading: true });
+            setAvlJob({ loading: true });
             const jobs = await get_jobs()
             let list = {}
             for (const v of jobs) {
@@ -81,7 +78,7 @@ const JobSelect = (props) => {
                     list.deploy = v.job
                 }
             }
-            setAvlJob({ ...avlJob, list, loading: false })
+            setAvlJob({ list, loading: false })
         }
         run()
     }, [])
@@ -157,23 +154,6 @@ const JobSelect = (props) => {
 
     const onParamCancel = () => {
         setParam({ ...param, loading: false, visible: false })
-    }
-
-    const RenderCardNone = (props) => {
-        return (
-            <Card size='small' onClick={() => { cardClick(props.item) }}
-                className={'card_normal'} style={{ marginTop: 12 }}
-                title={props.item.name} extra={
-                    <div> {
-                        props.item.tag.map(t => (<Tag key={t}>{t}</Tag>))
-                    }
-                    </div>
-                } >
-                <Typography.Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ width: '100%', marginBottom: 0 }}>
-                    {props.item.description}
-                </Typography.Paragraph>
-            </Card >
-        )
     }
 
     const readonly = !props.editable

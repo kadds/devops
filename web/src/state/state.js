@@ -1,5 +1,3 @@
-import { createStore } from 'redux';
-
 import { START_LOGIN, CLOSE_LOGIN } from './actions'
 
 const initState = {

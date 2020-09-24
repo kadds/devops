@@ -1,4 +1,4 @@
-import { get, post, put, set_token, remove_token } from './comm'
+import { get, post } from './comm'
 
 async function get_module_list() {
     return (await get('/module/list')).list

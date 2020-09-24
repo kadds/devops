@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter, Route, Link, Switch, NavLink } from 'react-router-dom'
+import { Route, Switch, NavLink } from 'react-router-dom'
 import { Layout, Menu, Avatar, Row, Col, Dropdown } from 'antd'
 import { info, logout } from './api/user'
 import {
     MenuUnfoldOutlined,
     MenuFoldOutlined,
-    UserOutlined,
     LogoutOutlined,
-    VideoCameraOutlined,
-    CloudServerOutlined,
     BuildOutlined,
     HddOutlined,
     GoldOutlined,

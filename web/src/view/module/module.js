@@ -1,9 +1,8 @@
-import React, { useState, useEffect, createRef } from 'react'
-import { Button, Spin, Popconfirm, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Button, Popconfirm, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
 import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
 import { add_module, get_module_list, update_module, delete_module } from '../../api/module'
 import { user_list } from '../../api/user'
-import ScriptSelect from '../compoments/script_select'
 import Server from '../server/server'
 import JobSelect from '../compoments/job_select'
 
@@ -50,7 +49,7 @@ const Module = () => {
             setState({ ...state, loading: false, visible: false, need_update: state.need_update + 1 })
         }
         else {
-            const ret = await update_module(val)
+            await update_module(val)
             // ok
             message.info('Update module done!')
             setState({ ...state, loading: false, visible: false, need_update: state.need_update + 1 })

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { get_pipeline, get_pipeline_log_id } from './../../../api/pipeline'
+import React, { useEffect, useState, useRef } from 'react'
+import { get_pipeline_log_id } from './../../../api/pipeline'
 import { base_ws_url } from '../../../api/comm'
 import { Tag, Row, Col, Spin } from 'antd'
 import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons'
@@ -32,6 +32,8 @@ const TagRender = (props) => {
 const PipeLineStageComm = (props) => {
     const [data, setData] = useState('')
     const [loading, setLoading] = useState(0)
+    const ref = useRef()
+    ref.current = data
     useEffect(() => {
         let ws = null
         async function run() {
@@ -46,7 +48,7 @@ const PipeLineStageComm = (props) => {
             }
 
             ws.onmessage = function (val) {
-                setData(data + val.data)
+                setData(ref.current + val.data)
             }
         }
         run()

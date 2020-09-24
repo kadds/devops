@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message } from 'antd'
 import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm } from '../../api/vm'
 import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
@@ -23,7 +23,7 @@ const VM = () => {
         }
         if (state.type === 0) {
             const ret = await add_vm({ vm: val })
-            if (ret == 0) {
+            if (ret === 0) {
                 // ok
                 message.info('Create VM done!')
                 setState({ ...state, loading: false, visible: false, need_update: state.need_update + 1 })
@@ -35,7 +35,7 @@ const VM = () => {
         }
         else {
             const ret = await update_vm({ vm: val })
-            if (ret == 0) {
+            if (ret === 0) {
                 // ok
                 message.info('Update VM done!')
                 setState({ ...state, loading: false, visible: false, need_update: state.need_update + 1 })

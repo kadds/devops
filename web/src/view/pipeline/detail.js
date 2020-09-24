@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react'
-import { useLocation, withRouter } from "react-router-dom";
+import { withRouter } from "react-router-dom";
 import PipeLineStageComm from './stages/comm'
 import PipeLineStageDone from './stages/done'
-import { get_pipeline, get_pipeline_log_id } from './../../api/pipeline'
-import { Row, Progress, Divider, Col, Input, Typography } from 'antd';
+import { get_pipeline } from './../../api/pipeline'
+import { Row, Divider, Col, Typography } from 'antd';
 import queryString from 'query-string'
 
 function PipeLineComp(props) {
     if (props.pipeline.data.stage < 4) {
         return (<PipeLineStageComm pipeline={props.pipeline.data} />)
     }
-    else if (props.pipeline.data.stage == 4) {
+    else if (props.pipeline.data.stage === 4) {
         return (<PipeLineStageDone pipeline={props.pipeline.data} />)
     }
     return 'unknown'
