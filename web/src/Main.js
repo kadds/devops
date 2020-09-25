@@ -6,12 +6,13 @@ import {
     MenuUnfoldOutlined,
     MenuFoldOutlined,
     LogoutOutlined,
-    BuildOutlined,
     HddOutlined,
+    CloudServerOutlined,
     GoldOutlined,
-    GatewayOutlined,
-    UnorderedListOutlined,
-    ProjectOutlined,
+    ThunderboltOutlined,
+    FilterOutlined,
+    LineChartOutlined,
+    DeploymentUnitOutlined,
 } from '@ant-design/icons'
 import PipeLineList from './view/pipeline/list'
 import PipeLineDetail from './view/pipeline/detail'
@@ -25,13 +26,15 @@ import { withRouter } from 'react-router-dom'
 
 
 const { Header, Sider, Content } = Layout;
+const style = { fontSize: 17, verticalAlign: 'middle' }
 const menus = [
-    { name: 'Pipeline List', icon: (<UnorderedListOutlined />), path: '/pipeline/list' },
-    { name: 'VM', icon: (<GoldOutlined />), path: '/vm' },
-    { name: 'Module', icon: (<HddOutlined />), path: '/module' },
-    { name: 'Server', icon: (<BuildOutlined />), path: '/server' },
-    { name: 'Monitor', icon: (<ProjectOutlined />), path: '/monitor' },
-    { name: 'Log', icon: (<GatewayOutlined />), path: '/log' }
+    { name: 'Pipeline List', icon: (<ThunderboltOutlined style={style} />), path: '/pipeline/list' },
+    { name: 'VM', icon: (<HddOutlined style={style} />), path: '/vm' },
+    { name: 'Module', icon: (<GoldOutlined style={style} />), path: '/module' },
+    { name: 'Server', icon: (<CloudServerOutlined style={style} />), path: '/server' },
+    { name: 'Deployment', icon: (<DeploymentUnitOutlined style={style} />), path: '/deploy' },
+    { name: 'Monitor', icon: (<LineChartOutlined style={style} />), path: '/monitor' },
+    { name: 'Log', icon: (<FilterOutlined style={style} />), path: '/log' }
 ]
 
 

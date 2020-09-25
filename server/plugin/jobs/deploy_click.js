@@ -16,6 +16,7 @@ const params = [
 ]
 
 const pipeline_params = [
+    { name: 'docker_file', label: 'Dockerfile', description: 'How to build image?', type: 'script' }
 ]
 
 const deps = []

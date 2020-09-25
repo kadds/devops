@@ -149,6 +149,35 @@ const m_pipeline = sequelize.define('pipeline', {
     indexes: [{ fields: ['mode_name'] }]
 })
 
+const m_deploy = sequelize.define('deploy', {
+    id: {
+        type:
+            DataTypes.INTEGER,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    pipeline_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
+    status: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    content: {
+        // json
+        type: DataTypes.JSON,
+        allowNull: false
+    }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+})
+
 
 const m_user = sequelize.define('user', {
     username: {
@@ -183,9 +212,10 @@ async function init() {
     await m_server.sync()
     await m_pipeline.sync()
     await m_user.sync()
+    await m_deploy.sync()
     if (await m_user.findByPk('admin') === null) {
         await m_user.create({ username: 'admin', password: '123' })
     }
 }
 
-module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_user, init }
+module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, init }

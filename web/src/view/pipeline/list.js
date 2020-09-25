@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Fragment } from 'react'
-import { Table, Tag, Button, Popconfirm, Modal, Row, Col, Form, Select, Input, Tooltip } from 'antd'
+import { Table, Typography, Tag, Button, Popconfirm, Modal, Row, Col, Form, Select, Input, Tooltip } from 'antd'
 import { get_pipelines, delete_pipeline, create_pipeline } from './../../api/pipeline'
 import { withRouter } from 'react-router-dom';
 import { get_module_list, get_module } from '../../api/module'
@@ -71,6 +71,12 @@ const PipeLineList = props => {
             dataIndex: 'ctime',
             key: 'ctime',
             render: text => <span>{new Date(text).toLocaleString()}</span>
+        },
+        {
+            title: 'Mark',
+            dataIndex: 'mark',
+            key: 'mark',
+            render: text => <Typography.Text ellipsis>{text}</Typography.Text>
         },
         {
             title: 'Operation',

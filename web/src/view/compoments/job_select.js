@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react'
 import { Button, Row, Tag, Input, Form, Modal, message, Col, Typography, Alert, Card, Badge, Tooltip } from 'antd'
 import { QuestionCircleOutlined } from '@ant-design/icons'
@@ -286,6 +285,9 @@ const JobSelect = (props) => {
                                     <Input.TextArea autoSize={{ minRows: 2, maxRows: 10 }}></Input.TextArea>
                                 </Form.Item>
                             )
+                        }
+                        else {
+                            return null
                         }
                     })}
                 </Form>
