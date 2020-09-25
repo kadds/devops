@@ -104,6 +104,7 @@ async function connect_shell(ip, port, password, private_key, user) {
         username: user,
         readyTimeout: 2000
     })
+    ssh.base_dir = '/'
     return ssh
 }
 
@@ -135,18 +136,37 @@ async function exec(ssh, cmd, stdin, logger) {
     }
     if (ssh.docker_name) {
         if (stdin) {
-            cmd = 'docker exec -i -w /root ' + ssh.docker_name + ' ' + cmd
+            cmd = 'docker exec -i -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd
         }
         else {
-            cmd = 'docker exec -w /root ' + ssh.docker_name + ' ' + cmd
+            cmd = 'docker exec -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd
         }
     }
-    const res = await ssh.execCommand(cmd, { stdin: stdin })
+    const res = await ssh.execCommand(cmd, { stdin: stdin, cwd: ssh.docker_name ? null : ssh.base_dir })
+    console.log(res)
     if (res.code) {
-        throw 'code ' + res.code + '\n' + res.stdout + (res.stderr ? ('\n' + res.stderr) : '')
+        let data = 'code ' + res.code + '\n'
+        if (res.stdout) {
+            data += res.stdout
+            if (data[data.length - 1] !== '\n') {
+                data += '\n'
+            }
+        }
+        if (res.stderr) {
+            data += res.stderr
+        }
+        if (data[data.length - 1] === '\n') {
+            data.length = data.length - 1
+        }
+        throw data
     }
     else {
-        logger.write(res.stdout + '\n')
+        if (res.stdout[res.stdout.length - 1] === '\n') {
+            logger.write(res.stdout)
+        }
+        else {
+            logger.write(res.stdout + '\n')
+        }
         return res.stdout
     }
 }

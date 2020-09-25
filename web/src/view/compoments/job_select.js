@@ -264,15 +264,30 @@ const JobSelect = (props) => {
                 ]}
             >
                 <Form form={pform}>
-                    {param.params.map(p => (
-                        <Form.Item key={p.name} name={p.name} label={
-                            <span>{p.label} &nbsp;
+                    {param.params.map(p => {
+                        if (p.type === 'string') {
+                            return (
+                                <Form.Item key={p.name} name={p.name} label={
+                                    <span>{p.label} &nbsp;
                                 <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
-                            </span>
-                        }>
-                            <Input></Input>
-                        </Form.Item>
-                    ))}
+                                    </span>
+                                }>
+                                    <Input></Input>
+                                </Form.Item>
+                            )
+                        }
+                        else if (p.type === 'text') {
+                            return (
+                                <Form.Item key={p.name} name={p.name} label={
+                                    <span>{p.label} &nbsp;
+                                <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
+                                    </span>
+                                }>
+                                    <Input.TextArea autoSize={{ minRows: 2, maxRows: 10 }}></Input.TextArea>
+                                </Form.Item>
+                            )
+                        }
+                    })}
                 </Form>
                 {param.err && <Alert message='Error' description={param.err} type='error' showIcon />}
             </Modal>

@@ -64,7 +64,6 @@ async function run(id) {
             await run_job(job.name, job.param, { ssh, logger, id })
         }
         await update_flag(id, FLAGS.PIPE_STAGE_DONE)
-        await logger.split('cleanup')
     }
     catch (e) {
         try {
@@ -91,6 +90,10 @@ async function run(id) {
         }
     }
     finally {
+        try {
+            await logger.split('cleanup')
+        }
+        catch (e) { console.error(e) }
         try {
             await close_job(env_job.name, env_job.param, { logger, id, ssh })
         }

@@ -16,9 +16,8 @@ const params = [
 ]
 
 const pipeline_params = [
-    { name: 'test_svr', label: 'Test server', description: 'Which server will be upgraded first for testing?', type: 'select Server' }
 ]
 
 const deps = []
 
-module.exports = { entry, name: 'devops', description: 'Resilient deployment of microservice systems', tag: ['devops'], type: 'deploy', params, pipeline_params, deps }
+module.exports = { entry, name: 'deploy-click', description: 'One-Click deployment system', tag: ['deploy'], type: 'deploy', params, pipeline_params, deps }

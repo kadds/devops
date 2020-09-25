@@ -17,10 +17,11 @@ async function entry(request, param, opt) {
         const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
         await logger.write('- pulling docker image\n')
         await exec(ssh, 'docker pull ' + param.dockerimg, null, logger)
-        await exec(ssh, 'docker run -d --name ' + docker_name + ' ' + param.dockerimg + ' /bin/tail -f', null, logger)
         await logger.write('- connecting docker environment\n')
+        await exec(ssh, 'docker run -d --name ' + docker_name + ' ' + param.dockerimg + ' /bin/tail -f', null, logger)
         await logger.write('- installing deps\n')
         ssh.docker_name = docker_name
+        ssh.base_dir = '/root/'
         await install_deps(ssh, opt.deps, logger)
         if (param.post_install_script) {
             await logger.write('- do post install script\n')
@@ -34,7 +35,17 @@ async function entry(request, param, opt) {
     }
     else if (request === 'close') {
         const logger = opt.logger
-        const ssh = opt.ssh
+        let ssh = opt.ssh
+        try {
+            if (ssh === undefined || ssh === null) {
+                const vm = await m_vm.findByPk(param.vm_name)
+                ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+            }
+        }
+        catch (e) {
+            console.error(e)
+        }
+
         try {
             const name = ssh.docker_name
             ssh.docker_name = null
@@ -42,6 +53,7 @@ async function entry(request, param, opt) {
             await exec(ssh, 'docker rm ' + name, null, logger)
         }
         catch (e) {
+            console.error(e)
         }
         finally {
             ssh.dispose()

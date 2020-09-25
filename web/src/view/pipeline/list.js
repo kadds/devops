@@ -137,6 +137,18 @@ const PipeLineList = props => {
     const [serverList, setServerList] = useState([])
     const [vmList, setVmList] = useState([])
 
+    const fillDefaults = (p, obj) => {
+        for (const it of p) {
+            let f = {}
+            for (const ot of it.param) {
+                if (ot.default)
+                    f[ot.name] = ot.default
+            }
+            if (f !== {})
+                obj[it.name] = f
+        }
+    }
+
     const onModuleSelect = async (name) => {
         setCreateLoading(true)
         try {
@@ -146,6 +158,13 @@ const PipeLineList = props => {
             setCreateData(module_data.pipeline_params)
             setVmList(vm_list)
             setServerList(server_list)
+            let obj = {}
+            fillDefaults(module_data.pipeline_params.env, obj)
+            fillDefaults(module_data.pipeline_params.source, obj)
+            fillDefaults(module_data.pipeline_params.build, obj)
+            fillDefaults(module_data.pipeline_params.deploy, obj)
+            console.log(obj)
+            form.setFieldsValue({ param: obj })
         }
         catch (e) {
         }
@@ -200,6 +219,17 @@ const PipeLineList = props => {
                                                     </span>
                                                 }>
                                                     <Input></Input>
+                                                </Form.Item>
+                                            )
+                                        }
+                                        else if (p.type === 'text') {
+                                            return (
+                                                <Form.Item key={p.name} name={['param', l.name, p.name]} label={
+                                                    <span>{p.label} &nbsp;
+                                                    <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
+                                                    </span>
+                                                }>
+                                                    <Input.TextArea autoSize={{ minRows: 2, maxRows: 10 }}></Input.TextArea>
                                                 </Form.Item>
                                             )
                                         }

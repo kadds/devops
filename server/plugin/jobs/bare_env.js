@@ -13,25 +13,47 @@ async function entry(request, param, opt) {
         const vm = await m_vm.findByPk(param.vm_name)
         await logger.write('- connecting environment\n')
         const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+        const base_dir = param.base_dir + '/' + opt.id + '/'
+        await logger.write('- checking directory\n')
+        if (param.base_dir.indexOf(' ') >= 0) {
+            throw 'invalid parameter base_dir ' + param.base_dir
+        }
+        await exec(ssh, 'mkdir -p ' + base_dir, null, logger)
+        ssh.base_dir = base_dir
         await logger.write('- installing deps\n')
         await install_deps(ssh, opt.deps, logger)
         if (param.post_install_script) {
             await logger.write('- do post install script\n')
             const sc = await fs.readFile(__dirname + '/../../upload/scripts/' + param.post_install_script)
-            await exec(ssh, 'cat > tmp.sh', sc.toString(), logger)
-            await exec(ssh, 'sh ./tmp.sh', null, logger)
-            await exec(ssh, 'rm ./tmp.sh', null, logger)
+            await exec(ssh, 'sh', sc.toString(), logger)
         }
         else {
             await logger.write('- no need to execute post install script\n')
         }
+        return ssh
     }
     else if (request === 'close') {
+        const base_dir = param.base_dir + '/' + opt.id + '/'
         const logger = opt.logger
+        let ssh = opt.ssh
         try {
-            await exec(ssh, 'logout', null, logger)
+            if (ssh === undefined || ssh === null) {
+                const vm = await m_vm.findByPk(param.vm_name)
+                ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+            }
         }
         catch (e) {
+            console.error(e)
+        }
+        try {
+            if (param.base_dir.indexOf(' ') < 0) {
+                await exec(ssh, 'rm -rf ' + base_dir, null, logger)
+            }
+            ssh.base_dir = param.base_dir
+            await exec(ssh, 'exit', null, logger)
+        }
+        catch (e) {
+            console.error(e)
         }
         finally {
             ssh.dispose()
@@ -41,6 +63,7 @@ async function entry(request, param, opt) {
 
 const params = []
 const pipeline_params = [{ name: 'vm_name', label: 'Vm to run', description: 'Which virtual machine is ready to run the pipeline?', type: 'select VM' },
+{ name: 'base_dir', label: 'Base Directory', description: 'Directory for preparing environment and building source code. (Don\'t use ~)', type: 'string', default: '/tmp/' },
 { name: 'post_install_script', label: 'Post-install script', description: 'The script is executed when environment is ready.', type: 'script' }]
 
 module.exports = {
