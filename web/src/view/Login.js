@@ -15,7 +15,7 @@ function Login({ show, close_login_modal }) {
         set_loading(true)
         const val = await form.current.validateFields()
         if (await login(val.username, val.password)) {
-            message.info("wellcome " + val.username)
+            message.info("Welcome " + val.username)
             set_loading(false)
             setTimeout(() => {
                 window.location.reload();
