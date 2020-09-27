@@ -1,4 +1,5 @@
 const { exec } = require('./../../utils/vmutils')
+const { install_deps } = require('./comm/install')
 
 async function entry(request, param, opt) {
     if (request === 'valid') {
@@ -7,8 +8,9 @@ async function entry(request, param, opt) {
     else if (request === 'run') {
         const logger = opt.logger
         const ssh = opt.ssh
-        await exec(ssh, param.cmake_command, null, logger)
-        return param.result_dir
+        const deps = param.dependence.split('\n')
+        if (deps.length > 0)
+            await install_deps(ssh, deps, logger)
     }
 }
 

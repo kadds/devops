@@ -1,6 +1,7 @@
 const { connect_shell, exec } = require('./../../utils/vmutils')
 const { m_vm } = require('../../data')
 const { install_deps } = require('./comm/install')
+const { get_script_content } = require('./../../utils/script')
 
 async function entry(request, param, opt) {
     if (request === 'valid') {
@@ -24,8 +25,7 @@ async function entry(request, param, opt) {
         await install_deps(ssh, opt.deps, logger)
         if (param.post_install_script) {
             await logger.write('- do post install script\n')
-            const sc = await fs.readFile(__dirname + '/../../upload/scripts/' + param.post_install_script)
-            await exec(ssh, 'sh', sc.toString(), logger)
+            await exec(ssh, 'sh', get_script_content(param.post_install_script), logger)
         }
         else {
             await logger.write('- no need to execute post install script\n')

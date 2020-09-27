@@ -1,4 +1,5 @@
 const { exec } = require('./../../utils/vmutils')
+const { get_script_content } = require('./../../utils/script')
 
 async function entry(request, param, opt) {
     if (request === 'valid') {
@@ -7,7 +8,7 @@ async function entry(request, param, opt) {
     else if (request === 'run') {
         const logger = opt.logger
         const ssh = opt.ssh
-        await exec(ssh, param.yarn_command, null, logger)
+        await exec(ssh, 'sh', await get_script_content(param.build_command), logger)
         return param.result_dir
     }
 }

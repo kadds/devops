@@ -224,9 +224,11 @@ const Server = (props) => {
                     <Col>
                         <Button onClick={() => startClick(props.server.name)} icon={<PoweroffOutlined />} type='primary'>Start</Button>
                     </Col>
-                    <Popconfirm title="Are you sure?" onConfirm={() => destroyClick(props.server.name)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                        <Button danger icon={<CloseOutlined />}>Destroy</Button>
-                    </Popconfirm>
+                    <Col>
+                        <Popconfirm title="Are you sure?" onConfirm={() => destroyClick(props.server.name)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                            <Button danger icon={<CloseOutlined />}>Destroy</Button>
+                        </Popconfirm>
+                    </Col>
                 </Row>
             )
         }

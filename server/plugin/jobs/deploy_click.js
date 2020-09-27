@@ -1,14 +1,11 @@
 
-async function entry(request, param) {
+async function entry(request, param, opt) {
     if (request === 'valid') {
-        try {
-            await check_connection(param.ssh_host, 22, param.ssh_password, param.ssh_pkey, param.ssh_user)
-        }
-        catch (e) {
-            console.log(e)
-            return '' + e
-        }
         return ''
+    }
+    else if (request === 'run') {
+        const logger = opt.logger
+        const ssh = opt.ssh
     }
 }
 

@@ -1,10 +1,20 @@
 const { m_vm } = require('../../data')
-async function entry(request, param) {
+
+async function entry(request, param, opt) {
     if (request === 'valid') {
         if (await m_vm.findByPk(param.vm_name)) {
             return ''
         }
         return 'vm not exist'
+    }
+    else if (request === 'run') {
+        const logger = opt.logger
+        const ssh = opt.ssh
+        const vm = await m_vm.findBy(param.vm_name)
+        if (!vm) {
+            throw 'vm not find'
+        }
+
     }
 }
 
