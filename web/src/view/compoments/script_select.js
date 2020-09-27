@@ -51,8 +51,8 @@ const ScriptSelect = (props) => {
     return (
         <Modal
             visible={props.visible}
-            title="Select Script"
-            okText='Select'
+            title={props.title}
+            okText='Confirm'
             cancelText='Cancel'
             onOk={onModalOk}
             onCancel={onModalCancel}

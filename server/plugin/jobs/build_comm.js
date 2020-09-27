@@ -15,7 +15,7 @@ async function entry(request, param, opt) {
 const params = []
 
 const pipeline_params = [
-    { name: 'build_command', label: 'command', type: 'text', default: '', description: 'Build command.' },
+    { name: 'build_command', label: 'command', type: 'script', default: '', description: 'Build command.' },
     { name: 'result_dir', label: 'Result directory', description: 'Relative path. Showing build results', type: 'string', default: 'build/' }
 ]
 

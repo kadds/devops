@@ -2,7 +2,7 @@ const { exec } = require('../../../utils/vmutils')
 
 async function install_deps_pacman(ssh, deps, logger) {
     await exec(ssh, 'pacman -Syu --noconfirm', null, logger)
-    await exec(ssh, 'pacman -S --noconfirm ' + deps.join(' '), null, logger)
+    await exec(ssh, 'pacman -S --noconfirm --needed ' + deps.join(' '), null, logger)
 }
 
 async function install_deps_apt(ssh, deps, logger) {

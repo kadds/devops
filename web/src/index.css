@@ -148,6 +148,7 @@ pre.output {
 }
 
 .select_script_list_item {
+    user-select: none;
     cursor: pointer;
     padding: 10px;
     background-color: #fff;
@@ -157,4 +158,8 @@ pre.output {
 
 .select_script_list_item:hover {
     background-color: #eee;
+}
+
+.pipeline .ant-form-item:last-child {
+    margin-bottom: 0;
 }

@@ -111,7 +111,7 @@ class LogStream {
         await this.file.close()
     }
 
-    get_buf() {
+    get_current_buf() {
         return this.buf.toString('utf8', 0, this.pos)
     }
 

@@ -193,25 +193,25 @@ const PipeLineList = props => {
 
     const [select, setSelect] = useState({ visible: false })
 
-    const onSearch = (name) => {
-        setSelect({ visible: true, name })
+    const onSearch = (name, param_names) => {
+        setSelect({ visible: true, name, param_names })
     }
 
     const onCancel = () => {
-        setSelect({ visible: false })
+        setSelect({ ...select, visible: false })
     }
 
     const onSelect = (script) => {
-        setSelect({ visible: false })
+        setSelect({ ...select, visible: false })
         let obj = {}
         let last = obj, p = null
-        for (const it of select.name) {
+        for (const it of select.param_names) {
             let o = {}
             last[it] = o
             p = last
             last = o
         }
-        p[select.name[select.name.length - 1]] = script
+        p[select.param_names[select.param_names.length - 1]] = script
         form.setFieldsValue(obj)
     }
 
@@ -226,7 +226,7 @@ const PipeLineList = props => {
                                     {l.name}
                                 </Tag>
                             </span>
-                            <div className='form_items'>
+                            <div className='form_items pipeline'>
                                 {
                                     l.param.map(p => {
                                         if (p.type === 'string') {
@@ -258,7 +258,7 @@ const PipeLineList = props => {
                                                     <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
                                                     </span>
                                                 }>
-                                                    <Input.Search enterButton='Get' name={p.name} onSearch={() => onSearch(['param', l.name, p.name])} />
+                                                    <Input.Search enterButton='Select' name={p.name} onSearch={() => onSearch(p.label, ['param', l.name, p.name])} />
                                                 </Form.Item>
                                             )
                                         }
@@ -339,7 +339,7 @@ const PipeLineList = props => {
                     </Form.Item>
                 </Form>
             </Modal>
-            <ScriptSelect visible={select.visible} onCancel={onCancel} onSelect={onSelect} />
+            <ScriptSelect title={'Select ' + select.name} visible={select.visible} onCancel={onCancel} onSelect={onSelect} />
         </div>
     )
 }

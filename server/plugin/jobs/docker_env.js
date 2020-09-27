@@ -47,7 +47,7 @@ async function entry(request, param, opt) {
         }
 
         try {
-            const name = ssh.docker_name
+            const name = 'pipe_' + opt.id
             ssh.docker_name = null
             await exec(ssh, 'docker stop ' + name, null, logger)
             await exec(ssh, 'docker rm ' + name, null, logger)

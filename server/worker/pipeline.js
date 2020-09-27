@@ -162,6 +162,11 @@ async function listen_log(id, send, close) {
             }
             catch (e) {
                 logger.rm_listener(listener)
+                // send rest log
+                try {
+                    await do_ws_send(send, logger.get_current_buf())
+                }
+                catch (e) { console.error(e) }
                 close()
             }
         }
@@ -186,7 +191,7 @@ async function listen_log(id, send, close) {
             file.close()
         }
         try {
-            await do_ws_send(send, logger.get_buf())
+            await do_ws_send(send, logger.get_current_buf())
         }
         catch (e) {
             close()
