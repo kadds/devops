@@ -19,6 +19,9 @@ import PipeLineDetail from './view/pipeline/detail'
 import VM from './view/vm/vm'
 import Module from './view/module/module'
 import Server from './view/server/server'
+import Monitor from './view/monitor/monitor'
+import LogView from './view/log_view/log_view'
+import Deploy from './view/deploy/deploy'
 import P404 from './view/P404'
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import { withRouter } from 'react-router-dom'
@@ -46,8 +49,9 @@ function Main(props) {
         { path: '/vm', component: VM },
         { path: '/module', component: Module },
         { path: '/server', component: Server },
-        { path: '/monitor', component: P404 },
-        { path: '/log', component: P404 },
+        { path: '/deploy', component: Deploy },
+        { path: '/monitor', component: Monitor },
+        { path: '/log', component: LogView },
         { component: P404 }
     ]
     // useEffect(() => {

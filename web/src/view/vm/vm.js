@@ -113,7 +113,7 @@ const VM = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<Row gutter={8}> <Col> <Button disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+            render: (i, r) => (<Row gutter={[8, 8]}> <Col> <Button disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
                 <Col>
                     <Button disabled={isDel} onClick={() => redoClick(r.name)}>Sync</Button>
                 </Col>

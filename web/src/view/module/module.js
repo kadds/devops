@@ -135,7 +135,7 @@ const Module = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<Row gutter={8}> <Col> <Button loading={editLoading} disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+            render: (i, r) => (<Row gutter={[8, 8]}> <Col> <Button loading={editLoading} disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
                 <Col>
                     <Popconfirm title="Are you sure?" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                         <Button danger loading={isDel}>Delete</Button>

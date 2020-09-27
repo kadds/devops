@@ -220,7 +220,7 @@ const Server = (props) => {
         }
         else if (props.server.status === 4) {
             return (
-                <Row gutter={8}>
+                <Row gutter={[8, 8]}>
                     <Col>
                         <Button onClick={() => startClick(props.server.name)} icon={<PoweroffOutlined />} type='primary'>Start</Button>
                     </Col>
@@ -232,7 +232,7 @@ const Server = (props) => {
         }
         else if (props.server.status === 10) {
             return (
-                <Row gutter={8}>
+                <Row gutter={[8, 8]}>
                     <Col>
                         <Button onClick={() => restartClick(props.server.name)}>Restart</Button>
                     </Col>
@@ -244,7 +244,7 @@ const Server = (props) => {
         }
         else if (props.server.status !== 22) {
             return (
-                <Row gutter={8}>
+                <Row gutter={[8, 8]}>
                     <Col>
                         <Popconfirm title="Are you sure?" onConfirm={() => destroyClick(props.server.name)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                             <Button danger icon={<CloseOutlined />}>Destroy</Button>

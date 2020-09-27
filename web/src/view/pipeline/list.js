@@ -86,7 +86,7 @@ const PipeLineList = props => {
             title: 'Operation',
             dataIndex: 'id',
             key: 'id',
-            render: (id, r) => (<Row gutter={8}> <Col>
+            render: (id, r) => (<Row gutter={[8, 8]}> <Col>
                 <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(id)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                     <Button danger loading={isDel}>Delete</Button></Popconfirm>
             </Col>
