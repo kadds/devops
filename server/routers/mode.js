@@ -27,6 +27,17 @@ router.get('/list', async (req, rsp, next) => {
     rsp.json({ err: 0, list: data })
 })
 
+async function fill_params(name, map) {
+    let param = await get_job_pipeline_params(name)
+    const kv = map.get(name)
+    if (kv) {
+        for (let p of param) {
+            p.default = kv.get(p.name)
+        }
+    }
+    return param
+}
+
 router.get('', async (req, rsp, next) => {
     const name = req.query.name
     const data = await m_mode.findByPk(name)
@@ -41,17 +52,31 @@ router.get('', async (req, rsp, next) => {
     dt.jobs = data.content.jobs
     dt.port = data.content.res.port
     dt.pipeline_params = { env: [], source: [], build: [], deploy: [] }
+    let map = new Map()
+    // [{name: name, params: {}}]
+    console.log(data.content.defaults)
+    if (data.content.defaults) {
+        for (const def of data.content.defaults) {
+            let list = map.get(def.name) || new Map()
+            if (def.params) {
+                for (const [k, v] of Object.entries(def.params)) {
+                    list.set(k, v)
+                }
+                map.set(def.name, list)
+            }
+        }
+    }
     for (const { name } of dt.jobs.env) {
-        dt.pipeline_params.env.push({ name, param: await get_job_pipeline_params(name) })
+        dt.pipeline_params.env.push({ name, param: await fill_params(name, map) })
     }
     for (const { name } of dt.jobs.source) {
-        dt.pipeline_params.source.push({ name, param: await get_job_pipeline_params(name) })
+        dt.pipeline_params.source.push({ name, param: await fill_params(name, map) })
     }
     for (const { name } of dt.jobs.build) {
-        dt.pipeline_params.build.push({ name, param: await get_job_pipeline_params(name) })
+        dt.pipeline_params.build.push({ name, param: await fill_params(name, map) })
     }
     for (const { name } of dt.jobs.deploy) {
-        dt.pipeline_params.deploy.push({ name, param: await get_job_pipeline_params(name) })
+        dt.pipeline_params.deploy.push({ name, param: await fill_params(name, map) })
     }
     rsp.json({ err: 0, data: dt })
 })

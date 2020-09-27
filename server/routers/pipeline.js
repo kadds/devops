@@ -37,22 +37,35 @@ router.post('/', async (req, rsp, next) => {
     pipeline.content = {}
     pipeline.content.jobs = module.content.jobs
     const param = req.body.pipeline.param
+    // save param
+    let save_param = []
     for (const v of pipeline.content.jobs.env) {
         if (param[v.name])
             v.param = { ...v.param, ...param[v.name] }
-        console.log(v.param)
+        save_param.push({ name: v.name, params: param[v.name] })
     }
     for (const v of pipeline.content.jobs.source) {
         if (param[v.name])
             v.param = { ...v.param, ...param[v.name] }
+        save_param.push({ name: v.name, params: param[v.name] })
     }
     for (const v of pipeline.content.jobs.build) {
         if (param[v.name])
             v.param = { ...v.param, ...param[v.name] }
+        save_param.push({ name: v.name, params: param[v.name] })
     }
     for (const v of pipeline.content.jobs.deploy) {
         if (param[v.name])
             v.param = { ...v.param, ...param[v.name] }
+        save_param.push({ name: v.name, params: param[v.name] })
+    }
+    try {
+        let mod = await m_mode.findByPk(req.body.pipeline.mode_name)
+        mod.content.defaults = save_param
+        await m_mode.update({ content: mod.content }, { where: { name: mod.name } })
+    }
+    catch (e) {
+        console.error(e)
     }
 
     const res = await m_pipeline.create(pipeline)

@@ -23,6 +23,10 @@ const PipeLineList = props => {
         setIsDel(false)
         setNeedUpdate(needUpdate + 1)
     }
+    const goDeployClick = (id) => {
+        props.history.push({ pathname: '/deploy', search: '?id=' + id })
+    }
+
     const RenderStage = (props) => {
         if (props.stage === 1) {
             return <Tag color='processing' icon={<SyncOutlined spin />}>Prepare</Tag>
@@ -82,13 +86,21 @@ const PipeLineList = props => {
             title: 'Operation',
             dataIndex: 'id',
             key: 'id',
-            render: id => (<Row gutter={8}> <Col>
+            render: (id, r) => (<Row gutter={8}> <Col>
                 <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(id)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                     <Button danger loading={isDel}>Delete</Button></Popconfirm>
             </Col>
                 <Col>
                     <Button onClick={() => goClick(id)} >View Detail</Button>
                 </Col>
+                {
+                    r.deploy_id &&
+                    (
+                        <Col>
+                            <Button onClick={() => goDeployClick(r.deploy_id)} >Go Deploy</Button>
+                        </Col>
+                    )
+                }
             </Row>
             )
         }
