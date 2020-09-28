@@ -7,10 +7,14 @@ import {
     MenuFoldOutlined,
     LogoutOutlined,
     HddOutlined,
+    HddFilled,
     CloudServerOutlined,
     GoldOutlined,
+    GoldFilled,
     ThunderboltOutlined,
+    ThunderboltFilled,
     FilterOutlined,
+    FilterFilled,
     LineChartOutlined,
     DeploymentUnitOutlined,
 } from '@ant-design/icons'
@@ -31,13 +35,13 @@ import { withRouter } from 'react-router-dom'
 const { Header, Sider, Content } = Layout;
 const style = { fontSize: 17, verticalAlign: 'middle' }
 const menus = [
-    { name: 'Pipeline List', icon: (<ThunderboltOutlined style={style} />), path: '/pipeline/list' },
-    { name: 'VM', icon: (<HddOutlined style={style} />), path: '/vm' },
-    { name: 'Module', icon: (<GoldOutlined style={style} />), path: '/module' },
-    { name: 'Server', icon: (<CloudServerOutlined style={style} />), path: '/server' },
-    { name: 'Deployment', icon: (<DeploymentUnitOutlined style={style} />), path: '/deploy' },
-    { name: 'Monitor', icon: (<LineChartOutlined style={style} />), path: '/monitor' },
-    { name: 'Log', icon: (<FilterOutlined style={style} />), path: '/log' }
+    { name: 'Pipeline List', icon: (<ThunderboltOutlined style={style} />), icon2: (<ThunderboltFilled style={style} />), path: '/pipeline/list' },
+    { name: 'VM', icon: (<HddOutlined style={style} />), icon2: (<HddFilled style={style} />), path: '/vm' },
+    { name: 'Module', icon: (<GoldOutlined style={style} />), icon2: (<GoldFilled style={style} />), path: '/module' },
+    { name: 'Server', icon: (<CloudServerOutlined style={style} />), icon2: (<CloudServerOutlined style={style} />), path: '/server' },
+    { name: 'Deployment', icon: (<DeploymentUnitOutlined style={style} />), icon2: (<DeploymentUnitOutlined style={style} />), path: '/deploy' },
+    { name: 'Monitor', icon: (<LineChartOutlined style={style} />), icon2: (<LineChartOutlined style={style} />), path: '/monitor' },
+    { name: 'Log', icon: (<FilterOutlined style={style} />), icon2: (<FilterFilled style={style} />), path: '/log' }
 ]
 
 
@@ -82,13 +86,17 @@ function Main(props) {
         </Menu>
     )
     const MenuRender = (props) => {
+        const [selectMenu, setSelectMenu] = useState(props.location.pathname)
+        const onSelect = (e) => {
+            setSelectMenu(e.key)
+        }
         return (
-            <Menu selectedKeys={[props.location.pathname]} style={{ height: '100%', overflowY: 'auto' }} theme="dark" mode="inline">
+            <Menu onSelect={onSelect} selectedKeys={[selectMenu]} style={{ height: '100%', overflowY: 'auto' }} theme="dark" mode="inline">
                 {
                     menus.map(item => {
                         if (item.sub === undefined) {
                             return (
-                                <Menu.Item key={item.path} icon={item.icon}>
+                                <Menu.Item key={item.path} icon={selectMenu === item.path ? item.icon2 : item.icon}>
                                     <NavLink activeClassName="active" className="nav-link" to={item.path}>
                                         {item.name}
                                     </NavLink>
