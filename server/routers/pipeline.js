@@ -90,8 +90,8 @@ router.get('', async (req, rsp, next) => {
     data.mode_name = pipeline.mode_name
     data.content = pipeline.content
     data.ctime = pipeline.ctime.valueOf()
-    data.mtime = pipeline.mtime.valueOf()
     data.stage = pipeline.stage
+    data.deploy_id = pipeline.content.deploy_id
     rsp.json({ err: 0, data: data })
 })
 

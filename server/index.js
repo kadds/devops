@@ -102,10 +102,12 @@ function start_ws() {
     wss.on('connection', (ws, req) => {
         const t = process.hrtime()
         let bytes = 0
-        ws.on('close', () => {
+        let close_fn = null
+        ws.on('close', (code, reason) => {
+            console.log(code, reason)
             const t2 = process.hrtime()
             const delta = Math.round(t2[0] * 1000 + t2[1] / 1000000 - (t[0] * 1000 + t[1] / 1000000), 1)
-            const log = `> ${chalk.bold('WS')} ${req.url} ${chalk.whiteBright('closed')} ${chalk.green(delta + 'ms')} bytes ${chalk.yellow(bytes)}`
+            const log = `> ${chalk.bold('WS')} ${req.url} ${chalk.whiteBright('closed')} ${chalk.green(delta + 'ms')} bytes ${chalk.yellow(bytes)} reason ${reason}`
             console.log(log)
         })
         const log = `> ${chalk.bold('WS')} ${req.url}`
@@ -118,11 +120,18 @@ function start_ws() {
             ws.close()
             return
         }
+
         listen_log(pipeline_id, (msg, callback) => {
             bytes += msg.length
-            ws.send(msg, (err) => {
+            try {
+                ws.send(msg, (err) => {
+                    callback(err)
+                })
+            }
+            catch (e) {
+                console.log(e)
                 callback(err)
-            })
+            }
         }, () => {
             ws.close()
         })

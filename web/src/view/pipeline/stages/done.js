@@ -5,6 +5,9 @@ import PipeLineStageComm from './comm'
 
 const PipeLineStageDone = (props) => {
     const [showLog, setShowLog] = useState(false)
+    const goDeployClick = (id) => {
+        props.history.push({ pathname: '/deploy', search: '?id=' + id })
+    }
     return (
         <div>
             <Result
@@ -17,8 +20,15 @@ const PipeLineStageDone = (props) => {
                             <Button onClick={() => { props.history.push('/pipeline/list') }}>Return list</Button>
                         </Col>
                         <Col>
-                            <Button type='primary' disabled={showLog} onClick={() => { setShowLog(true) }}>Show log</Button>
+                            <Button disabled={showLog} onClick={() => { setShowLog(true) }}>Show log</Button>
                         </Col>
+                        {
+                            props.pipeline.deploy_id && (
+                                <Col>
+                                    <Button type='primary' onClick={() => { goDeployClick(props.pipeline.deploy_id) }}>Go deployment</Button>
+                                </Col>
+                            )
+                        }
                     </Row>
                 ]}
             />

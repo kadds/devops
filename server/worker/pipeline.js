@@ -194,6 +194,7 @@ async function listen_log(id, send, close) {
             await do_ws_send(send, logger.get_current_buf())
         }
         catch (e) {
+            logger.rm_listener(listener)
             close()
             return
         }

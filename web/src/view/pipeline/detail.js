@@ -42,7 +42,7 @@ const PipeLineDetail = (props) => {
                         <Col className={`${Math.abs(pipeline.data.stage) === 3 ? 'step_active' : 'step'}`}>
                             Build
                 </Col>
-                        <Col className={`${Math.abs(pipeline.data.stage) === 3 ? 'step_active' : 'step'}`}>
+                        <Col className={`${Math.abs(pipeline.data.stage) === 4 ? 'step_active' : 'step'}`}>
                             Deploy
                 </Col>
                         <Col className={`${pipeline.data.stage === 100 ? 'step_active' : 'step'}`}>
