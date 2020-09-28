@@ -158,6 +158,10 @@ const m_deploy = sequelize.define('deploy', {
         primaryKey: true,
         autoIncrement: true
     },
+    mode_name: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     pipeline_id: {
         type: DataTypes.INTEGER,
         allowNull: true,

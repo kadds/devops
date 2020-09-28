@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react'
-import { Spin, List, Row, Input, Form, Modal, Col, Alert } from 'antd'
-import { get_scripts, get_script, upload_script } from '../../api/upload'
+import { Spin, List, Typography, Row, Input, Form, Modal, Col, Alert, Popconfirm, Tooltip } from 'antd'
+import { get_scripts, get_script, upload_script, delete_script } from '../../api/upload'
+import { CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
+
 const TextArea = Input.TextArea;
 
 
 const ScriptSelect = (props) => {
     const [scriptList, setScriptList] = useState([])
     const [contentLoading, setContentLoading] = useState(false)
+    const [needUpdate, setNeedUpdate] = useState(0)
 
     const [form] = Form.useForm()
     const onModalOk = async () => {
@@ -31,10 +34,11 @@ const ScriptSelect = (props) => {
         }
         if (props.visible)
             run()
-    }, [props.visible])
+    }, [props.visible, needUpdate])
 
 
     const listClick = async (e) => {
+        console.log(e, 'list click')
         setContentLoading(true)
         const data = await get_script(e)
         setContentLoading(false)
@@ -48,6 +52,16 @@ const ScriptSelect = (props) => {
         props.onSelect(e)
     }
 
+    const onDeleteClick = async (e, item) => {
+        await delete_script(item)
+        setNeedUpdate(needUpdate + 1)
+    }
+
+    const CancelClick = (e) => {
+        e.stopPropagation()
+        e.nativeEvent.stopImmediatePropagation()
+    }
+
     return (
         <Modal
             visible={props.visible}
@@ -59,14 +73,25 @@ const ScriptSelect = (props) => {
             centered
             width='70%'
         >
-            <Row>
-                <Col span={4}>
+            <Row gutter={12}>
+                <Col span={6}>
                     <List
+                        style={{ height: 100, overflowY: 'auto' }}
                         className='select_script_list'
                         dataSource={scriptList}
                         renderItem={item => (
                             <List.Item className='select_script_list_item' key={item} onClick={() => listClick(item)} onDoubleClick={() => listDoubleClick(item)}>
-                                <span style={{ cursor: 'pointer' }} >{item}</span>
+                                <Typography.Text ellipsis className='select_script_list_item_label'>
+                                    <Tooltip title={item}>{item}</Tooltip>
+                                </Typography.Text>
+                                <div onClick={CancelClick}
+                                    onDoubleClick={CancelClick} >
+                                    <Popconfirm title={
+                                        <span><p>Are you sure delete this script? </p><p>It can make mistakes when pipeline using this script.</p></span>}
+                                        onConfirm={(e) => onDeleteClick(e, item)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                                        <CloseOutlined className='icon_btn' />
+                                    </Popconfirm>
+                                </div>
                             </List.Item>
                         )}>
                     </List>

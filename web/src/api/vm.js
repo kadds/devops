@@ -2,7 +2,7 @@
 import { get, post } from './comm'
 
 async function add_vm(data) {
-    return (await post('/vm/create', data)).status
+    return (await post('/vm/create', data, { timeout: 5000 })).status
 }
 
 async function get_all_vm() {

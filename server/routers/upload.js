@@ -39,6 +39,16 @@ router.get('/:name', async (req, rsp, next) => {
     rsp.json({ err: 0, data: data.toString() })
 })
 
+router.post('/del', async (req, rsp, next) => {
+    const name = req.body.name
+    if (name === undefined || name === null || name.indexOf('/') >= 0) {
+        rsp.json({ err: 512, msg: 'invalid script name ' + name })
+        return
+    }
+    await fs.unlink(__dirname + '/../upload/scripts/' + name)
+    rsp.json({ err: 0 })
+})
+
 const upload = router
 
 module.exports = upload

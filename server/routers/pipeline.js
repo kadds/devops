@@ -18,6 +18,7 @@ router.get('/list', async (req, rsp, next) => {
         it.ctime = item.ctime.valueOf()
         it.mode_name = item.mode_name
         it.stage = item.stage
+        it.deploy_id = item.content.deploy_id
         ls.push(it)
     }
     rsp.json({ err: 0, list: ls })

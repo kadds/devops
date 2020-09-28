@@ -13,4 +13,8 @@ async function upload_script(name, data) {
     return (await post('/upload/script', { name, data }))
 }
 
-export { get_scripts, get_script, upload_script }
+async function delete_script(name) {
+    return (await post('/upload/del', { name }))
+}
+
+export { get_scripts, get_script, upload_script, delete_script }

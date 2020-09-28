@@ -8,7 +8,7 @@ async function check_connection(ip, port, password, private_key, user) {
         password: password,
         private_key: private_key,
         username: user,
-        readyTimeout: 1000,
+        readyTimeout: 3000,
     })
 }
 
