@@ -1,7 +1,8 @@
 import { post } from './comm'
 
 async function query_log(req) {
-    return (await post('/log/search', req)).list
+    let obj = (await post('/log/search', req))
+    return { list: obj.list, count: obj.count }
 }
 
 export { query_log }

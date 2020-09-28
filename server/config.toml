@@ -1,0 +1,10 @@
+[mongodb]
+uri="mongodb://localhost:27017"
+dbname="devops_db"
+monitorColumnName="monitor"
+serviceColumnName="service"
+logColumnName="log"
+[log]
+bind="127.0.0.1"
+port=10900
+maxSizePer=109

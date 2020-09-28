@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Row, Col, Input, Form, Select, Divider, DatePicker, Button } from 'antd'
+import { Row, Col, Tooltip, Input, InputNumber, Form, Table, Select, Divider, DatePicker, Button, Typography, Tag } from 'antd'
+import { SearchOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { get_module_list } from '../../api/module'
 import { get_server_list } from '../../api/server'
 import { query_log } from '../../api/log'
@@ -26,21 +27,106 @@ const LogView = (props) => {
         form.setFieldsValue({ server: '' })
     }
 
-    const [logList, setLogList] = useState({ loading: false, list: [] })
+    const [logList, setLogList] = useState({ loading: false, list: [], count: 0 })
 
-    const onFinish = async () => {
-        let val = null
-        setLogList({ loading: true, list: [] })
+    const onFinish = async (val) => {
+        setLogList({ loading: true, list: [], count: 0 })
         try {
-            val = await form.validateFields()
-            const list = await query_log(val)
-            setLogList({ loading: false, list })
+            let query = {}
+            if (val.vid)
+                query.vid = parseInt(val.vid)
+
+            if (val.tid)
+                query.tid = val.tid
+
+            if (val.time) {
+                if (val.time[0])
+                    query.time_start = new Date(val.time[0]).valueOf()
+                if (val.time[1])
+                    query.time_end = new Date(val.time[1]).valueOf()
+            }
+
+            if (val.server) {
+                query.server = val.server
+            }
+            if (val.level && val.level.length !== 0) {
+                query.level = val.level
+            }
+            if (val.module) {
+                query.module = val.module
+            }
+            if (val.detail) {
+                query.detail = val.detail
+            }
+
+            const { list, count } = await query_log(query)
+            setLogList({ loading: false, list, count })
         }
         catch (e) {
-            setLogList({ loading: false, list: [] })
+            console.log(e)
+            setLogList({ loading: false, list: [], count: 0 })
             return
         }
     }
+    const TagRender = (props) => {
+        if (props.level === 'error') {
+            return (<Tag color='error'>{props.level}</Tag>)
+        }
+        else if (props.level === 'info') {
+            return (<Tag color='processing'>{props.level}</Tag>)
+        }
+        else if (props.level === 'warning') {
+            return (<Tag color='warning'>{props.level}</Tag>)
+        }
+        else if (props.level) {
+            return (<Tag>{props.level}</Tag>)
+        }
+        else {
+            return null
+        }
+    }
+
+    const columns = [
+        {
+            title: 'vid',
+            dataIndex: 'vid',
+            key: 'vid',
+            render: vid => (<Typography.Text>{vid}</Typography.Text>)
+        },
+        {
+            title: 'track id',
+            dataIndex: 'tid',
+            key: 'tid',
+            render: tid => (<Typography.Text>{tid}</Typography.Text>)
+        },
+        {
+            title: 'level',
+            dataIndex: 'level',
+            key: 'level',
+            render: level => (<TagRender level={level}></TagRender>)
+        },
+        {
+            title: 'time',
+            dataIndex: 'timestamp',
+            key: 'timestamp',
+            render: timestamp => (<span>
+                <Tooltip title={
+                    <Typography.Text copyable>{timestamp}</Typography.Text>
+                }>{new Date(timestamp).toLocaleString()}</Tooltip></span>)
+        },
+        {
+            title: 'server',
+            dataIndex: 'server',
+            key: 'server',
+        },
+        {
+            title: 'detail',
+            dataIndex: 'detail',
+            key: 'detail',
+            ellipsis: true,
+            render: detail => (<span>{detail}</span>)
+        }
+    ]
 
     return (
         <div className='page'>
@@ -48,7 +134,7 @@ const LogView = (props) => {
                 <Row gutter={[12, 12]}>
                     <Col >
                         <Form.Item label='VID' name='vid'>
-                            <Input maxLength={24}></Input>
+                            <InputNumber maxLength={24}></InputNumber>
                         </Form.Item>
                     </Col>
                     <Col >
@@ -87,15 +173,25 @@ const LogView = (props) => {
                         </Form.Item>
                     </Col>
                     <Col>
-                        <Form.Item label='Log text' name='text'>
+                        <Form.Item name='detail' label={<span>Log text search&nbsp;
+                                                    <Tooltip title={'Use query string by mongodb.'}><QuestionCircleOutlined /></Tooltip>
+                        : &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span>
+                        }>
                             <Input.TextArea autoSize={{ minRows: 2, maxRows: 5 }}></Input.TextArea>
                         </Form.Item>
                     </Col>
                 </Row>
-                <Button type='primary' loading={logList.loading} htmlType='submit'>Query</Button>
+                <Button type='primary' icon={<SearchOutlined />} loading={logList.loading} htmlType='submit'>Query</Button>
             </Form>
             <Divider />
-        </div>
+            <Table fixedHeader expandable={{
+                expandedRowRender: record => <Typography.Text copyable>{record.detail}</Typography.Text>,
+                rowExpandable: () => { return true; },
+            }}
+                style={{ width: '100%' }} title={() => (<Typography.Text>{'Full query record ' + logList.count}</Typography.Text>)} rowKey='_id' dataSource={logList.list} columns={columns}>
+
+            </Table>
+        </div >
     )
 }
 
