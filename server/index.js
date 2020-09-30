@@ -102,7 +102,6 @@ function start_ws() {
     wss.on('connection', (ws, req) => {
         const t = process.hrtime()
         let bytes = 0
-        let close_fn = null
         ws.on('close', (code, reason) => {
             console.log(code, reason)
             const t2 = process.hrtime()

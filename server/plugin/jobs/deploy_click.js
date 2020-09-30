@@ -23,7 +23,7 @@ async function entry(request, param, opt) {
         pipeline = await m_pipeline.findByPk(opt.id)
         pipeline.content.deploy_id = res.id
         await m_pipeline.update({ content: pipeline.content }, { where: { id: opt.id } })
-        logger.write('- update deployment information done')
+        logger.write('- update deployment information done\n')
     }
 }
 

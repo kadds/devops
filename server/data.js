@@ -180,6 +180,7 @@ const m_deploy = sequelize.define('deploy', {
     timestamps: true,
     createdAt: 'ctime',
     updatedAt: 'mtime',
+    version: true
 })
 
 
