@@ -19,6 +19,7 @@ import {
     DeploymentUnitOutlined,
     DashboardFilled,
     DashboardOutlined,
+    SettingOutlined,
 } from '@ant-design/icons'
 import PipeLineList from './view/pipeline/list'
 import PipeLineDetail from './view/pipeline/detail'
@@ -30,6 +31,8 @@ import LogIndex from './view/log_view/index'
 import Deploy from './view/deploy/deploy'
 import P404 from './view/P404'
 import DashboardIndex from './view/dashboard/index'
+import Setting from './view/setting/index'
+
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import { withRouter } from 'react-router-dom'
 
@@ -56,19 +59,26 @@ const contents = [
     { path: '/deploy', component: Deploy, title: 'Deploying list' },
     { path: '/monitor', component: MonitorIndex, title: 'Monitor' },
     { path: '/log', component: LogIndex, title: 'Log Query' },
+    { path: '/setting', component: Setting, title: 'Configuration' },
     { component: P404 }
 ]
 
 function Main(props) {
     const context = contents.find(v => { return v.path === props.history.location.pathname })
+    let breadcrumbs = [{ label: '' }]
     if (context) {
         document.title = context.title
+    }
+
+    const onSettingClick = () => {
+        props.history.push({ pathname: '/setting' })
     }
 
     const [collapsed, set_collapsed] = useState(false)
     const toggle = () => {
         set_collapsed(!collapsed)
     }
+
     const [username, set_username] = useState('')
     useEffect(() => {
         async function run() {
@@ -138,18 +148,34 @@ function Main(props) {
             <Layout className="site-layout" id='rightPanel' style={{ overflowX: 'visible', overflowY: 'auto' }}>
                 <Header className="site-layout-background" style={{ padding: 0 }}>
                     <Row justify='space-between'>
-                        <Col span={2}>
-                            <span style={{ display: 'inline' }}>
-                                {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-                                    className: 'trigger',
-                                    onClick: toggle,
-                                })}
-                            </span>
+                        <Col>
+                            <Row gutter={16} style={{ marginLeft: 10 }}>
+                                <Col>
+                                    <span style={{ display: 'inline' }}>
+                                        {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+                                            className: 'trigger',
+                                            onClick: toggle,
+                                        })}
+                                    </span>
+                                </Col>
+                                <Col>
+                                    <span style={{ fontSize: 15, color: '#7a7a8a' }}>
+                                        {document.title}
+                                    </span>
+                                </Col>
+                            </Row>
                         </Col>
-                        <Col span={2}>
-                            <Dropdown overlay={userMenu}>
-                                <Avatar style={{ color: '#f56a00', backgroundColor: '#fde3cf' }}>{username}</Avatar>
-                            </Dropdown>
+                        <Col>
+                            <Row gutter={16} style={{ marginRight: 20 }}>
+                                <Col>
+                                    <SettingOutlined onClick={onSettingClick} />
+                                </Col>
+                                <Col>
+                                    <Dropdown overlay={userMenu}>
+                                        <Avatar style={{ color: '#f56a00', backgroundColor: '#fde3cf', cursor: 'pointer' }}>{username}</Avatar>
+                                    </Dropdown>
+                                </Col>
+                            </Row>
                         </Col>
                     </Row>
                 </Header>

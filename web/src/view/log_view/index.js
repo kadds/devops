@@ -1,5 +1,6 @@
 import React from 'react'
-import LogView from './log_view'
+import AppLog from './app_log'
+import ClickLog from './click_log'
 import { Tabs } from 'antd'
 
 const LogIndex = () => {
@@ -7,10 +8,10 @@ const LogIndex = () => {
         <div className='page'>
             <Tabs defaultActiveKey='0'>
                 <Tabs.TabPane key='0' tab='Application Log'>
-                    <LogView />
+                    <AppLog />
                 </Tabs.TabPane>
                 <Tabs.TabPane key='1' tab='Click Stream'>
-                    todo
+                    <ClickLog />
                 </Tabs.TabPane>
             </Tabs>
         </div>

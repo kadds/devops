@@ -5,4 +5,9 @@ async function query_log(req) {
     return { list: obj.list, count: obj.count }
 }
 
-export { query_log }
+async function click_query(v) {
+    let obj = (await post('/log/click/search', v))
+    return { list: obj.list, count: obj.count }
+}
+
+export { query_log, click_query }

@@ -5,7 +5,7 @@ import { get_module_list } from '../../api/module'
 import { get_server_list } from '../../api/server'
 import { query_log } from '../../api/log'
 
-const LogView = (props) => {
+const AppLog = (props) => {
     const [serverList, setServerList] = useState([])
     const [moduleList, setModuleList] = useState([])
     useEffect(() => {
@@ -88,25 +88,25 @@ const LogView = (props) => {
 
     const columns = [
         {
-            title: 'vid',
+            title: 'Vid',
             dataIndex: 'vid',
             key: 'vid',
             render: vid => (<Typography.Text>{vid}</Typography.Text>)
         },
         {
-            title: 'track id',
+            title: 'Track id',
             dataIndex: 'tid',
             key: 'tid',
             render: tid => (<Typography.Text>{tid}</Typography.Text>)
         },
         {
-            title: 'level',
+            title: 'Level',
             dataIndex: 'level',
             key: 'level',
             render: level => (<TagRender level={level}></TagRender>)
         },
         {
-            title: 'time',
+            title: 'Time',
             dataIndex: 'timestamp',
             key: 'timestamp',
             render: timestamp => (<span>
@@ -115,12 +115,12 @@ const LogView = (props) => {
                 }>{new Date(timestamp).toLocaleString()}</Tooltip></span>)
         },
         {
-            title: 'server',
+            title: 'Server',
             dataIndex: 'server',
             key: 'server',
         },
         {
-            title: 'detail',
+            title: 'Detail',
             dataIndex: 'detail',
             key: 'detail',
             ellipsis: true,
@@ -129,8 +129,8 @@ const LogView = (props) => {
     ]
 
     return (
-        <div className='page'>
-            <Form onFinish={onFinish} form={form} wrapperCol={{ span: 16 }} labelCol={{ span: 8 }} layout='inline'>
+        <div>
+            <Form onFinish={onFinish} form={form}>
                 <Row gutter={[12, 12]}>
                     <Col >
                         <Form.Item label='VID' name='vid'>
@@ -175,7 +175,7 @@ const LogView = (props) => {
                     <Col>
                         <Form.Item name='detail' label={<span>Log text search&nbsp;
                                                     <Tooltip title={'Use query string by mongodb.'}><QuestionCircleOutlined /></Tooltip>
-                        : &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span>
+                        </span>
                         }>
                             <Input.TextArea autoSize={{ minRows: 2, maxRows: 5 }}></Input.TextArea>
                         </Form.Item>
@@ -188,11 +188,14 @@ const LogView = (props) => {
                 expandedRowRender: record => <Typography.Text copyable>{record.detail}</Typography.Text>,
                 rowExpandable: () => { return true; },
             }}
-                style={{ width: '100%' }} title={() => (<Typography.Text>{'Full query record ' + logList.count}</Typography.Text>)} rowKey='_id' dataSource={logList.list} columns={columns}>
-
+                style={{ width: '100%' }} title={
+                    () =>
+                        (<Typography.Text>{'Full query record ' + logList.count}</Typography.Text>)
+                }
+                rowKey='_id' dataSource={logList.list} columns={columns}>
             </Table>
         </div >
     )
 }
 
-export default LogView
+export default AppLog

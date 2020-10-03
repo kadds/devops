@@ -68,6 +68,12 @@ router.post('/search', async (req, rsp, next) => {
     rsp.json({ err: 0, list, count })
 })
 
+router.post('/click/search', async (req, rsp, next) => {
+    // TODO: do search in mongodb
+    const list = []
+    let count = 0
+    rsp.json({ err: 0, list, count })
+})
 
 const log = router
 module.exports = log
