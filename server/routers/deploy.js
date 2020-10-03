@@ -39,8 +39,10 @@ router.get('', async (req, rsp, next) => {
     }
     const content_servers = deploy.content.servers || []
     const map = new Map()
+
     for (const server of content_servers) {
-        map.set(server.name, server)
+        if (server.status !== 'stop')
+            map.set(server.name, server)
     }
 
     const servers = (await m_server.findAll({ where: { mode_name: deploy.mode_name } }))
@@ -49,8 +51,8 @@ router.get('', async (req, rsp, next) => {
                 name: v.name,
                 is_test: v.flag & FLAGS.SVR_FLAG_TEST,
                 version: v.content.version,
-                can_upload: !map.has(v.name) || (map.has(v.name) && map.get(v.name).is_doing === 0),
-                can_rollback: map.has(v.name) && map.get(v.name).is_doing === 3,
+                can_upload: !map.has(v.name) || (map.has(v.name) && map.get(v.name).op !== 'upload'),
+                can_rollback: map.has(v.name) && map.get(v.name).op !== 'rollback',
             }
         })
 
@@ -60,31 +62,78 @@ router.get('', async (req, rsp, next) => {
     data.pipeline_id = deploy.pipeline_id
     data.status = deploy.status
     data.all = servers
-    data.do_servers = content_servers
+    data.op_list = content_servers.reverse()
     rsp.json({ err: 0, data })
 })
 
 router.post('/upload', async (req, rsp, next) => {
-    const deploy = await m_deploy.findByPk(req.body.id)
+    let deploy = await m_deploy.findByPk(req.body.id)
     if (!deploy) {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
-    const servers = deploy.content.servers || []
+    const content = deploy.content
+    const servers = content.servers || []
+    const opt = req.body.opt || { interval: 30 }
     for (const server of req.body.servers) {
-        servers.push({ name: server, time: new Date().valueOf(), is_doing: 0, })
+        servers.push({
+            name: server, ctime: new Date().valueOf(), mtime: new Date().valueOf(),
+            status: 'prepare', interval: opt.interval, op: 'upload', index: servers.length - 1,
+            start_time: servers.length !== 0 ? servers[servers.length - 1].start_time + opt.interval : new Date().valueOf()
+        })
     }
-    deploy.content.servers = servers
-    await deploy.update()
+    content.servers = servers
+    await m_deploy.update({ content, version: deploy.version + 1 },
+        { where: { id: deploy.id, version: deploy.version } })
+
     rsp.json({ err: 0 })
 })
 
 router.post('/rollback', async (req, rsp, next) => {
-    const deploy = await m_deploy.findByPk(req.body.id)
+    let deploy = await m_deploy.findByPk(req.body.id)
     if (!deploy) {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
+    const content = deploy.content
+    const servers = content.servers || []
+    const opt = req.body.opt || { interval: 30 }
+    for (const server of req.body.servers) {
+        servers.push({
+            name: server, ctime: new Date().valueOf(), mtime: new Date().valueOf(),
+            status: 'prepare', interval: opt.interval, op: 'rollback', index: servers.length - 1,
+            start_time: servers.length !== 0 ? servers[servers.length - 1].start_time + opt.interval : new Date().valueOf()
+        })
+    }
+    content.servers = servers
+    await m_deploy.update({ content, version: deploy.version + 1 },
+        { where: { id: deploy.id, version: deploy.version } })
+
+    rsp.json({ err: 0 })
+})
+
+router.post('/stop', async (req, rsp, next) => {
+    let deploy = await m_deploy.findByPk(req.body.id)
+    if (!deploy) {
+        rsp.json({ err: 404, msg: 'not find deploy' })
+        return
+    }
+    const content = deploy.content
+    const servers = content.servers || []
+    for (const idx of req.body.index) {
+        if (idx < servers) {
+            servers[idx].status = 'stop'
+        }
+        else {
+            rsp.json({ err: 109, msg: 'Unknown deployment index ' + idx });
+            return
+        }
+    }
+    content.servers = servers
+    await m_deploy.update({ content, version: deploy.version + 1 },
+        { where: { id: deploy.id, version: deploy.version } })
+
+    rsp.json({ err: 0 })
 })
 
 

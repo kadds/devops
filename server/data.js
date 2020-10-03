@@ -1,7 +1,14 @@
 const { Sequelize, DataTypes } = require('sequelize')
 
 let storage = 'data.db'
-const sequelize = new Sequelize({ dialect: 'sqlite', storage })
+const sequelize = new Sequelize({
+    dialect: 'sqlite', storage, pool: {
+        max: 4,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+    }
+})
 
 // platform
 const m_vm = sequelize.define('vm', {
@@ -158,6 +165,11 @@ const m_deploy = sequelize.define('deploy', {
         primaryKey: true,
         autoIncrement: true
     },
+    version: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    },
     mode_name: {
         type: DataTypes.STRING,
         allowNull: true
@@ -180,7 +192,6 @@ const m_deploy = sequelize.define('deploy', {
     timestamps: true,
     createdAt: 'ctime',
     updatedAt: 'mtime',
-    version: true
 })
 
 

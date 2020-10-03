@@ -1,7 +1,7 @@
 import React from 'react'
 import { Tabs } from 'antd'
 
-const Monitor = (props) => {
+const MonitorIndex = (props) => {
     return (
         <div className='page'>
             <Tabs defaultActiveKey='1'>
@@ -16,4 +16,4 @@ const Monitor = (props) => {
     )
 }
 
-export default Monitor
+export default MonitorIndex

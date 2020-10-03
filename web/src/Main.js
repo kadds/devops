@@ -17,14 +17,16 @@ import {
     FilterFilled,
     LineChartOutlined,
     DeploymentUnitOutlined,
+    DashboardFilled,
+    DashboardOutlined,
 } from '@ant-design/icons'
 import PipeLineList from './view/pipeline/list'
 import PipeLineDetail from './view/pipeline/detail'
 import VM from './view/vm/vm'
 import Module from './view/module/module'
 import Server from './view/server/server'
-import Monitor from './view/monitor/monitor'
-import LogView from './view/log_view/log_view'
+import MonitorIndex from './view/monitor/index'
+import LogIndex from './view/log_view/index'
 import Deploy from './view/deploy/deploy'
 import P404 from './view/P404'
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
@@ -35,6 +37,7 @@ import { withRouter } from 'react-router-dom'
 const { Header, Sider, Content } = Layout;
 const style = { fontSize: 17, verticalAlign: 'middle' }
 const menus = [
+    { name: 'Dashboard', icon: (<DashboardOutlined style={style} />), icon2: (<DashboardFilled style={style} />), path: '/index' },
     { name: 'Pipeline List', icon: (<ThunderboltOutlined style={style} />), icon2: (<ThunderboltFilled style={style} />), path: '/pipeline/list' },
     { name: 'VM', icon: (<HddOutlined style={style} />), icon2: (<HddFilled style={style} />), path: '/vm' },
     { name: 'Module', icon: (<GoldOutlined style={style} />), icon2: (<GoldFilled style={style} />), path: '/module' },
@@ -54,8 +57,8 @@ function Main(props) {
         { path: '/module', component: Module },
         { path: '/server', component: Server },
         { path: '/deploy', component: Deploy },
-        { path: '/monitor', component: Monitor },
-        { path: '/log', component: LogView },
+        { path: '/monitor', component: MonitorIndex },
+        { path: '/log', component: LogIndex },
         { component: P404 }
     ]
     // useEffect(() => {
