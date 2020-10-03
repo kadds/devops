@@ -33,41 +33,38 @@ import DashboardIndex from './view/dashboard/index'
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import { withRouter } from 'react-router-dom'
 
-
-
 const { Header, Sider, Content } = Layout;
 const style = { fontSize: 17, verticalAlign: 'middle' }
 const menus = [
     { name: 'Dashboard', icon: (<DashboardOutlined style={style} />), icon2: (<DashboardFilled style={style} />), path: '/index' },
     { name: 'Pipeline List', icon: (<ThunderboltOutlined style={style} />), icon2: (<ThunderboltFilled style={style} />), path: '/pipeline/list' },
-    { name: 'VM', icon: (<HddOutlined style={style} />), icon2: (<HddFilled style={style} />), path: '/vm' },
+    { name: 'Virtual Machine', icon: (<HddOutlined style={style} />), icon2: (<HddFilled style={style} />), path: '/vm' },
     { name: 'Module', icon: (<GoldOutlined style={style} />), icon2: (<GoldFilled style={style} />), path: '/module' },
-    { name: 'Server', icon: (<CloudServerOutlined style={style} />), icon2: (<CloudServerOutlined style={style} />), path: '/server' },
+    { name: 'Cloud Server', icon: (<CloudServerOutlined style={style} />), icon2: (<CloudServerOutlined style={style} />), path: '/server' },
     { name: 'Deployment', icon: (<DeploymentUnitOutlined style={style} />), icon2: (<DeploymentUnitOutlined style={style} />), path: '/deploy' },
     { name: 'Monitor', icon: (<LineChartOutlined style={style} />), icon2: (<LineChartOutlined style={style} />), path: '/monitor' },
     { name: 'Log', icon: (<FilterOutlined style={style} />), icon2: (<FilterFilled style={style} />), path: '/log' }
 ]
 
-
+const contents = [
+    { path: '/index', component: DashboardIndex, title: 'Dashboard' },
+    { path: '/pipeline/list', component: PipeLineList, title: 'Pipeline list' },
+    { path: '/pipeline/detail', component: PipeLineDetail, title: 'Pipeline detail' },
+    { path: '/vm', component: VM, title: 'Virtual Machine' },
+    { path: '/module', component: Module, title: 'Module Information' },
+    { path: '/server', component: Server, title: 'Cloud Server' },
+    { path: '/deploy', component: Deploy, title: 'Deploying list' },
+    { path: '/monitor', component: MonitorIndex, title: 'Monitor' },
+    { path: '/log', component: LogIndex, title: 'Log Query' },
+    { component: P404 }
+]
 
 function Main(props) {
-    const contents = [
-        { path: '/index', component: DashboardIndex },
-        { path: '/pipeline/list', component: PipeLineList },
-        { path: '/pipeline/detail', component: PipeLineDetail },
-        { path: '/vm', component: VM },
-        { path: '/module', component: Module },
-        { path: '/server', component: Server },
-        { path: '/deploy', component: Deploy },
-        { path: '/monitor', component: MonitorIndex },
-        { path: '/log', component: LogIndex },
-        { component: P404 }
-    ]
-    // useEffect(() => {
-    //     props.history.listen((val) => {
+    const context = contents.find(v => { return v.path === props.history.location.pathname })
+    if (context) {
+        document.title = context.title
+    }
 
-    //     })
-    // }, [])
     const [collapsed, set_collapsed] = useState(false)
     const toggle = () => {
         set_collapsed(!collapsed)
@@ -80,9 +77,11 @@ function Main(props) {
         }
         run()
     }, [])
+
     const do_logout = async function () {
         await logout()
     }
+
     const userMenu = (
         <Menu>
             <Menu.Item onClick={do_logout} icon={<LogoutOutlined />}>

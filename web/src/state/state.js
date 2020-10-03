@@ -1,7 +1,12 @@
-import { START_LOGIN, CLOSE_LOGIN } from './actions'
+import { START_LOGIN, CLOSE_LOGIN, UPDATE_URI } from './actions'
 
 const initState = {
     is_login_show: false,
+}
+
+const initStateUri = {
+    url: null,
+    title: 'Welcome devops'
 }
 
 function login(state = initState, action) {
@@ -18,6 +23,17 @@ function login(state = initState, action) {
         }
     }
 
+    return state
+}
+
+function uri(state = initStateUri, action) {
+    if (action.type === UPDATE_URI) {
+        return {
+            ...state,
+            title: action.title,
+            url: action.url
+        }
+    }
     return state
 }
 
