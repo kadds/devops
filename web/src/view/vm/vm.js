@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message } from 'antd'
 import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm } from '../../api/vm'
-import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
+import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons'
 
 const VM = () => {
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
@@ -113,14 +113,18 @@ const VM = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<Row gutter={[8, 8]}> <Col> <Button disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+            render: (i, r) => (<Row gutter={[8, 8]}>
                 <Col>
-                    <Button disabled={isDel} onClick={() => redoClick(r.name)}>Sync</Button>
+                    <Button type='link' disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button>
+                </Col>
+                <Col>
+                    <Button type='link' disabled={isDel} icon={<FileSyncOutlined />} onClick={() => redoClick(r.name)}>Sync</Button>
                 </Col>
                 <Col>
                     <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                        <Button danger loading={isDel}>Delete</Button>
-                    </Popconfirm> </Col>
+                        <Button danger type='link' icon={<DeleteOutlined />} loading={isDel}>Delete</Button>
+                    </Popconfirm>
+                </Col>
             </Row>)
 
         }

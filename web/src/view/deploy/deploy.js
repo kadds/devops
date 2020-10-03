@@ -125,7 +125,7 @@ const Deploy = (props) => {
             title: 'Operation',
             dataIndex: 'do_count',
             key: 'do_count',
-            render: (cnt, r) => (<Button onClick={() => onViewClick(r.id)}>View</Button>)
+            render: (cnt, r) => (<Button type='link' onClick={() => onViewClick(r.id)}>View</Button>)
         }
     ]
 
@@ -171,7 +171,7 @@ const Deploy = (props) => {
                 if (r.status === 'prepare') {
                     return (
                         <Popconfirm title='Stop this deployment?' onConfirm={() => onStopClick(r.index)}>
-                            <Button danger>Stop</Button>
+                            <Button type='link' danger>Stop</Button>
                         </Popconfirm>
                     )
                 }

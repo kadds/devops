@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button, Popconfirm, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
-import { QuestionCircleOutlined, EditOutlined } from '@ant-design/icons'
+import { QuestionCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { add_module, get_module_list, update_module, delete_module, get_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import Server from '../server/server'
@@ -135,10 +135,13 @@ const Module = () => {
             title: 'Op',
             dataIndex: 'name',
             key: 'name',
-            render: (i, r) => (<Row gutter={[8, 8]}> <Col> <Button loading={editLoading} disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button> </Col>
+            render: (i, r) => (<Row gutter={[8, 8]}>
+                <Col>
+                    <Button type='link' loading={editLoading} disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button>
+                </Col>
                 <Col>
                     <Popconfirm title="Are you sure?" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                        <Button danger loading={isDel}>Delete</Button>
+                        <Button type='link' danger icon={<DeleteOutlined />} loading={isDel}>Delete</Button>
                     </Popconfirm>
                 </Col> </Row>)
         }

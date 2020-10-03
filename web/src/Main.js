@@ -29,6 +29,7 @@ import MonitorIndex from './view/monitor/index'
 import LogIndex from './view/log_view/index'
 import Deploy from './view/deploy/deploy'
 import P404 from './view/P404'
+import DashboardIndex from './view/dashboard/index'
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import { withRouter } from 'react-router-dom'
 
@@ -51,6 +52,7 @@ const menus = [
 
 function Main(props) {
     const contents = [
+        { path: '/index', component: DashboardIndex },
         { path: '/pipeline/list', component: PipeLineList },
         { path: '/pipeline/detail', component: PipeLineDetail },
         { path: '/vm', component: VM },

@@ -5,7 +5,7 @@ import { withRouter } from 'react-router-dom';
 import { get_module_list, get_module } from '../../api/module'
 import { get_all_vm } from '../../api/vm'
 import { get_server_list } from '../../api/server'
-import { QuestionCircleOutlined, SyncOutlined, CloseCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { QuestionCircleOutlined, SyncOutlined, CloseCircleOutlined, CheckCircleOutlined, LinkOutlined, FundViewOutlined, DeleteOutlined } from '@ant-design/icons'
 import ScriptSelect from './../compoments/script_select'
 
 
@@ -88,16 +88,16 @@ const PipeLineList = props => {
             key: 'id',
             render: (id, r) => (<Row gutter={[8, 8]}> <Col>
                 <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(id)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                    <Button danger loading={isDel}>Delete</Button></Popconfirm>
+                    <Button danger type='link' icon={<DeleteOutlined />} loading={isDel}>Delete</Button></Popconfirm>
             </Col>
                 <Col>
-                    <Button onClick={() => goClick(id)} >View Detail</Button>
+                    <Button type='link' icon={<FundViewOutlined />} onClick={() => goClick(id)} >View Detail</Button>
                 </Col>
                 {
                     r.deploy_id &&
                     (
                         <Col>
-                            <Button onClick={() => goDeployClick(r.deploy_id)} >Go Deploy</Button>
+                            <Button type='link' icon={<LinkOutlined />} onClick={() => goDeployClick(r.deploy_id)} >Go Deploy</Button>
                         </Col>
                     )
                 }
