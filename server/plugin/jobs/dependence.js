@@ -1,4 +1,3 @@
-const { exec } = require('./../../utils/vmutils')
 const { install_deps } = require('./comm/install')
 
 async function entry(request, param, opt) {
@@ -9,8 +8,13 @@ async function entry(request, param, opt) {
         const logger = opt.logger
         const ssh = opt.ssh
         const deps = param.dependence.split('\n')
-        if (deps.length > 0)
+        if (deps.length > 0) {
+            await logger.write('- install dependencies by plugin dependence\n')
             await install_deps(ssh, deps, logger)
+        }
+        else {
+            await logger.write('- install nothing by plugin dependence\n')
+        }
     }
 }
 

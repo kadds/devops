@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { conn, m_mode, m_server } = require('../data')
+const { conn, m_mode, m_server, m_pipeline } = require('../data')
 const { get_job_pipeline_params } = require('../plugin/index')
 
 let router = new Router()
@@ -14,7 +14,6 @@ router.get('/list', async (req, rsp, next) => {
         it.name = item.name
         it.dev_user = item.dev_user
         it.ctime = item.ctime.valueOf()
-        it.port = item.content.res.port
         const name = it.name
         cnt_req.push(m_server.count({ where: { mode_name: name } }))
         idx++
@@ -30,12 +29,15 @@ router.get('/list', async (req, rsp, next) => {
 async function fill_params(name, map) {
     let param = await get_job_pipeline_params(name)
     const kv = map.get(name)
-    if (kv) {
-        for (let p of param) {
-            p.default = kv.get(p.name)
+    let new_param = []
+    for (let p of param) {
+        let item = Object.assign({}, p)
+        if (kv) {
+            item.default = kv.get(item.name)
         }
+        new_param.push(item)
     }
-    return param
+    return new_param
 }
 
 router.get('', async (req, rsp, next) => {
@@ -50,7 +52,6 @@ router.get('', async (req, rsp, next) => {
     dt.dev_user = data.dev_user
     dt.ctime = data.ctime.valueOf()
     dt.jobs = data.content.jobs
-    dt.port = data.content.res.port
     dt.pipeline_params = { env: [], source: [], build: [], deploy: [] }
     let map = new Map()
     // [{name: name, params: {}}]
@@ -91,8 +92,6 @@ router.post('/', async (req, rsp, next) => {
     data.flag = 0
     data.content = {}
     data.content.jobs = module.jobs
-    data.content.res = {}
-    data.content.res.port = module.res_port
 
     await m_mode.create(data)
     rsp.json({ err: 0 })
@@ -117,6 +116,7 @@ router.post('/del', async (req, rsp, next) => {
         return
     }
     await m_mode.destroy({ where: { name: name } })
+    // remote cache
     rsp.json({ err: 0 })
 })
 

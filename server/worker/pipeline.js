@@ -33,6 +33,8 @@ async function run(id) {
     let pip = { close: false, logger }
     pipes.set(id, pip)
     let ssh = null
+    // need clear cache?
+    let reserve = false
     try {
         if (pip.close) {
             throw 'stop by user'
@@ -42,18 +44,27 @@ async function run(id) {
         if (pip.close) {
             throw 'stop by user'
         }
+        reserve = true
         await logger.split('source')
         await update_flag(id, FLAGS.PIPE_STAGE_SOURCE)
         for (const job of pipeline.content.jobs.source) {
             await run_job(job.name, job.param, { ssh, logger, id })
         }
+        // get source done
         if (pip.close) {
             throw 'stop by user'
         }
         await logger.split('build')
         await update_flag(id, FLAGS.PIPE_STAGE_BUILD)
+        let result_dir = null
         for (const job of pipeline.content.jobs.build) {
-            await run_job(job.name, job.param, { ssh, logger, id })
+            const dir = await run_job(job.name, job.param, { ssh, logger, id })
+            if (dir) {
+                result_dir = dir
+            }
+        }
+        if (!result_dir) {
+            throw 'can\'t get result, building plugin doesn\'t return a path.'
         }
         if (pip.close) {
             throw 'stop by user'
@@ -61,11 +72,12 @@ async function run(id) {
         await logger.split('deploy')
         await update_flag(id, FLAGS.PIPE_STAGE_DEPLOY)
         for (const job of pipeline.content.jobs.deploy) {
-            await run_job(job.name, job.param, { ssh, logger, id })
+            await run_job(job.name, job.param, { ssh, logger, id, result_dir })
         }
         await update_flag(id, FLAGS.PIPE_STAGE_DONE)
     }
     catch (e) {
+        console.log(e)
         try {
             await logger.write(e + '\n')
         }
@@ -95,7 +107,7 @@ async function run(id) {
         }
         catch (e) { console.error(e) }
         try {
-            await close_job(env_job.name, env_job.param, { logger, id, ssh })
+            await close_job(env_job.name, env_job.param, { logger, id, ssh, reserve })
         }
         catch (e) { console.error(e) }
         try {

@@ -78,6 +78,17 @@ pre.output {
     overflow-x: auto;
     font-size: 13px;
     font-family: 'Courier New', Courier, monospace;
+    line-height: 1.5em;
+}
+
+.code_edit{
+    line-height: 1.3em !important;
+    padding: 6px 12px;
+    color: #eee;
+    background: #222;
+    text-align: left;
+    font-size: 13px;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .page {
@@ -190,4 +201,8 @@ pre.output {
 .icon_btn:hover, .icon_btn:active {
     background-color: #fff;
     color: #f00;
+}
+
+.pipeline_form_item {
+    margin-bottom: 8px;
 }

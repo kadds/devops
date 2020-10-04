@@ -69,12 +69,15 @@ const PipeLineStageComm = (props) => {
             }
             ws.onclose = function () {
                 setLoading(2)
+                if (props.onClose) {
+                    props.onClose()
+                }
             }
 
             ws.onmessage = function (val) {
                 setData(ref.current + val.data)
                 const e = document.getElementById('output_log')
-                if (e.scrollTop + e.clientHeight <= e.scrollHeight + 20) {
+                if (e && e.scrollTop + e.clientHeight <= e.scrollHeight + 20) {
                     setTimeout(() => {
                         e.scrollTo({ left: 0, top: e.scrollHeight, behavior: 'smooth' })
                     }, 100)

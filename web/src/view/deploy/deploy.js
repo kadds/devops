@@ -63,7 +63,7 @@ const Deploy = (props) => {
                 let last_time = 0
                 for (const item of dt.op_list) {
                     if (item.status !== 'stop')
-                        last_time = Math.max(item.start_time)
+                        last_time = Math.max(item.target_time)
                 }
 
                 setData({
@@ -80,7 +80,7 @@ const Deploy = (props) => {
                     is_active: true,
                     upload_loading: false,
                     rollback_loading: false,
-                    last_time
+                    last_time: new Date(last_time).toLocaleString()
                 })
                 upload_form.setFieldsValue({ interval: window.localStorage.getItem('upload_interval') || 30 })
                 rollback_form.setFieldsValue({ interval: window.localStorage.getItem('rollback_interval') || 10 })
@@ -132,24 +132,31 @@ const Deploy = (props) => {
     const opColumns = [
         {
             title: 'Server',
-            dataIndex: 'name',
-            key: 'name',
+            dataIndex: 'server',
+            key: 'server',
         },
         {
             title: 'Operation',
             dataIndex: 'op',
             key: 'op',
+            render: v => { if (v === 0) { return 'Upload' } else { return 'Rollback' } }
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            render: text => {
-                if (text === 'prepare') {
+            render: status => {
+                if (status === 1) {
                     return ('Preparing')
                 }
                 return 'Unknown'
             }
+        },
+        {
+            title: 'Target operation time',
+            dataIndex: 'target_time',
+            key: 'target_time',
+            render: text => (new Date(text).toLocaleString())
         },
         {
             title: 'Last operation time',
@@ -168,7 +175,7 @@ const Deploy = (props) => {
             dataIndex: 'index',
             key: 'index',
             render: (cnt, r) => {
-                if (r.status === 'prepare') {
+                if (r.status === 1) {
                     return (
                         <Popconfirm title='Stop this deployment?' onConfirm={() => onStopClick(r.index)}>
                             <Button type='link' danger>Stop</Button>
@@ -236,7 +243,7 @@ const Deploy = (props) => {
                                 </Typography.Title>
                                 <Progress status={data.is_active ? 'active' : 'exception'} percent={data.done_cnt / data.all_cnt * 100}
                                 ></Progress>
-                                <Table rowKey='index' dataSource={data.op_list} columns={opColumns}></Table>
+                                <Table rowKey='id' dataSource={data.op_list} columns={opColumns}></Table>
                             </Spin>
                         </Tabs.TabPane>
                         <Tabs.TabPane tab='Upload' key='1'>

@@ -1,39 +1,26 @@
-const tmp = require('tmp');
 const { exec } = require('./../../utils/vmutils')
-
-async function tmp_dir() {
-    return new Promise((resolve, reject) => {
-        tmp.dir({}, (err, name, remove) => {
-            if (err) {
-                reject(err)
-            }
-            else {
-                resolve({ name, remove })
-            }
-        })
-    })
-}
 
 async function entry(request, param, opt) {
     if (request === 'valid') {
-        let removeCallback = null
-        try {
-            const { name, remove } = await tmp_dir()
-            removeCallback = remove
-            removeCallback()
-            return ''
-        }
-        catch (e) {
-            console.log(e)
-            if (removeCallback)
-                removeCallback()
-            return '' + e
-        }
+        return ''
     }
     else if (request === 'run') {
         const logger = opt.logger
         const ssh = opt.ssh
-        await exec(ssh, 'git clone --depth=1 --single-branch --branch ' + param.branch + ' ' + param.git_url + ' ./', null, logger)
+        let need_clone = true
+        try {
+            const status = await exec(ssh, 'git status', null, logger)
+            need_clone = false
+        }
+        catch (e) {
+            console.log(e)
+        }
+        if (need_clone) {
+            await exec(ssh, 'git clone --depth=1 --single-branch --branch ' + param.branch + ' ' + param.git_url + ' ./', null, logger)
+        }
+        else {
+            await exec(ssh, 'git pull', null, logger)
+        }
     }
 }
 

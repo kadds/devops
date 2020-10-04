@@ -27,4 +27,12 @@ async function post_pipeline_op(op, id) {
     }
 }
 
-module.exports = { post_task_server_op, post_pipeline_op }
+async function post_deploy_task_op(op, deploy_id) {
+    if (op === 'new') {
+    }
+    else if (op === 'stop') {
+
+    }
+}
+
+module.exports = { post_task_server_op, post_pipeline_op, post_deploy_task_op }

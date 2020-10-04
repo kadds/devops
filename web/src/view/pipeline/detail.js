@@ -6,27 +6,26 @@ import { get_pipeline } from './../../api/pipeline'
 import { Row, Divider, Col, Typography } from 'antd';
 import queryString from 'query-string'
 
-function PipeLineComp(props) {
-    if (props.pipeline.data.stage !== 100) {
-        return (<PipeLineStageComm pipeline={props.pipeline.data} />)
-    }
-    else if (props.pipeline.data.stage === 100) {
-        return (<PipeLineStageDone pipeline={props.pipeline.data} />)
-    }
-    return 'unknown'
-}
+
 
 const PipeLineDetail = (props) => {
     const [pipeline, setPipeline] = useState({ loading: false, data: null })
+    const [needUpdate, setNeedUpdate] = useState(0)
     useEffect(() => {
         async function run() {
             const id = queryString.parse(props.location.search).id
-            setPipeline({ loading: true, data: null })
+            setPipeline({ ...pipeline, loading: true })
             const p = await get_pipeline(id)
             setPipeline({ loading: false, data: p })
         }
         run()
-    }, [props.location])
+    }, [props.location, needUpdate])
+
+    const onClose = () => {
+        if (needUpdate === 0 && pipeline.data.stage <= 4 && pipeline.data.stage >= 1) {
+            setNeedUpdate(needUpdate + 1)
+        }
+    }
 
     return (
         <div className='page'>
@@ -64,8 +63,13 @@ const PipeLineDetail = (props) => {
             }
             <Divider />
             {
-                pipeline.data && (
-                    <PipeLineComp pipeline={pipeline} />
+                pipeline.data && pipeline.data.stage !== 100 && (
+                    <PipeLineStageComm onClose={onClose} pipeline={pipeline.data} />
+                )
+            }
+            {
+                pipeline.data && pipeline.data.stage === 100 && (
+                    <PipeLineStageDone pipeline={pipeline.data} />
                 )
             }
         </div>

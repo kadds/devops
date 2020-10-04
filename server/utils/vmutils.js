@@ -126,23 +126,7 @@ async function update_vm_servers(servers, vm_name, ip, port, password, private_k
     console.log('update agent_servers.txt done')
 }
 
-async function exec(ssh, cmd, stdin, logger) {
-    await logger.write('$-> ')
-    await logger.write(cmd)
-    await logger.write('\n')
-    if (stdin) {
-        await logger.write(stdin)
-        await logger.write('\n')
-    }
-    if (ssh.docker_name) {
-        if (stdin) {
-            cmd = 'docker exec -i -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd
-        }
-        else {
-            cmd = 'docker exec -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd
-        }
-    }
-    const res = await ssh.execCommand(cmd, { stdin: stdin, cwd: ssh.docker_name ? null : ssh.base_dir })
+function do_result(res, logger) {
     console.log(res)
     if (res.code) {
         let data = 'code ' + res.code + '\n'
@@ -171,4 +155,50 @@ async function exec(ssh, cmd, stdin, logger) {
     }
 }
 
-module.exports = { check_connection, copy_to_vm, restart_agent, clear_vm, connect_shell, update_vm_servers, exec }
+async function exec(ssh, cmd, stdin, logger, in_vm = false) {
+    await logger.write('$-> ')
+    await logger.write(cmd)
+    await logger.write('\n')
+    if (stdin) {
+        await logger.write(stdin)
+        await logger.write('\n')
+    }
+    if (ssh.docker_name && !in_vm) {
+        if (stdin) {
+            cmd = 'docker exec -i -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd
+        }
+        else {
+            cmd = 'docker exec -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd
+        }
+    }
+    const res = await ssh.execCommand(cmd, { stdin: stdin, cwd: ssh.docker_name ? null : ssh.base_dir })
+    return do_result(res, logger)
+}
+
+async function copy(ssh, remote, local, logger) {
+    if (!ssh.docker_name) {
+        throw 'not in docker'
+    }
+    let cmd = 'docker cp ' + ssh.docker_name + ':' + ssh.base_dir + remote + ' ' + local
+    await logger.write('$-> ')
+    await logger.write(cmd)
+    await logger.write('\n')
+
+    const res = await ssh.execCommand(cmd)
+    return do_result(res, logger)
+}
+
+async function build_docker_image(ssh, dir, docker_file, tag, version, logger) {
+    if (!ssh.docker_name) {
+        throw 'not in docker'
+    }
+    let cmd = `docker build -t ${tag}:${version} -t ${tag}:latest -f ${docker_file} ${dir}`
+    await logger.write('$-> ')
+    await logger.write(cmd)
+    await logger.write('\n')
+
+    const res = await ssh.execCommand(cmd)
+    return do_result(res, logger)
+}
+
+module.exports = { check_connection, copy_to_vm, restart_agent, clear_vm, connect_shell, update_vm_servers, exec, copy, build_docker_image }

@@ -219,6 +219,68 @@ const m_user = sequelize.define('user', {
     updatedAt: 'mtime',
 })
 
+const m_docker_cache = sequelize.define('docker_cache', {
+    mode_name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    vm_name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    docker_names: {
+        type: DataTypes.JSON,
+        allowNull: false,
+    },
+    version: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    },
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+})
+
+const m_deploy_stream = sequelize.define('deploy_stream', {
+    id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+        autoIncrement: true,
+    },
+    deploy_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    server: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    target_time: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    // 0 upload
+    // 1 rollback
+    op: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    status: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+    indexes: [{ fields: ['deploy_id', 'target_time', 'status'] }]
+})
 
 const conn = sequelize
 
@@ -229,9 +291,11 @@ async function init() {
     await m_pipeline.sync()
     await m_user.sync()
     await m_deploy.sync()
+    await m_docker_cache.sync()
+    await m_deploy_stream.sync()
     if (await m_user.findByPk('admin') === null) {
         await m_user.create({ username: 'admin', password: '123' })
     }
 }
 
-module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, init }
+module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, m_docker_cache, m_deploy_stream, init }

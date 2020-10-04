@@ -25,7 +25,7 @@ async function entry(request, param, opt) {
         await install_deps(ssh, opt.deps, logger)
         if (param.post_install_script) {
             await logger.write('- do post install script\n')
-            await exec(ssh, 'sh', get_script_content(param.post_install_script), logger)
+            await exec(ssh, 'sh', await get_script_content(param.post_install_script), logger)
         }
         else {
             await logger.write('- no need to execute post install script\n')

@@ -8,7 +8,8 @@ async function entry(request, param, opt) {
     else if (request === 'run') {
         const logger = opt.logger
         const ssh = opt.ssh
-        await exec(ssh, 'sh', await get_script_content(param.build_command), logger)
+        if (param.build_command)
+            await exec(ssh, 'sh', await get_script_content(param.build_command), logger)
         return param.result_dir
     }
 }

@@ -28,25 +28,33 @@ const ScriptSelect = (props) => {
         props.onCancel()
     }
 
+
+
+    const listClick = async (e) => {
+        setContentLoading(true)
+        try {
+            const data = await get_script(e)
+            form.setFieldsValue({
+                name: e,
+                content: data
+            })
+        }
+        catch (e) {
+            setContentLoading(false)
+            return
+        }
+        setContentLoading(false)
+    }
+
     useEffect(() => {
         async function run() {
             setScriptList(await get_scripts())
+            if (props.script)
+                await listClick(props.script)
         }
         if (props.visible)
             run()
     }, [props.visible, needUpdate])
-
-
-    const listClick = async (e) => {
-        console.log(e, 'list click')
-        setContentLoading(true)
-        const data = await get_script(e)
-        setContentLoading(false)
-        form.setFieldsValue({
-            name: e,
-            content: data
-        })
-    }
 
     const listDoubleClick = (e) => {
         props.onSelect(e)
@@ -102,8 +110,8 @@ const ScriptSelect = (props) => {
                             <Input placeholder="Name" bordered={false}></Input>
                         </Form.Item>
                         <Spin spinning={contentLoading}>
-                            <Form.Item label="text" name="content">
-                                <TextArea autoSize={{ minRows: 10 }}>
+                            <Form.Item label="code" name="content">
+                                <TextArea className='code_edit' autoSize={{ minRows: 10 }}>
                                 </TextArea>
                             </Form.Item>
                         </Spin>

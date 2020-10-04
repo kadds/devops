@@ -69,7 +69,6 @@ const Module = () => {
             form.setFieldsValue({
                 name: mode.name,
                 dev_user: mode.dev_user,
-                res_port: mode.port,
             })
             setState({ ...state, visible: true, type: 1, loading: false })
             setJoblist(mode.jobs)
@@ -114,11 +113,6 @@ const Module = () => {
             dataIndex: 'dev_user',
             key: 'dev_user',
             render: text => <span>{text}</span>
-        },
-        {
-            title: 'Port',
-            dataIndex: 'port',
-            key: 'port',
         },
         {
             title: 'Server count',
@@ -192,9 +186,6 @@ const Module = () => {
                                 <Option key={v.username} value={v.username}>{v.username}</Option>
                             ))}
                         </Select>
-                    </Form.Item>
-                    <Form.Item label='Port' name='res_port' rules={[{ required: true, message: 'Please input res port' }]}>
-                        <InputNumber disabled={state.type !== 0}></InputNumber>
                     </Form.Item>
                     <Form.Item label='Pipeline jobs' name='pipeline'>
                         <JobSelect editable={state.type === 0} joblist={joblist} onJobChange={onChange}></JobSelect>

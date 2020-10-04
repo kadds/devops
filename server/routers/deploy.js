@@ -1,5 +1,6 @@
 const { Router } = require('express')
-const { m_deploy, m_pipeline, m_server } = require('../data')
+const sequelize = require('sequelize')
+const { m_deploy, m_deploy_stream, m_pipeline, m_server } = require('../data')
 const FLAGS = require('../flags')
 const data = require('../data')
 
@@ -37,12 +38,30 @@ router.get('', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
-    const content_servers = deploy.content.servers || []
-    const map = new Map()
+    const tasks = await m_deploy_stream.findAll({
+        where: {
+            deploy_id: id
+        },
+        order: [
+            ['ctime', 'DESC']
+        ]
+    })
 
-    for (const server of content_servers) {
-        if (server.status !== 'stop')
-            map.set(server.name, server)
+    const map = new Map()
+    const op_list = []
+
+    for (const task of tasks) {
+        if (task.status !== FLAGS.DEPLOY_STREAM_STATUS_STOP)
+            map.set(task.server, task)
+        op_list.push({
+            ctime: task.ctime.valueOf(),
+            mtime: task.mtime.valueOf(),
+            target_time: task.target_time,
+            server: task.server,
+            op: task.op,
+            status: task.status,
+            id: task.id,
+        })
     }
 
     const servers = (await m_server.findAll({ where: { mode_name: deploy.mode_name } }))
@@ -51,8 +70,8 @@ router.get('', async (req, rsp, next) => {
                 name: v.name,
                 is_test: v.flag & FLAGS.SVR_FLAG_TEST,
                 version: v.content.version,
-                can_upload: !map.has(v.name) || (map.has(v.name) && map.get(v.name).op !== 'upload'),
-                can_rollback: map.has(v.name) && map.get(v.name).op !== 'rollback',
+                can_upload: !map.has(v.name) || (map.has(v.name) && map.get(v.name).op !== 0), // upload
+                can_rollback: map.has(v.name) && map.get(v.name).op !== 1, // rollback
             }
         })
 
@@ -62,7 +81,7 @@ router.get('', async (req, rsp, next) => {
     data.pipeline_id = deploy.pipeline_id
     data.status = deploy.status
     data.all = servers
-    data.op_list = content_servers.reverse()
+    data.op_list = op_list
     rsp.json({ err: 0, data })
 })
 
@@ -72,19 +91,29 @@ router.post('/upload', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
-    const content = deploy.content
-    const servers = content.servers || []
+    let last_time = await m_deploy_stream.findOne({
+        where: { deploy_id: deploy.id },
+        order: [['target_time', 'DESC']],
+        limit: 1
+    })
+    if (!last_time) {
+        last_time = new Date().valueOf()
+    }
+    else {
+        last_time = last_time.target_time
+    }
+
     const opt = req.body.opt || { interval: 30 }
     for (const server of req.body.servers) {
-        servers.push({
-            name: server, ctime: new Date().valueOf(), mtime: new Date().valueOf(),
-            status: 'prepare', interval: opt.interval, op: 'upload', index: servers.length - 1,
-            start_time: servers.length !== 0 ? servers[servers.length - 1].start_time + opt.interval : new Date().valueOf()
-        })
+        let r = {
+            deploy_id: deploy.id,
+            op: 0,
+            server: server,
+            status: FLAGS.DEPLOY_STREAM_STATUS_PREPARE, op: 0,
+            target_time: last_time + opt.interval * 1000
+        }
+        await m_deploy_stream.create(r)
     }
-    content.servers = servers
-    await m_deploy.update({ content, version: deploy.version + 1 },
-        { where: { id: deploy.id, version: deploy.version } })
 
     rsp.json({ err: 0 })
 })
@@ -95,19 +124,30 @@ router.post('/rollback', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
-    const content = deploy.content
-    const servers = content.servers || []
-    const opt = req.body.opt || { interval: 30 }
-    for (const server of req.body.servers) {
-        servers.push({
-            name: server, ctime: new Date().valueOf(), mtime: new Date().valueOf(),
-            status: 'prepare', interval: opt.interval, op: 'rollback', index: servers.length - 1,
-            start_time: servers.length !== 0 ? servers[servers.length - 1].start_time + opt.interval : new Date().valueOf()
-        })
+    let last_time = await m_deploy_stream.findOne({
+        where: { deploy_id: deploy.id },
+        order: [['target_time', 'DESC']],
+        limit: 1
+    })
+    if (!last_time) {
+        last_time = new Date().valueOf()
     }
-    content.servers = servers
-    await m_deploy.update({ content, version: deploy.version + 1 },
-        { where: { id: deploy.id, version: deploy.version } })
+    else {
+        last_time = last_time.target_time
+    }
+
+    const opt = req.body.opt || { interval: 10 }
+    for (const server of req.body.servers) {
+        let r = {
+            deploy_id: deploy.id,
+            op: 0,
+            server: server,
+            status: FLAGS.DEPLOY_STREAM_STATUS_PREPARE, op: 0,
+            target_time: last_time + opt.interval * 1000
+        }
+        await m_deploy_stream.create(r)
+    }
+
 
     rsp.json({ err: 0 })
 })

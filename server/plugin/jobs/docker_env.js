@@ -1,5 +1,5 @@
 const { connect_shell, exec } = require('./../../utils/vmutils')
-const { m_vm } = require('../../data')
+const { m_vm, m_docker_cache, m_pipeline } = require('../../data')
 const { install_deps } = require('./comm/install')
 const { get_script_content } = require('./../../utils/script')
 
@@ -8,28 +8,84 @@ async function entry(request, param, opt) {
         return ''
     }
     else if (request === 'run') {
-        const docker_name = 'pipe_' + opt.id
+        // connect ssh
         const logger = opt.logger
         await logger.write('- startup bare environment\n')
         await logger.write('- target vm is ' + param.vm_name + '\n')
         const vm = await m_vm.findByPk(param.vm_name)
         await logger.write('- connecting environment\n')
         const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
-        await logger.write('- pulling docker image\n')
-        await exec(ssh, 'docker pull ' + param.dockerimg, null, logger)
-        await logger.write('- connecting docker environment\n')
-        await exec(ssh, 'docker run -d --name ' + docker_name + ' ' + param.dockerimg + ' /bin/tail -f', null, logger)
-        await logger.write('- installing deps\n')
-        ssh.docker_name = docker_name
-        ssh.base_dir = '/root/'
-        await install_deps(ssh, opt.deps, logger)
-        if (param.post_install_script) {
-            await logger.write('- do post install script\n')
-            await exec(ssh, 'sh', get_script_content(param.post_install_script), logger)
+
+        const pipeline = await m_pipeline.findByPk(opt.id)
+
+        let docker_name = null
+        let cache = await m_docker_cache.findOne({ where: { mode_name: pipeline.mode_name, vm_name: param.vm_name } })
+        // select cached docker 
+        await logger.write('- detecting docker container to reuse.\n')
+        if (cache && cache.docker_names && cache.docker_names.names.length > 0) {
+            let len = cache.docker_names.names.length
+            for (let i = cache.docker_names.names.length - 1; i >= 0; i--) {
+                docker_name = cache.docker_names.names[i]
+                try {
+                    const data = await exec(ssh, `docker stats ${docker_name} --no-stream --format "{{.Name}}"`, null, logger)
+                    if (data !== docker_name) {
+                        docker_name = null
+                    }
+                    else {
+                        break;
+                    }
+                }
+                catch (e) {
+                    docker_name = null
+                }
+                len--
+            }
+            cache.docker_names.names.length = len
+        }
+        const is_new = docker_name === null
+        if (is_new) {
+            docker_name = 'pipe_' + opt.id
+        }
+        if (cache) {
+            if (is_new)
+                cache.docker_names.names.push(docker_name)
+            const [num] = await m_docker_cache.update({ docker_names: cache.docker_names, version: cache.version + 1 },
+                { where: { mode_name: pipeline.mode_name, vm_name: param.vm_name, version: cache.version } })
+            if (num !== 1) throw 'update docker cache version fail'
         }
         else {
-            await logger.write('- no need to execute post install script\n')
+            let docker_names = { names: [] }
+            if (is_new)
+                docker_names.names.push(docker_name)
+
+            const [num] = await m_docker_cache.create({ docker_names: docker_names, mode_name: pipeline.mode_name, vm_name: param.vm_name, version: 0 })
+            if (num !== 1) throw 'docker cache create fail'
         }
+
+        if (is_new) {
+            await logger.write('- pulling docker image\n')
+            await exec(ssh, 'docker pull ' + param.dockerimg, null, logger)
+            await logger.write('- connecting docker environment\n')
+            await exec(ssh, 'docker run -d --name ' + docker_name + ' ' + param.dockerimg + ' /bin/tail -f', null, logger)
+            await logger.write('- installing deps\n')
+            ssh.docker_name = docker_name
+            ssh.base_dir = '/root/'
+
+            await install_deps(ssh, opt.deps, logger)
+            if (param.post_install_script) {
+                await logger.write('- do post install script\n')
+                await exec(ssh, 'sh', await get_script_content(param.post_install_script), logger)
+            }
+            else {
+                await logger.write('- no need to execute post install script\n')
+            }
+        }
+        else {
+            ssh.docker_name = docker_name
+            ssh.base_dir = '/root/'
+            await logger.write('- note docker container is already existed, reuse it.\n')
+        }
+
         return ssh
     }
     else if (request === 'close') {
@@ -44,10 +100,27 @@ async function entry(request, param, opt) {
         catch (e) {
             console.error(e)
         }
+        if (opt.reserve) { // reserve docker container
+            try {
+                await logger.write('- finish (reserved)\n')
+            }
+            catch (e) { }
+            if (ssh)
+                ssh.dispose()
+            return
+        }
 
         try {
-            const name = 'pipe_' + opt.id
+            await logger.write('- finish\n')
+            let name
+            if (!ssh.docker_name) {
+                name = 'pipe_' + opt.id
+            }
+            else {
+                name = ssh.docker_name
+            }
             ssh.docker_name = null
+            ssh.base_dir = '/'
             await exec(ssh, 'docker stop ' + name, null, logger)
             await exec(ssh, 'docker rm ' + name, null, logger)
         }
@@ -58,6 +131,10 @@ async function entry(request, param, opt) {
             ssh.dispose()
         }
     }
+}
+
+function delete_cache() {
+
 }
 
 const params = [{ name: 'dockerimg', label: 'docker image name', type: 'string', default: 'archlinux:latest', description: 'Docket base image for environment.' }]

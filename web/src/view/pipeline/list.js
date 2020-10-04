@@ -117,6 +117,7 @@ const PipeLineList = props => {
     const [form] = Form.useForm()
     const [moduleList, setModuleList] = useState({ loading: false, list: [] })
     const [state, setState] = useState({ loading: false, visible: false })
+    const [scriptName, setScriptName] = useState(null)
 
     const addClick = async () => {
         setState({ loading: false, visible: true })
@@ -159,7 +160,7 @@ const PipeLineList = props => {
         for (const it of p) {
             let f = {}
             for (const ot of it.param) {
-                if (ot.default)
+                if (ot.default !== undefined && ot.default !== null)
                     f[ot.name] = ot.default
             }
             if (f !== {})
@@ -181,7 +182,6 @@ const PipeLineList = props => {
             fillDefaults(module_data.pipeline_params.source, obj)
             fillDefaults(module_data.pipeline_params.build, obj)
             fillDefaults(module_data.pipeline_params.deploy, obj)
-            console.log(obj)
             form.setFieldsValue({ param: obj })
         }
         catch (e) {
@@ -194,6 +194,8 @@ const PipeLineList = props => {
     const [select, setSelect] = useState({ visible: false })
 
     const onSearch = (name, param_names) => {
+        let data = form.getFieldValue(param_names)
+        setScriptName(data)
         setSelect({ visible: true, name, param_names })
     }
 
@@ -201,25 +203,17 @@ const PipeLineList = props => {
         setSelect({ ...select, visible: false })
     }
 
+
     const onSelect = (script) => {
         setSelect({ ...select, visible: false })
-        let obj = {}
-        let last = obj, p = null
-        for (const it of select.param_names) {
-            let o = {}
-            last[it] = o
-            p = last
-            last = o
-        }
-        p[select.param_names[select.param_names.length - 1]] = script
-        form.setFieldsValue(obj)
+        form.setFields([{ name: select.param_names, value: script }])
     }
 
     const ItemRender = (list) => {
         return (
             list.map(l => {
                 if (l.param.length > 0) return (
-                    <Form.Item key={l.name}>
+                    <Form.Item key={l.name} className='pipeline_form_item'>
                         <div>
                             <span className='form_items_label'>
                                 <Tag color='#108ee9'>
@@ -339,7 +333,7 @@ const PipeLineList = props => {
                     </Form.Item>
                 </Form>
             </Modal>
-            <ScriptSelect title={'Select ' + select.name} visible={select.visible} onCancel={onCancel} onSelect={onSelect} />
+            <ScriptSelect title={'Select ' + select.name} script={scriptName} visible={select.visible} onCancel={onCancel} onSelect={onSelect} />
         </div>
     )
 }

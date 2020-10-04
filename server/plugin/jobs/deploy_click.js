@@ -1,5 +1,9 @@
 const { m_deploy, m_pipeline } = require('../../data')
+const tmp = require('tmp-promise')
+const { exec, copy, build_docker_image } = require('../../utils/vmutils')
 const FLAGS = require('../../flags')
+const { get_script_content } = require('../../utils/script')
+
 async function entry(request, param, opt) {
     if (request === 'valid') {
         return ''
@@ -18,7 +22,28 @@ async function entry(request, param, opt) {
         deploy.content = {}
         deploy.content.do_count = 0
         deploy.content.test_server = null
-        deploy.content.image_name = 'deploy_' + deploy.mode_name + '_' + opt.id
+        deploy.content.image_name = 'deploy_' + deploy.mode_name + ':' + opt.id
+        if (param.pre_build_cmd) {
+            await logger.write('- do pre build command\n')
+            await exec(ssh, 'sh', param.pre_build_cmd, logger)
+        }
+
+        const { path, cleanup } = await tmp.dir()
+
+        try {
+            const docker_file = path + '/docker_build_file_.' + opt.id
+            await logger.write('- copy build result from docker container\n')
+            await copy(ssh, opt.result_dir, path, logger)
+            await exec(ssh, 'cat > ' + docker_file, await get_script_content(param.docker_file), logger, true)
+            await logger.write('- build new docker image\n')
+            await build_docker_image(ssh, path, docker_file, 'deploy_' + deploy.mode_name, opt.id, logger)
+        }
+        catch (e) {
+            cleanup()
+            throw e
+        }
+        cleanup()
+
         const res = await m_deploy.create(deploy)
         pipeline = await m_pipeline.findByPk(opt.id)
         pipeline.content.deploy_id = res.id
@@ -31,7 +56,8 @@ const params = [
 ]
 
 const pipeline_params = [
-    { name: 'docker_file', label: 'Dockerfile', description: 'How to build image?', type: 'script' }
+    { name: 'pre_build_cmd', label: 'Pre build command', description: 'Run command before build docker image. Installing dependencies which used by binaries', type: 'script' },
+    { name: 'docker_file', label: 'Build dockerfile', description: 'How to build image?', type: 'script' },
 ]
 
 const deps = []
