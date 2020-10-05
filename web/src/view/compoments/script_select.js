@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Spin, List, Typography, Row, Input, Form, Modal, Col, Alert, Popconfirm, Tooltip } from 'antd'
 import { get_scripts, get_script, upload_script, delete_script } from '../../api/upload'
 import { CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
@@ -30,7 +30,7 @@ const ScriptSelect = (props) => {
 
 
 
-    const listClick = async (e) => {
+    const listClick = useCallback(async (e) => {
         setContentLoading(true)
         try {
             const data = await get_script(e)
@@ -44,7 +44,7 @@ const ScriptSelect = (props) => {
             return
         }
         setContentLoading(false)
-    }
+    }, [form])
 
     useEffect(() => {
         async function run() {
@@ -54,7 +54,7 @@ const ScriptSelect = (props) => {
         }
         if (props.visible)
             run()
-    }, [props.visible, needUpdate, props.script])
+    }, [props.visible, needUpdate, props.script, listClick])
 
     const listDoubleClick = (e) => {
         props.onSelect(e)

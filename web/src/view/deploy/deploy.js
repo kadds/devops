@@ -58,7 +58,7 @@ const Deploy = (props) => {
     useEffect(() => {
         async function run() {
             if (id) {
-                setData({ ...data, loading: true })
+                setData(data => ({ ...data, loading: true }))
                 const dt = await get_deploy(id)
                 let last_time = 0
                 for (const item of dt.op_list) {
@@ -87,7 +87,7 @@ const Deploy = (props) => {
             }
         }
         run()
-    }, [needUpdate, id])
+    }, [needUpdate, id, upload_form, rollback_form])
 
     const onViewClick = (id) => {
         props.history.push({ pathname: '/deploy', search: '?id=' + id })
