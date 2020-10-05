@@ -65,7 +65,6 @@ const contents = [
 
 function Main(props) {
     const context = contents.find(v => { return v.path === props.history.location.pathname })
-    let breadcrumbs = [{ label: '' }]
     if (context) {
         document.title = context.title
     }

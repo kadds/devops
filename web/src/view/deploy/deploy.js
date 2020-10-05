@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from 'react'
+import React, { useState, useEffect } from 'react'
 import { get_deploy_list, get_deploy, deploy_do_upload, deploy_do_rollback, stop_deploy } from '../../api/deploy'
 import { withRouter } from "react-router-dom"
 import { Table, Row, Col, Popconfirm, Tabs, Tag, Divider, Button, Form, Transfer, Progress, InputNumber, Spin, Typography } from 'antd'
@@ -88,6 +88,7 @@ const Deploy = (props) => {
         }
         run()
     }, [needUpdate, id])
+
     const onViewClick = (id) => {
         props.history.push({ pathname: '/deploy', search: '?id=' + id })
         setNeedUpdate(needUpdate + 1)
@@ -147,7 +148,19 @@ const Deploy = (props) => {
             key: 'status',
             render: status => {
                 if (status === 1) {
-                    return ('Preparing')
+                    return (<Tag>Preparing</Tag>)
+                }
+                else if (status === 2) {
+                    return (<Tag color='processing'>Doing</Tag>)
+                }
+                else if (status === 5) {
+                    return (<Tag color='warning'>Stop</Tag>)
+                }
+                else if (status === 100) {
+                    return (<Tag color='success'>Done</Tag>)
+                }
+                else if (status === -100) {
+                    return (<Tag color='error'>Error</Tag>)
                 }
                 return 'Unknown'
             }
@@ -172,12 +185,12 @@ const Deploy = (props) => {
         },
         {
             title: 'Operation',
-            dataIndex: 'index',
-            key: 'index',
+            dataIndex: 'id',
+            key: 'id',
             render: (cnt, r) => {
                 if (r.status === 1) {
                     return (
-                        <Popconfirm title='Stop this deployment?' onConfirm={() => onStopClick(r.index)}>
+                        <Popconfirm title='Stop this deployment?' onConfirm={() => onStopClick(r.id)}>
                             <Button type='link' danger>Stop</Button>
                         </Popconfirm>
                     )

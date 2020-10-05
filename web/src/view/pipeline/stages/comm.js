@@ -57,20 +57,21 @@ const PipeLineStageComm = (props) => {
     const ref = useRef()
     const [height, setHeight] = useState((window.innerHeight - 80) + 'px')
     ref.current = data
+    const { pipeline, onClose } = props
 
     useEffect(() => {
         let ws = null
         async function run() {
             setLoading(0)
-            const id = (await get_pipeline_log_id(props.pipeline.id)).id
+            const id = (await get_pipeline_log_id(pipeline.id)).id
             ws = new WebSocket(base_ws_url + '/log?id=' + id)
             ws.onopen = function () {
                 setLoading(1)
             }
             ws.onclose = function () {
                 setLoading(2)
-                if (props.onClose) {
-                    props.onClose()
+                if (onClose) {
+                    onClose()
                 }
             }
 
@@ -89,7 +90,7 @@ const PipeLineStageComm = (props) => {
             if (ws)
                 ws.close()
         }
-    }, [props.pipeline])
+    }, [pipeline, onClose])
 
     useEventListener('resize', () => {
         setHeight((window.innerHeight - 80) + 'px')

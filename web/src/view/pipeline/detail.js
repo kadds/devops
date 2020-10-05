@@ -14,7 +14,7 @@ const PipeLineDetail = (props) => {
     useEffect(() => {
         async function run() {
             const id = queryString.parse(props.location.search).id
-            setPipeline({ ...pipeline, loading: true })
+            setPipeline({ data: null, loading: true })
             const p = await get_pipeline(id)
             setPipeline({ loading: false, data: p })
         }

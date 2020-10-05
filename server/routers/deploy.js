@@ -148,7 +148,6 @@ router.post('/rollback', async (req, rsp, next) => {
         await m_deploy_stream.create(r)
     }
 
-
     rsp.json({ err: 0 })
 })
 
@@ -158,20 +157,12 @@ router.post('/stop', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
-    const content = deploy.content
-    const servers = content.servers || []
-    for (const idx of req.body.index) {
-        if (idx < servers) {
-            servers[idx].status = 'stop'
-        }
-        else {
-            rsp.json({ err: 109, msg: 'Unknown deployment index ' + idx });
-            return
-        }
+
+    for (const xid of req.body.ids) {
+        await m_deploy_stream.update({ status: FLAGS.DEPLOY_STREAM_STATUS_STOP }, {
+            where: { deploy_id: req.body.id, id: xid },
+        })
     }
-    content.servers = servers
-    await m_deploy.update({ content, version: deploy.version + 1 },
-        { where: { id: deploy.id, version: deploy.version } })
 
     rsp.json({ err: 0 })
 })

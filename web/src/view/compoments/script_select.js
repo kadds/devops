@@ -54,7 +54,7 @@ const ScriptSelect = (props) => {
         }
         if (props.visible)
             run()
-    }, [props.visible, needUpdate])
+    }, [props.visible, needUpdate, props.script])
 
     const listDoubleClick = (e) => {
         props.onSelect(e)

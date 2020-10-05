@@ -17,11 +17,11 @@ async function get_deploy(id) {
 }
 
 async function stop_deploy(id, idx) {
-    return (await post('/deploy/stop', { id, index: [idx] }))
+    return (await post('/deploy/stop', { id, ids: [idx] }))
 }
 
 async function stop_deploys(id, indices) {
-    return (await post('/deploy/stop', { id, index: indices }))
+    return (await post('/deploy/stop', { id, ids: indices }))
 }
 
 export { get_deploy_list, deploy_do_upload, deploy_do_rollback, get_deploy, stop_deploy, stop_deploys }

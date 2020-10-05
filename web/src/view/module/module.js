@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Button, Popconfirm, Row, Select, Table, Input, Form, Modal, InputNumber, message, Col } from 'antd'
+import { Button, Popconfirm, Row, Select, Table, Input, Form, Modal, message, Col } from 'antd'
 import { QuestionCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { add_module, get_module_list, update_module, delete_module, get_module } from '../../api/module'
 import { user_list } from '../../api/user'
