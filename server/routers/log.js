@@ -1,8 +1,7 @@
 const { Router } = require('express')
 const MongoClient = require('mongodb').MongoClient
-const TOML = require('@iarna/toml')
 const { m_server } = require('../data')
-const fs = require('fs').promises
+const Config = require('../config')
 
 let router = new Router()
 
@@ -53,8 +52,7 @@ router.post('/search', async (req, rsp, next) => {
     console.log(find_obj)
 
     let list = []
-    const data = (await fs.readFile(__dirname + '/../config.toml')).toString()
-    const config = await TOML.parse.async(data)
+    const config = Config.get()
 
     const uri = config.mongodb.uri
     const dbName = config.mongodb.dbname

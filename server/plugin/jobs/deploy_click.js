@@ -3,6 +3,9 @@ const tmp = require('tmp-promise')
 const { exec, copy, build_docker_image } = require('../../utils/vmutils')
 const FLAGS = require('../../flags')
 const { get_script_content } = require('../../utils/script')
+const Config = require('../../config')
+
+tmp.setGracefulCleanup()
 
 async function entry(request, param, opt) {
     if (request === 'valid') {
@@ -16,20 +19,24 @@ async function entry(request, param, opt) {
         let pipeline = await m_pipeline.findByPk(opt.id)
         deploy.mode_name = pipeline.mode_name
         if (deploy.mode_name === null) {
-            throw 'unknown module in pipeline ' + opt.id
+            throw new Error('unknown module in pipeline ' + opt.id)
         }
         deploy.status = FLAGS.DEPLOY_STATUS_INIT
         deploy.content = {}
         deploy.content.do_count = 0
         deploy.content.test_server = null
-        deploy.content.image_name = 'deploy_' + deploy.mode_name + ':' + opt.id
+
+        const config = Config.get()
+        const prefix = config.server.deploy.image.prefix
+        const postfix = config.server.deploy.image.postfix
+
+        deploy.content.image_name = prefix + deploy.mode_name + postfix + ':' + opt.id
         if (param.pre_build_cmd) {
             await logger.write('- do pre build command\n')
             await exec(ssh, 'sh', param.pre_build_cmd, logger)
         }
 
-        const { path, cleanup } = await tmp.dir()
-
+        const { path, cleanup } = await tmp.dir({ prefix: 'devops', unsafeCleanup: true })
         try {
             const docker_file = path + '/docker_build_file_.' + opt.id
             await logger.write('- copy build result from docker container\n')
@@ -45,6 +52,7 @@ async function entry(request, param, opt) {
         cleanup()
 
         const res = await m_deploy.create(deploy)
+        // update res id
         pipeline = await m_pipeline.findByPk(opt.id)
         pipeline.content.deploy_id = res.id
         await m_pipeline.update({ content: pipeline.content }, { where: { id: opt.id } })

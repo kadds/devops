@@ -24,7 +24,7 @@ router.get('/vm', async (req, rsp, next) => {
         rsp.json({ err: 0, data: tmp })
         return
     }
-    throw 'unknown params'
+    throw new Error('unknown params')
 })
 
 const monitor = router

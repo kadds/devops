@@ -5,6 +5,7 @@ import { get_module_list } from '../../api/module'
 
 import { Button, Spin, Row, Select, Popconfirm, Typography, Card, Input, Form, Modal, Col, Space, Tag, Badge } from 'antd'
 import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
+import { withRouter } from 'react-router'
 
 const getServerRunningTime = (delta) => {
     if (delta) {
@@ -331,6 +332,17 @@ const Server = (props) => {
 
     }
 
+    const ServerVersion = withRouter((props) => {
+        if (props.version) {
+            return (
+                <Button type='link' onClick={() => props.history.push({ pathname: '/deploy', search: '?id=' + props.version })}>{props.version}</Button>
+            )
+        }
+        else {
+            return ('None')
+        }
+    })
+
     return (
         <div className='page'>
             <Row>
@@ -356,7 +368,7 @@ const Server = (props) => {
                     <Row gutter={8} style={{ marginTop: 30 }}>
                         <Col span={16}>
                             <Card title={'Information of ' + server.name}>
-                                <Row gutter={32}>
+                                <Row gutter={[32, 32]}>
                                     <Col span={8}>
                                         <Typography.Title level={4}>
                                             Status:
@@ -375,8 +387,6 @@ const Server = (props) => {
                                         </Typography.Title>
                                         {new Date(server.ctime).toLocaleString()}
                                     </Col>
-                                </Row>
-                                <Row gutter={32} style={{ marginTop: 32 }}>
                                     <Col span={8}>
                                         <Typography.Title level={4}>
                                             VM:
@@ -394,6 +404,12 @@ const Server = (props) => {
                                             Running Time:
                                         </Typography.Title>
                                         <RunningTime server={server}></RunningTime>
+                                    </Col>
+                                    <Col span={8}>
+                                        <Typography.Title level={4}>
+                                            Version:
+                                        </Typography.Title>
+                                        <ServerVersion version={server.version} />
                                     </Col>
                                 </Row>
                             </Card>

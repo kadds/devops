@@ -41,6 +41,7 @@ router.get('', async (req, rsp, next) => {
     ms_server.vm_name = server.vm_name
     ms_server.status = server.status
     ms_server.flag = server.flag
+    ms_server.version = server.content.version || null
     if (server.content.res)
         ms_server.start_time = server.content.res.last_start_time
     rsp.json({ err: 0, data: ms_server })
@@ -91,7 +92,7 @@ router.post('/stop', async (req, rsp, next) => {
 })
 
 router.post('/start', async (req, rsp, next) => {
-    await post_task_server_op('start', req.body.name)
+    post_task_server_op('start', req.body.name)
     rsp.json({ err: 0 })
 })
 

@@ -12,10 +12,10 @@ const { valid_token } = require('./token')
 const { init } = require('./data')
 const process = require('process')
 const upload = require('./routers/upload')
-const { } = require('./worker/index')
+const Worker = require('./worker/index')
+const Config = require('./config')
 const { listen_log } = require('./worker/pipeline')
 const WebSocket = require('ws')
-const { Server } = require('ws-promise')
 const url = require('url')
 const { valid_ws_id } = require('./ws')
 
@@ -138,6 +138,11 @@ function start_ws() {
 }
 
 init().then(() => {
-    start()
-    start_ws()
+    Config.load().then(() => {
+        start()
+        start_ws()
+        Worker.init_worker()
+    }).catch(e => {
+        console.error('Load config fail', e)
+    })
 })

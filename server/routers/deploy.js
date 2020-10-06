@@ -3,6 +3,7 @@ const sequelize = require('sequelize')
 const { m_deploy, m_deploy_stream, m_pipeline, m_server } = require('../data')
 const FLAGS = require('../flags')
 const data = require('../data')
+const { post_deploy_task_op } = require('../worker/index')
 
 let router = new Router()
 
@@ -31,6 +32,11 @@ router.get('/list', async (req, rsp, next) => {
     rsp.json({ err: 0, list })
 })
 
+function is_done_task(task) {
+    return (task.status === FLAGS.DEPLOY_STREAM_STATUS_STOP || task.status === FLAGS.DEPLOY_STREAM_STATUS_ERROR
+        || task.status === FLAGS.DEPLOY_STREAM_STATUS_DONE)
+}
+
 router.get('', async (req, rsp, next) => {
     const id = req.query.id
     const deploy = await m_deploy.findByPk(id)
@@ -47,12 +53,18 @@ router.get('', async (req, rsp, next) => {
         ]
     })
 
-    const map = new Map()
+    const upload_map = new Map()
+    const rollback_map = new Map()
     const op_list = []
 
     for (const task of tasks) {
-        if (task.status !== FLAGS.DEPLOY_STREAM_STATUS_STOP)
-            map.set(task.server, task)
+        if (!is_done_task(task)) {
+            if (task.op === 0)
+                upload_map.set(task.server, task)
+            else
+                rollback_map.set(task.server, task)
+        }
+
         op_list.push({
             ctime: task.ctime.valueOf(),
             mtime: task.mtime.valueOf(),
@@ -70,8 +82,8 @@ router.get('', async (req, rsp, next) => {
                 name: v.name,
                 is_test: v.flag & FLAGS.SVR_FLAG_TEST,
                 version: v.content.version,
-                can_upload: !map.has(v.name) || (map.has(v.name) && map.get(v.name).op !== 0), // upload
-                can_rollback: map.has(v.name) && map.get(v.name).op !== 1, // rollback
+                can_upload: !upload_map.has(v.name), // upload
+                can_rollback: !rollback_map.has(v.name), // rollback
             }
         })
 
@@ -91,29 +103,38 @@ router.post('/upload', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
+    const opt = req.body.opt || { interval: 30 }
+    const t = opt.interval * 1000
     let last_time = await m_deploy_stream.findOne({
         where: { deploy_id: deploy.id },
         order: [['target_time', 'DESC']],
         limit: 1
     })
+    let now = new Date().valueOf()
     if (!last_time) {
-        last_time = new Date().valueOf()
+        last_time = now
     }
     else {
         last_time = last_time.target_time
+        if (last_time < now) {
+            last_time = now - t
+        }
     }
+    const base_time = last_time
 
-    const opt = req.body.opt || { interval: 30 }
     for (const server of req.body.servers) {
         let r = {
             deploy_id: deploy.id,
             op: 0,
             server: server,
-            status: FLAGS.DEPLOY_STREAM_STATUS_PREPARE, op: 0,
-            target_time: last_time + opt.interval * 1000
+            status: FLAGS.DEPLOY_STREAM_STATUS_PREPARE,
+            target_time: last_time + t,
+            content: { target_version: deploy.pipeline_id }
         }
         await m_deploy_stream.create(r)
+        last_time += t
     }
+    post_deploy_task_op('new', base_time)
 
     rsp.json({ err: 0 })
 })
@@ -124,29 +145,42 @@ router.post('/rollback', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'not find deploy' })
         return
     }
+    const opt = req.body.opt || { interval: 10 }
+    const t = opt.interval * 1000
+
     let last_time = await m_deploy_stream.findOne({
         where: { deploy_id: deploy.id },
         order: [['target_time', 'DESC']],
         limit: 1
     })
+
+    let now = new Date().valueOf()
     if (!last_time) {
-        last_time = new Date().valueOf()
+        last_time = now
     }
     else {
         last_time = last_time.target_time
+        if (last_time < now) {
+            last_time = now - t
+        }
     }
 
-    const opt = req.body.opt || { interval: 10 }
+    const base_time = last_time
+
     for (const server of req.body.servers) {
         let r = {
             deploy_id: deploy.id,
-            op: 0,
+            op: 1,
             server: server,
-            status: FLAGS.DEPLOY_STREAM_STATUS_PREPARE, op: 0,
-            target_time: last_time + opt.interval * 1000
+            status: FLAGS.DEPLOY_STREAM_STATUS_PREPARE,
+            target_time: last_time + t,
+            content: {}
         }
         await m_deploy_stream.create(r)
+        last_time += t
     }
+
+    post_deploy_task_op('new', base_time)
 
     rsp.json({ err: 0 })
 })
@@ -160,9 +194,10 @@ router.post('/stop', async (req, rsp, next) => {
 
     for (const xid of req.body.ids) {
         await m_deploy_stream.update({ status: FLAGS.DEPLOY_STREAM_STATUS_STOP }, {
-            where: { deploy_id: req.body.id, id: xid },
+            where: { deploy_id: req.body.id, id: xid, status: FLAGS.DEPLOY_STREAM_STATUS_PREPARE },
         })
     }
+    post_deploy_task_op('stop', null)
 
     rsp.json({ err: 0 })
 })

@@ -36,7 +36,7 @@ async function run_job(job_name, param, opt) {
     if (job) {
         return await job.entry('run', param, opt)
     }
-    throw 'job not find'
+    throw new Error('job not find')
 }
 
 async function close_job(job_name, param, opt) {
@@ -44,7 +44,15 @@ async function close_job(job_name, param, opt) {
     if (job) {
         return await job.entry('close', param, opt)
     }
-    throw 'job not find'
+    throw new Error('job not find')
+}
+
+async function clean_job(job_name, param, opt) {
+    const job = job_map.get(job_name)
+    if (job) {
+        return await job.entry('clean', param, opt)
+    }
+    throw new Error('job not find')
 }
 
 async function get_job_deps(job_name) {
@@ -52,7 +60,7 @@ async function get_job_deps(job_name) {
     if (job) {
         return await job.deps
     }
-    throw 'job not find'
+    throw new Error('job not find')
 }
 
 async function get_job_pipeline_params(job_name) {
@@ -60,7 +68,7 @@ async function get_job_pipeline_params(job_name) {
     if (job) {
         return await job.pipeline_params
     }
-    throw 'job not find'
+    throw new Error('job not find')
 }
 
 init()

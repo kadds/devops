@@ -52,7 +52,7 @@ async function entry(request, param, opt) {
                 cache.docker_names.names.push(docker_name)
             const [num] = await m_docker_cache.update({ docker_names: cache.docker_names, version: cache.version + 1 },
                 { where: { mode_name: pipeline.mode_name, vm_name: param.vm_name, version: cache.version } })
-            if (num !== 1) throw 'update docker cache version fail'
+            if (num !== 1) throw new Error('update docker cache version fail')
         }
         else {
             let docker_names = { names: [] }

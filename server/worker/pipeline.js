@@ -37,12 +37,12 @@ async function run(id) {
     let reserve = false
     try {
         if (pip.close) {
-            throw 'stop by user'
+            throw new Error('stop by user')
         }
         await logger.split('environment')
         ssh = await run_job(env_job.name, env_job.param, { deps, logger, id })
         if (pip.close) {
-            throw 'stop by user'
+            throw new Error('stop by user')
         }
         reserve = true
         await logger.split('source')
@@ -52,7 +52,7 @@ async function run(id) {
         }
         // get source done
         if (pip.close) {
-            throw 'stop by user'
+            throw new Error('stop by user')
         }
         await logger.split('build')
         await update_flag(id, FLAGS.PIPE_STAGE_BUILD)
@@ -64,10 +64,10 @@ async function run(id) {
             }
         }
         if (!result_dir) {
-            throw 'can\'t get result, building plugin doesn\'t return a path.'
+            throw new Error('can\'t get result, building plugin doesn\'t return a path.')
         }
         if (pip.close) {
-            throw 'stop by user'
+            throw new Error('stop by user')
         }
         await logger.split('deploy')
         await update_flag(id, FLAGS.PIPE_STAGE_DEPLOY)
@@ -79,7 +79,7 @@ async function run(id) {
     catch (e) {
         console.log(e)
         try {
-            await logger.write(e + '\n')
+            await logger.write(e.message + '\n')
         }
         catch (e2) {
             console.error(e2)
@@ -124,7 +124,14 @@ async function stop(id) {
         v.close = true
         pipes.set(id, v)
     }
+    // remove log file
     await remove(id)
+    // TODO: remove pipeline cache
+    try {
+
+    }
+    catch (e) { console.error(e) }
+
 }
 
 function do_ws_send(send, msg) {
@@ -165,6 +172,7 @@ async function listen_log(id, send, close) {
         }
     }
     else {
+        const logger = v.logger
         const listener = async (v) => {
             try {
                 if (v === null) {
@@ -182,7 +190,6 @@ async function listen_log(id, send, close) {
                 close()
             }
         }
-        const logger = v.logger
         const path = log_path(id)
         const file = await fs.open(path, 'r')
         let buf = Buffer.allocUnsafe(4096)

@@ -22,13 +22,6 @@ async function copy_to_vm(local_dir, ip, port, password, private_key, user, dir)
         username: user,
         readyTimeout: 2000
     })
-    console.log('try to copy agent files')
-    if (!await ssh.putDirectory(local_dir, dir + '/agent', {
-        recursive: false, concurrency: 1,
-        tick: (local, remote, err) => { console.log('local ' + local + ' transfer ' + err) },
-    })) {
-        console.error('ssh put directory fail')
-    }
     try {
         console.log('kill agent')
         const pid = (await ssh.execCommand('cat ' + dir + '/agent/agent.pid')).stdout
@@ -38,6 +31,18 @@ async function copy_to_vm(local_dir, ip, port, password, private_key, user, dir)
     }
     catch (err) {
         console.error(err)
+        throw new Error('ssh kill fail')
+    }
+    console.log('try to copy agent files')
+    if (!await ssh.putDirectory(local_dir, dir + '/agent', {
+        recursive: false, concurrency: 1,
+        tick: (local, remote, err) => {
+            console.log('local ' + local + ' transfer ')
+            if (err) { console.error(err) }
+        },
+    })) {
+        console.error('ssh put directory fail')
+        throw new Error('ssh put directory fail')
     }
     console.log('try start agent')
     await ssh.execCommand('chmod +x ' + dir + '/agent/agent')
@@ -142,7 +147,7 @@ function do_result(res, logger) {
         if (data[data.length - 1] === '\n') {
             data.length = data.length - 1
         }
-        throw data
+        throw new Error(data)
     }
     else {
         if (res.stdout[res.stdout.length - 1] === '\n') {
@@ -177,7 +182,7 @@ async function exec(ssh, cmd, stdin, logger, in_vm = false) {
 
 async function copy(ssh, remote, local, logger) {
     if (!ssh.docker_name) {
-        throw 'not in docker'
+        throw new Error('not in docker')
     }
     let cmd = 'docker cp ' + ssh.docker_name + ':' + ssh.base_dir + remote + ' ' + local
     await logger.write('$-> ')
@@ -190,7 +195,7 @@ async function copy(ssh, remote, local, logger) {
 
 async function build_docker_image(ssh, dir, docker_file, tag, version, logger) {
     if (!ssh.docker_name) {
-        throw 'not in docker'
+        throw new Error('not in docker')
     }
     let cmd = `docker build -t ${tag}:${version} -t ${tag}:latest -f ${docker_file} ${dir}`
     await logger.write('$-> ')

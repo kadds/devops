@@ -4,7 +4,16 @@ dbname="devops_db"
 monitorColumnName="monitor"
 serviceColumnName="service"
 logColumnName="log"
+
 [log]
 bind="127.0.0.1"
 port=10900
 maxSizePer=109
+
+[server.deploy.port]
+min=10000
+max=65500
+
+[server.deploy.image]
+prefix="deploy_"
+postfix=""

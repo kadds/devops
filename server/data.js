@@ -7,7 +7,8 @@ const sequelize = new Sequelize({
         min: 0,
         acquire: 30000,
         idle: 10000
-    }
+    },
+    logging: () => { }
 })
 
 // platform
@@ -272,6 +273,10 @@ const m_deploy_stream = sequelize.define('deploy_stream', {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+    content: {
+        type: DataTypes.JSON,
+        allowNull: false,
+    }
 }, {
     sequelize,
     timestamps: true,

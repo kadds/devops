@@ -17,7 +17,7 @@ async function entry(request, param, opt) {
         const base_dir = param.base_dir + '/' + opt.id + '/'
         await logger.write('- checking directory\n')
         if (param.base_dir.indexOf(' ') >= 0) {
-            throw 'invalid parameter base_dir ' + param.base_dir
+            throw new Error('invalid parameter base_dir ' + param.base_dir)
         }
         await exec(ssh, 'mkdir -p ' + base_dir, null, logger)
         ssh.base_dir = base_dir

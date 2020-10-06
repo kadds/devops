@@ -124,7 +124,7 @@ class LogStream {
             this.listener.splice(idx, 1)
             return
         }
-        throw 'not find fn'
+        throw new Error('not find fn')
     }
 }
 
