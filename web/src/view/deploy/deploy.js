@@ -80,7 +80,7 @@ const Deploy = (props) => {
                     is_active: true,
                     upload_loading: false,
                     rollback_loading: false,
-                    last_time: new Date(last_time).toLocaleString()
+                    last_time: last_time
                 })
                 upload_form.setFieldsValue({ interval: window.localStorage.getItem('upload_interval') || 30 })
                 rollback_form.setFieldsValue({ interval: window.localStorage.getItem('rollback_interval') || 10 })
@@ -251,9 +251,13 @@ const Deploy = (props) => {
                     <Tabs defaultActiveKey='0'>
                         <Tabs.TabPane tab='Summary' key='0'>
                             <Spin spinning={data.loading}>
-                                <Typography.Title level={5}>
-                                    Expected completion time:{data.last_time}
-                                </Typography.Title>
+                                {
+                                    data.last_time > 0 && (
+                                        <Typography.Title level={5}>
+                                            Expected completion time:{new Date(data.last_time).toLocaleString()}
+                                        </Typography.Title>
+                                    )
+                                }
                                 <Progress status={data.is_active ? 'active' : 'exception'} percent={data.done_cnt / data.all_cnt * 100}
                                 ></Progress>
                                 <Table rowKey='id' dataSource={data.op_list} columns={opColumns}></Table>
@@ -304,7 +308,7 @@ const Deploy = (props) => {
                         <Tabs.TabPane tab='Rollback' key='2'>
                             <Transfer
                                 style={{ width: '100%', textAlign: 'left' }}
-                                titles={['Ready to rollback', 'Rollback']}
+                                titles={['Ready to rollback', 'Rollbacked']}
                                 onChange={onRollbackChange}
                                 dataSource={data.all_rollback}
                                 targetKeys={data.rollback_targets}

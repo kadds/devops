@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { withRouter } from "react-router-dom";
 import PipeLineStageComm from './stages/comm'
 import PipeLineStageDone from './stages/done'
@@ -21,11 +21,11 @@ const PipeLineDetail = (props) => {
         run()
     }, [props.location, needUpdate])
 
-    const onClose = () => {
+    const onClose = useCallback(() => {
         if (needUpdate === 0 && pipeline.data.stage <= 4 && pipeline.data.stage >= 1) {
             setNeedUpdate(needUpdate + 1)
         }
-    }
+    }, [needUpdate, pipeline])
 
     return (
         <div className='page'>

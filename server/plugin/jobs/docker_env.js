@@ -22,7 +22,8 @@ async function entry(request, param, opt) {
         let cache = await m_docker_cache.findOne({ where: { mode_name: pipeline.mode_name, vm_name: param.vm_name } })
         // select cached docker 
         await logger.write('- detecting docker container to reuse.\n')
-        if (cache && cache.docker_names && cache.docker_names.names.length > 0) {
+        console.log(cache)
+        if (cache && cache.docker_names && cache.docker_names.names && cache.docker_names.names.length > 0) {
             let len = cache.docker_names.names.length
             for (let i = cache.docker_names.names.length - 1; i >= 0; i--) {
                 docker_name = cache.docker_names.names[i]
@@ -58,8 +59,7 @@ async function entry(request, param, opt) {
             if (is_new)
                 docker_names.names.push(docker_name)
 
-            const [num] = await m_docker_cache.create({ docker_names: docker_names, mode_name: pipeline.mode_name, vm_name: param.vm_name, version: 0 })
-            if (num !== 1) throw 'docker cache create fail'
+            await m_docker_cache.create({ docker_names: docker_names, mode_name: pipeline.mode_name, vm_name: param.vm_name, version: 0 })
         }
 
         if (is_new) {

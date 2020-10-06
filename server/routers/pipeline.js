@@ -4,6 +4,7 @@ const { get_job_list, job_param_valid } = require('../plugin/index')
 const { post_pipeline_op } = require('../worker/index')
 const { new_ws_id } = require('../ws')
 const FLAGS = require('../flags')
+const { Op } = require('sequelize')
 
 let router = new Router()
 
@@ -128,6 +129,32 @@ router.post('/jobs/valid', async (req, rsp, next) => {
     else {
         rsp.json({ err: 0, data: res })
     }
+})
+
+router.get('/stat', async (req, rsp, next) => {
+    const ctime = new Date()
+    ctime.setHours(0, 0, 0, 0)
+    ctime.setDate(ctime.getDate() - 30)
+
+    const pipelines = await m_pipeline.findAll({ where: { ctime: { [Op.gte]: ctime.valueOf() } } })
+    const map = new Map()
+    for (let i = 0; i < 30; i++) {
+        ctime.setDate(ctime.getDate() + 1)
+        map.set(ctime.valueOf(), 0)
+    }
+    for (const pipe of pipelines) {
+        const date = new Date(pipe.ctime)
+        date.setHours(0, 0, 0, 0)
+        const timestamp = date.valueOf()
+        map.set(timestamp, map.get(timestamp) + 1)
+    }
+    const list = []
+    for (const [key, v] of map.entries()) {
+        list.push({ time: key, count: v })
+    }
+    list.sort((a, b) => (a.time < b.time))
+
+    rsp.json({ err: 0, list })
 })
 
 const pipeline = router

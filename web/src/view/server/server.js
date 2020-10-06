@@ -125,7 +125,7 @@ const Server = (props) => {
         setVmList({ loading: false, data: vmdata })
         form.setFieldsValue({
             mode_name: props.mode_name,
-            flag_env: 'normal'
+            flag_env: 'none'
         })
     }
 
@@ -442,9 +442,9 @@ const Server = (props) => {
                     </Form.Item>
                     <Form.Item label='Environment' name='flag_env' rules={[{ required: true, message: 'Please select env' }]}>
                         <Select>
-                            <Select.Option value={'none'} key='none'>Normal</Select.Option>
-                            <Select.Option value={'test'} key='test'>Test</Select.Option>
-                            <Select.Option value={'gray'} key='gray'>Gray</Select.Option>
+                            <Select.Option value='none' key='none'>Normal</Select.Option>
+                            <Select.Option value='test' key='test'>Test</Select.Option>
+                            <Select.Option value='gray' key='gray'>Gray</Select.Option>
                         </Select>
                     </Form.Item>
                 </Form>

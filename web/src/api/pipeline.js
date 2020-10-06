@@ -28,4 +28,8 @@ async function get_pipeline_log_id(id) {
     return (await post('/pipeline/log', { id })).data
 }
 
-export { get_pipelines, get_jobs, jobs_valid, create_pipeline, delete_pipeline, get_pipeline, get_pipeline_log_id }
+async function get_pipeline_stat() {
+    return (await get('/pipeline/stat')).list
+}
+
+export { get_pipelines, get_jobs, jobs_valid, create_pipeline, delete_pipeline, get_pipeline, get_pipeline_log_id, get_pipeline_stat }
