@@ -206,11 +206,9 @@ const m_user = sequelize.define('user', {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    avatar: {
-        type: DataTypes.STRING,
-    },
-    mark: {
-        type: DataTypes.STRING,
+    content: {
+        type: DataTypes.JSON,
+        allowNull: false,
     }
 }, {
     sequelize,
@@ -294,7 +292,7 @@ async function init() {
     await m_docker_cache.sync()
     await m_deploy_stream.sync()
     if (await m_user.findByPk('admin') === null) {
-        await m_user.create({ username: 'admin', password: '123' })
+        await m_user.create({ username: 'admin', password: '123', content: {} })
     }
 }
 

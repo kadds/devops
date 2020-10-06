@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Fragment } from 'react'
 import { Route, Switch, NavLink } from 'react-router-dom'
 import { Layout, Menu, Avatar, Row, Col, Dropdown } from 'antd'
 import { info, logout } from './api/user'
 import {
+    UserOutlined,
     MenuUnfoldOutlined,
     MenuFoldOutlined,
     LogoutOutlined,
@@ -78,11 +79,11 @@ function Main(props) {
         set_collapsed(!collapsed)
     }
 
-    const [username, set_username] = useState('')
+    const [user, set_user] = useState(null)
     useEffect(() => {
         async function run() {
             const user = await info()
-            set_username(user.username)
+            set_user(user)
         }
         run()
     }, [])
@@ -93,9 +94,17 @@ function Main(props) {
 
     const userMenu = (
         <Menu>
-            <Menu.Item onClick={do_logout} icon={<LogoutOutlined />}>
-                Logout
-            </Menu.Item>
+            {user && (
+                <Fragment>
+                    <Menu.Item>
+                        Username: {user.username}
+                    </Menu.Item>
+                    <Menu.Item onClick={do_logout} icon={<LogoutOutlined />}>
+                        Logout
+                        </Menu.Item>
+                </Fragment>
+            )
+            }
         </Menu>
     )
     const MenuRender = (props) => {
@@ -170,9 +179,13 @@ function Main(props) {
                                     <SettingOutlined onClick={onSettingClick} />
                                 </Col>
                                 <Col>
-                                    <Dropdown overlay={userMenu}>
-                                        <Avatar style={{ color: '#f56a00', backgroundColor: '#fde3cf', cursor: 'pointer' }}>{username}</Avatar>
-                                    </Dropdown>
+                                    {
+                                        user && (
+                                            <Dropdown overlay={userMenu}>
+                                                <Avatar style={{ backgroundColor: '#87d068', cursor: 'pointer' }} icon={<UserOutlined />} />
+                                            </Dropdown>
+                                        )
+                                    }
                                 </Col>
                             </Row>
                         </Col>

@@ -5,20 +5,29 @@ const { create_token, delete_token } = require('../token')
 let router = new Router()
 
 router.get('/', async (req, rsp, next) => {
-    if (req.params.username === undefined || req.params.username == '') {
+    let user = null
+    if (req.query.username === undefined || req.query.username == '') {
         // current user
-        req.params.username = req.user.data.username
+        user = req.user.data.username
+    }
+    else {
+        user = req.query.username
     }
 
-    let item = await m_user.findByPk(req.params.username)
+    let item = await m_user.findByPk(user)
     if (item === null) {
         rsp.json({ err: 400, msg: 'user not find' })
     }
     else {
-        item.password = undefined
-        item.ctime = item.ctime.valueOf()
-        item.mtime = undefined
-        rsp.json({ err: 0, data: item.get() })
+        let user = {}
+        user.username = item.username
+        user.ctime = item.ctime.valueOf()
+        user.last_login_time = item.content.last_login_time || null
+        user.last_login_ip = item.content.last_login_ip || ''
+        user.nick = item.content.nick || user.username
+        user.mark = item.content.mark || ''
+
+        rsp.json({ err: 0, data: user })
     }
 })
 
@@ -28,11 +37,15 @@ router.post('/register', async (req, rsp, next) => {
 })
 
 router.post('/login', async (req, rsp, next) => {
-    const item = await m_user.findByPk(req.body.username)
+    const item = await m_user.findByPk(req.body.username, { where: { password: req.body.password } })
     if (item === null) {
         rsp.json({ err: 201, msg: 'password error' })
     }
     else {
+        item.content.last_login_time = new Date().valueOf()
+        item.content.last_login_ip = req.ip
+
+        await m_user.update({ content: item.content }, { where: { username: item.username } })
         rsp.json({ err: 0, token: create_token({ username: req.body.username }) })
     }
 })
@@ -47,8 +60,6 @@ router.get('/list', async (req, rsp, next) => {
     for (const it of data) {
         let dt = {}
         dt.username = it.username
-        dt.avatar = it.avatar
-        dt.ctime = it.ctime.valueOf()
         list.push(dt)
     }
     rsp.json({ err: 0, list })

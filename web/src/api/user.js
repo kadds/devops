@@ -22,7 +22,7 @@ async function info(username) {
 
 async function user_list() {
     const data = await get('/user/list')
-    return data.list;
+    return data.list
 }
 
 
