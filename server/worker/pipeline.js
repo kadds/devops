@@ -1,5 +1,5 @@
 const { conn, m_pipeline, m_server, m_mode, m_vm } = require('../data')
-const { run_job, get_job_deps, close_job } = require('../plugin/index')
+const { run_job, get_job_deps, close_job, clean_job } = require('../plugin/index')
 const { LogStream, remove, log_path } = require('../utils/log_stream')
 const fs = require('fs').promises
 const FLAGS = require('../flags')
@@ -128,7 +128,9 @@ async function stop(id) {
     await remove(id)
     // TODO: remove pipeline cache
     try {
-
+        const pipeline = await m_pipeline.findByPk(id)
+        const env_job = pipeline.content.jobs.env[0]
+        ssh = await clean_job(env_job.name, env_job.param, { id })
     }
     catch (e) { console.error(e) }
 

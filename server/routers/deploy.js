@@ -17,6 +17,10 @@ router.get('/list', async (req, rsp, next) => {
     for (const it of data) {
         let item = {}
         const pipeline = await m_pipeline.findByPk(it.pipeline_id)
+        if (pipeline === null) {
+            await m_deploy.destroy({ where: { id: it.id } })
+            continue
+        }
         const servers = await m_server.count({ where: { mode_name: it.mode_name } })
         item.id = it.id
         item.mode_name = it.mode_name
@@ -58,12 +62,10 @@ router.get('', async (req, rsp, next) => {
     const op_list = []
 
     for (const task of tasks) {
-        if (!is_done_task(task)) {
-            if (task.op === 0)
-                upload_map.set(task.server, task)
-            else
-                rollback_map.set(task.server, task)
-        }
+        if (task.op === 0)
+            upload_map.set(task.server, task)
+        else
+            rollback_map.set(task.server, task)
 
         op_list.push({
             ctime: task.ctime.valueOf(),
@@ -82,8 +84,8 @@ router.get('', async (req, rsp, next) => {
                 name: v.name,
                 is_test: v.flag & FLAGS.SVR_FLAG_TEST,
                 version: v.content.version,
-                can_upload: !upload_map.has(v.name), // upload
-                can_rollback: !rollback_map.has(v.name), // rollback
+                can_upload: v.content.version !== deploy.pipeline_id && (v.status === FLAGS.SVR_STATUS_RUNNING || v.status === FLAGS.SVR_STATUS_STOPPED), // upload
+                can_rollback: v.content.version === deploy.pipeline_id && (v.status === FLAGS.SVR_STATUS_RUNNING || v.status === FLAGS.SVR_STATUS_STOPPED), // rollback
             }
         })
 
@@ -112,7 +114,7 @@ router.post('/upload', async (req, rsp, next) => {
     })
     let now = new Date().valueOf()
     if (!last_time) {
-        last_time = now
+        last_time = now - t
     }
     else {
         last_time = last_time.target_time
@@ -156,7 +158,7 @@ router.post('/rollback', async (req, rsp, next) => {
 
     let now = new Date().valueOf()
     if (!last_time) {
-        last_time = now
+        last_time = now - t
     }
     else {
         last_time = last_time.target_time

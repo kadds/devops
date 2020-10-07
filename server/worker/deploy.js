@@ -6,7 +6,11 @@ const FLAGS = require('../flags')
 async function do_task_begin(task) {
     let target_version = null
     if (task.op === 1) {
-        const upload_task = await m_deploy_stream.findOne({ where: { server: task.server, op: 0, status: FLAGS.DEPLOY_STATUS_DONE }, order: [['mtime', 'DESC']], limit: 1 })
+        const upload_task = await m_deploy_stream.findOne({
+            where: { server: task.server, op: 0, status: FLAGS.DEPLOY_STATUS_DONE },
+            order: [['mtime', 'DESC']],
+            limit: 1
+        })
         if (upload_task === null) {
             m_deploy_stream.update({
                 status: FLAGS.DEPLOY_STREAM_STATUS_ERROR,

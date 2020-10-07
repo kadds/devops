@@ -1,7 +1,7 @@
 const { m_server, m_mode, m_vm } = require('../data')
 const NodeSSH = require('node-ssh').NodeSSH
 const FLAGS = require('../flags')
-const { update_vm_servers } = require('./../utils/vmutils')
+const { update_vm_servers, exec } = require('./../utils/vmutils')
 const Config = require('../config')
 
 async function update_vm_agent(vm_name) {
@@ -46,12 +46,20 @@ function config_get() {
     const prefix = config.server.deploy.image.prefix
     const postfix = config.server.deploy.image.postfix
     const log_port = config.log.port
-    return { min, max, log_port, prefix, postfix }
+    const server_prefix = config.server.deploy.server.prefix
+    const server_postfix = config.server.deploy.server.postfix
+    return { min, max, log_port, prefix, postfix, server_prefix, server_postfix }
+}
+
+function name_get(config, mode, server) {
+    const image_name = `${config.prefix}${mode}${config.postfix}`
+    const container_name = `${config.server_prefix}${server}${config.server_postfix}`
+    return { container_name, image_name }
 }
 
 async function stop(name) {
     console.log(name + ' stopping')
-    const server = await m_server.findByPk(name)
+    let server = await m_server.findByPk(name)
     let is_last_start = false
     if (server.status !== FLAGS.SVR_STATUS_RUNNING) {
         if (server.status === FLAGS.SVR_STATUS_DESTROYING || server.status === FLAGS.SVR_STATUS_DESTROYED || server.status === FLAGS.SVR_STATUS_INIT) {
@@ -68,13 +76,23 @@ async function stop(name) {
     }
     let old_version = null
     let ssh = null
+    let container_name = null, image_name = null
     try {
         ssh = await connect(server.vm_name)
-        const res = await ssh.execCommand('docker ps --format "{{.Image}}" --filter name=' + name)
-        if (res.stdout !== '') {
-            old_version = get_version(res.stdout)
+        const ret = name_get(config_get(), server.mode_name, server.name)
+        container_name = ret.container_name
+        image_name = ret.image_name
+
+        const res = await exec(ssh, 'docker ps --format "{{.Image}}" --filter name=' + container_name, null)
+        if (res !== '') {
+            old_version = get_version(res)
+            await exec(ssh, 'docker stop ' + container_name, null)
         }
-        await ssh.execCommand('docker stop ' + name)
+        if (server.content.version !== old_version) {
+            server.content.version === old_version
+            console.log('update server ' + name + ' to version ' + old_version)
+            await m_server.update({ content: server.content }, { where: { name } })
+        }
     }
     catch (e) {
         if (is_last_start) {
@@ -87,21 +105,22 @@ async function stop(name) {
     }
 
     try {
-        await ssh.execCommand('docker rm ' + name)
+        await exec(ssh, 'docker rm ' + container_name, null)
     }
     catch (e) {
         // ignore
         console.error(e)
     }
 
-    await m_server.update({ status: FLAGS.SVR_STATUS_STOPPED }, { where: { name: name } })
+    let server = await m_server.findByPk(name)
+    await m_server.update({ status: FLAGS.SVR_STATUS_STOPPED, content: { ...server.content, version: null } }, { where: { name: name } })
 
-    console.log(name + ' stopped')
+    console.log(name + ' stopped version ' + old_version)
     return old_version
 }
 
 async function start(name, version) {
-    console.log(name + ' starting')
+    console.log(name + ' starting ' + version)
     let server = await m_server.findByPk(name)
     if (server.status !== FLAGS.SVR_STATUS_STOPPED) {
         throw new Error(`server state is ${server.status} cannot start`)
@@ -109,6 +128,8 @@ async function start(name, version) {
 
     if (version === null || version === undefined) {
         version = server.content.version
+        // just restart
+        console.log(name + ' get version ' + version)
     }
     else {
         server.content.version = version
@@ -123,12 +144,15 @@ async function start(name, version) {
         throw new Error('server start fail because of update check fail ' + name)
     }
     let ssh = null
+    let container_name = null, image_name = null
     try {
         ssh = await connect(server.vm_name)
         // pull image
-        const config = config_get()
+        const ret = name_get(config_get(), server.mode_name, server.name)
+        container_name = ret.container_name
+        image_name = ret.image_name
 
-        await ssh.execCommand(`docker pull ${config.prefix}${name}${config.postfix}:${version}`)
+        // await exec(ssh, `docker pull ${image_name}:${version}`, null)
     }
     catch (e) {
         // pull docker fail
@@ -138,10 +162,9 @@ async function start(name, version) {
 
     try {
         const vm = await m_vm.findByPk(server.vm_name)
-
         const ip = vm.ip
         // random port
-        await ssh.execCommand(`docker run --network host --env HOST_IP=${ip} -d --name ${name} ${name}:latest sh /root/start.sh`)
+        await exec(ssh, `docker run --network host --env HOST_IP=${ip} -d --name ${container_name} ${image_name}:${version}`, null)
     }
     catch (e) {
         await m_server.update({ status: FLAGS.SVR_STATUS_STOPPED }, { where: { name } })
@@ -155,11 +178,31 @@ async function start(name, version) {
     console.log(name + ' started')
 }
 
+async function is_server_start(name) {
+    let server = await m_server.findByPk(name)
+    const ssh = await connect(server.vm_name)
+    const config = config_get()
+    const container_name = `${config.prefix}${server.mode_name}${config.postfix}`
+
+    const res = await exec(ssh, 'docker ps --format "{{.Image}}" --filter name=' + container_name, null)
+    if (res !== '') {
+        old_version = get_version(res)
+    }
+
+    if (server.content.version !== old_version) {
+        server.content.version === old_version
+        console.log('update server ' + name + ' to version ' + old_version)
+        await m_server.update({ content: server.content }, { where: { name } })
+    }
+
+    return old_version !== null
+}
+
 async function restart(name, version) {
     console.log(name + ' restarting')
     let old_version = await stop(name)
     await start(name, version)
-    console.log(name + ' restarted')
+    console.log(name + ' restarted. old_version is ' + old_version)
     return old_version
 }
 

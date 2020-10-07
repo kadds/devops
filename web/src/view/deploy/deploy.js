@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { get_deploy_list, get_deploy, deploy_do_upload, deploy_do_rollback, stop_deploy } from '../../api/deploy'
 import { withRouter } from "react-router-dom"
-import { Table, Row, Col, Popconfirm, Tabs, Tag, Divider, Button, Form, Transfer, Progress, InputNumber, Spin, Typography } from 'antd'
+import { Table, Alert, Row, Col, Popconfirm, Tabs, Tag, Divider, Button, Form, Transfer, Progress, InputNumber, Spin, Typography } from 'antd'
 import queryString from 'query-string'
 
 const TagRender = (props) => {
@@ -265,6 +265,11 @@ const Deploy = (props) => {
                         </Tabs.TabPane>
                         <Tabs.TabPane tab='Upload' key='1'>
                             <Spin spinning={data.loading}>
+                                {
+                                    data.op_list.length === 0 && (
+                                        <Alert type="warning" style={{ padding: 10, margin: 5 }} showIcon message={'Please upload test server firstly.'} />
+                                    )
+                                }
                                 <Transfer
                                     style={{ width: '100%', textAlign: 'left' }}
                                     titles={['Ready to upload', 'Uploaded']}
@@ -306,44 +311,46 @@ const Deploy = (props) => {
                             </Spin>
                         </Tabs.TabPane>
                         <Tabs.TabPane tab='Rollback' key='2'>
-                            <Transfer
-                                style={{ width: '100%', textAlign: 'left' }}
-                                titles={['Ready to rollback', 'Rollbacked']}
-                                onChange={onRollbackChange}
-                                dataSource={data.all_rollback}
-                                targetKeys={data.rollback_targets}
-                                render={it => {
-                                    if (it.is_test) {
-                                        return <span>{it.title} -Test</span>
-                                    }
-                                    else {
-                                        return <span>{it.title}</span>
-                                    }
-                                }}
-                                listStyle={{
-                                    width: 350,
-                                    height: 400,
-                                }}
-                            >
-                            </Transfer>
-                            <Divider />
-                            <Form
-                                onFinish={onRollbackClick}
-                                form={rollback_form}
-                            >
-                                <Row gutter={[8, 8]}>
-                                    <Col>
-                                        <Form.Item name='interval' label='Interval (seconds)'>
-                                            <InputNumber min={1} max={3600}></InputNumber>
-                                        </Form.Item>
-                                    </Col>
-                                    <Col>
-                                    </Col>
-                                </Row>
-                                <Button disabled={data.rollback_targets.length === 0} type='primary'
-                                    loading={data.rollback_loading}
-                                    htmlType='submit'>Rollback {data.rollback_targets.length} server(s)</Button>
-                            </Form>
+                            <Spin spinning={data.loading}>
+                                <Transfer
+                                    style={{ width: '100%', textAlign: 'left' }}
+                                    titles={['Ready to rollback', 'Rollbacked']}
+                                    onChange={onRollbackChange}
+                                    dataSource={data.all_rollback}
+                                    targetKeys={data.rollback_targets}
+                                    render={it => {
+                                        if (it.is_test) {
+                                            return <span>{it.title} -Test</span>
+                                        }
+                                        else {
+                                            return <span>{it.title}</span>
+                                        }
+                                    }}
+                                    listStyle={{
+                                        width: 350,
+                                        height: 400,
+                                    }}
+                                >
+                                </Transfer>
+                                <Divider />
+                                <Form
+                                    onFinish={onRollbackClick}
+                                    form={rollback_form}
+                                >
+                                    <Row gutter={[8, 8]}>
+                                        <Col>
+                                            <Form.Item name='interval' label='Interval (seconds)'>
+                                                <InputNumber min={1} max={3600}></InputNumber>
+                                            </Form.Item>
+                                        </Col>
+                                        <Col>
+                                        </Col>
+                                    </Row>
+                                    <Button disabled={data.rollback_targets.length === 0} type='primary'
+                                        loading={data.rollback_loading}
+                                        htmlType='submit'>Rollback {data.rollback_targets.length} server(s)</Button>
+                                </Form>
+                            </Spin>
                         </Tabs.TabPane>
                     </Tabs>
                 )

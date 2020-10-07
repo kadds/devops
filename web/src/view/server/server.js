@@ -470,4 +470,4 @@ const Server = (props) => {
     )
 }
 
-export default Server
+export default withRouter(Server)

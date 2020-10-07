@@ -81,9 +81,15 @@ async function entry(request, param, opt) {
             }
         }
         else {
+            await logger.write('- note docker container is already existed, reuse it.\n')
+            // run it if not running
+            if (await exec(ssh, `docker ps --filter name=${docker_name} --format "{{.Names}}"`, null, logger) !== docker_name) {
+                // start it
+                await logger.write('- start container\n')
+                await exec(ssh, `docker start ${docker_name}`, null, logger)
+            }
             ssh.docker_name = docker_name
             ssh.base_dir = '/root/'
-            await logger.write('- note docker container is already existed, reuse it.\n')
         }
 
         return ssh
@@ -131,11 +137,37 @@ async function entry(request, param, opt) {
             ssh.dispose()
         }
     }
+    else if (request === 'clean') {
+        const vm = await m_vm.findByPk(param.vm_name)
+        const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+        const pipeline = await m_pipeline.findByPk(opt.id)
+        let cache = await m_docker_cache.findOne({ where: { mode_name: pipeline.mode_name, vm_name: param.vm_name } })
+        // select cached docker 
+        if (cache && cache.docker_names && cache.docker_names.names && cache.docker_names.names.length > 0) {
+            await m_docker_cache.destroy({ where: { mode_name: pipeline.mode_name, vm_name: param.vm_name } })
+
+            const fn = async () => {
+                for (let i = cache.docker_names.names.length - 1; i >= 0; i--) {
+                    docker_name = cache.docker_names.names[i]
+                    try {
+                        await exec(ssh, 'docker stop ' + name, null, null)
+                    }
+                    catch (e) {
+                    }
+                    try {
+                        await exec(ssh, 'docker rm ' + name, null, null)
+                    }
+                    catch (e) {
+                    }
+                }
+                ssh.dispose()
+            }
+            // do it async and return now
+            fn()
+        }
+    }
 }
 
-function delete_cache() {
-
-}
 
 const params = [{ name: 'dockerimg', label: 'docker image name', type: 'string', default: 'archlinux:latest', description: 'Docket base image for environment.' }]
 const pipeline_params = [{ name: 'vm_name', label: 'Vm to run', description: 'Which virtual machine is ready to run the pipeline?', type: 'select VM' },

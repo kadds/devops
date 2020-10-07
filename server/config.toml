@@ -17,3 +17,6 @@ max=65500
 [server.deploy.image]
 prefix="deploy_"
 postfix=""
+[server.deploy.server]
+prefix="service_"
+postfix=""

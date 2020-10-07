@@ -137,7 +137,7 @@ function do_result(res, logger) {
         let data = 'code ' + res.code + '\n'
         if (res.stdout) {
             data += res.stdout
-            if (data[data.length - 1] !== '\n') {
+            if (data[data.length - 1] !== '\n' && logger) {
                 data += '\n'
             }
         }
@@ -151,22 +151,42 @@ function do_result(res, logger) {
     }
     else {
         if (res.stdout[res.stdout.length - 1] === '\n') {
-            logger.write(res.stdout)
+            if (logger) {
+                logger.write(res.stdout)
+            }
+            else {
+                console.log(res.stdout)
+            }
         }
         else {
-            logger.write(res.stdout + '\n')
+            if (logger) {
+                logger.write(res.stdout + '\n')
+            }
+            else {
+                console.log(res.stdout)
+            }
         }
         return res.stdout
     }
 }
 
-async function exec(ssh, cmd, stdin, logger, in_vm = false) {
-    await logger.write('$-> ')
-    await logger.write(cmd)
-    await logger.write('\n')
-    if (stdin) {
-        await logger.write(stdin)
+async function exec(ssh, cmd, stdin, logger = null, in_vm = false) {
+    if (logger) {
+        await logger.write('$-> ')
+        await logger.write(cmd)
         await logger.write('\n')
+    }
+    else {
+        console.log('$-> ' + cmd)
+    }
+    if (stdin) {
+        if (logger) {
+            await logger.write(stdin)
+            await logger.write('\n')
+        }
+        else {
+            console.log(stdin)
+        }
     }
     if (ssh.docker_name && !in_vm) {
         if (stdin) {
