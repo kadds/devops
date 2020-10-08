@@ -112,7 +112,7 @@ async function stop(name) {
         console.error(e)
     }
 
-    let server = await m_server.findByPk(name)
+    server = await m_server.findByPk(name)
     await m_server.update({ status: FLAGS.SVR_STATUS_STOPPED, content: { ...server.content, version: null } }, { where: { name: name } })
 
     console.log(name + ' stopped version ' + old_version)

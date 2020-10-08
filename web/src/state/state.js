@@ -37,4 +37,4 @@ function uri(state = initStateUri, action) {
     return state
 }
 
-export { login }
+export { login, uri }
