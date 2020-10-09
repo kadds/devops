@@ -1,14 +1,21 @@
 [mongodb]
 uri="mongodb://localhost:27017"
 dbname="devops_db"
-monitorColumnName="monitor"
-serviceColumnName="service"
-logColumnName="log"
+vmMonitorColumnName="vm_monitor"
+serverMonitorColumnName="server_monitor"
+logColumnName="app_log"
+clickLogColumnName="click_log"
+serverInfoColumnName="server_log"
 
-[log]
+[logger]
 bind="127.0.0.1"
 port=10900
-maxSizePer=109
+maxSize=1024
+
+[monitor]
+interval=5
+eth="eth0"
+block="vda"
 
 [server.deploy.port]
 min=10000
