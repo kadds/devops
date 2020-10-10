@@ -1,15 +1,25 @@
 use super::config;
-use notify::{RecommendedWatcher, RecursiveMode, Result, Watcher};
+use super::db;
+use mongodb::bson::doc;
+use notify::{event, RecommendedWatcher, RecursiveMode, Result, Watcher};
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncBufReadExt;
 use tokio::sync::Notify;
 use tokio::{fs::File, io::BufReader, time, time::Duration};
+
+static mut WATCHER: Option<RecommendedWatcher> = None;
 
 fn watch(path: &str, notify: Arc<Notify>) -> Result<()> {
     let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| match res {
         Ok(event) => {
             println!("event: {:?}", event);
-            notify.notify();
+            let ev: event::Event = event;
+            if ev.kind
+                == event::EventKind::Access(event::AccessKind::Close(event::AccessMode::Write))
+            {
+                notify.notify();
+            }
         }
         Err(e) => {
             eprintln!("watch error: {:?}", e);
@@ -17,24 +27,26 @@ fn watch(path: &str, notify: Arc<Notify>) -> Result<()> {
             notify.notify();
         }
     })?;
-
     watcher.watch(path, RecursiveMode::Recursive)?;
+    unsafe {
+        WATCHER = Some(watcher);
+    }
     Ok(())
 }
 
 // watching servers_name.txt has changed and reloading it
 // normal std thread
-fn watch_thread(path: String, notify: Arc<Notify>) {
+async fn watch_main(path: String, notify: Arc<Notify>) {
     match watch(&path, notify.clone()) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("watch api returns {}", e);
+            eprintln!("watch api returns {} fallback to tick", e);
             // fallback to tick
             loop {
+                // do loop
+                tokio::time::delay_for(Duration::from_secs(60)).await;
                 //  call load
                 notify.notify();
-                // do loop
-                std::thread::sleep(std::time::Duration::from_secs(60));
             }
         }
     }
@@ -97,11 +109,42 @@ struct NetIoStat {
     write_package: u64,
 }
 
+impl NetIoStat {
+    fn delta(&self, last: &NetIoStat) -> NetIoStat {
+        NetIoStat {
+            read_bytes: self.read_bytes - last.read_bytes,
+            write_bytes: self.write_bytes - last.write_bytes,
+            read_package: self.read_package - last.read_package,
+            write_package: self.write_package - last.write_package,
+        }
+    }
+}
+
 #[derive(Default, Debug)]
 struct DiskIoStat {
     read_package: u64,
     write_package: u64,
 }
+
+impl DiskIoStat {
+    fn delta(&self, last: &DiskIoStat) -> DiskIoStat {
+        DiskIoStat {
+            read_package: self.read_package - last.read_package,
+            write_package: self.write_package - last.write_package,
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+struct NameConfig {
+    vm_name: String,
+    servers_name: Vec<String>,
+}
+
+static mut LASTNAMECONFIG: Option<Arc<NameConfig>> = None;
+static mut LASTCPUINFO: Option<CpuInfo> = None;
+static mut LASTNETINFO: Option<NetIoStat> = None;
+static mut LASTBLOCKINFO: Option<DiskIoStat> = None;
 
 fn read_to_cpu_info(line: &str) -> CpuInfo {
     let mut list = line.split_whitespace();
@@ -129,16 +172,6 @@ fn read_to_cpu_info(line: &str) -> CpuInfo {
         guest_nice,
     }
 }
-
-#[derive(Default, Debug)]
-struct NameConfig {
-    vm_name: String,
-    servers_name: Vec<String>,
-}
-
-static mut LASTNAMECONFIG: Option<Arc<NameConfig>> = None;
-
-static mut LASTCPUINFO: Option<CpuInfo> = None;
 
 async fn read_mem() -> Option<u64> {
     if let Ok(file) = File::open("/proc/meminfo").await {
@@ -183,31 +216,29 @@ async fn read_cpu_stat() -> Option<CpuInfo> {
 async fn read_cpu(interval_time: u64) -> Option<f32> {
     if let Some(new_cpu_info) = read_cpu_stat().await {
         unsafe {
-            let usage = if let Some(last) = &LASTCPUINFO {
-                new_cpu_info.calc_usage(last)
-            } else if interval_time > 2 {
-                // wait 1000ms and retry read
+            if let Some(last) = &LASTCPUINFO {
+                let usage = new_cpu_info.calc_usage(last);
                 LASTCPUINFO = Some(new_cpu_info);
-                time::interval(Duration::from_millis(1000)).tick().await;
+                return Some(usage);
+            } else if interval_time > 1 {
+                LASTCPUINFO = Some(new_cpu_info);
+                // wait 1000ms and retry read
+                time::delay_for(Duration::from_millis(1000)).await;
                 if let Some(new_cpu) = read_cpu_stat().await {
                     if let Some(last) = &LASTCPUINFO {
                         return Some(new_cpu.calc_usage(last));
                     }
+                    LASTCPUINFO = Some(new_cpu);
                 }
-                return None;
             } else {
                 LASTCPUINFO = Some(new_cpu_info);
-                return None;
-            };
-
-            LASTCPUINFO = Some(new_cpu_info);
-            return Some(usage);
+            }
         }
     }
     None
 }
 
-async fn read_net(eth_name: &str) -> Option<NetIoStat> {
+async fn read_net_stat(eth_name: &str) -> Option<NetIoStat> {
     if let Ok(file) = File::open("/proc/net/dev").await {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
@@ -237,7 +268,31 @@ async fn read_net(eth_name: &str) -> Option<NetIoStat> {
     None
 }
 
-async fn read_block(block_name: &str) -> Option<DiskIoStat> {
+async fn read_net(interval_time: u64, eth_name: &str) -> Option<NetIoStat> {
+    if let Some(new_net_info) = read_net_stat(eth_name).await {
+        unsafe {
+            if let Some(last) = &LASTNETINFO {
+                let delta = new_net_info.delta(last);
+                LASTNETINFO = Some(new_net_info);
+                return Some(delta);
+            } else if interval_time > 1 {
+                LASTNETINFO = Some(new_net_info);
+                time::delay_for(Duration::from_millis(1000)).await;
+                if let Some(new_net) = read_net_stat(eth_name).await {
+                    if let Some(last) = &LASTNETINFO {
+                        return Some(new_net.delta(last));
+                    }
+                    LASTNETINFO = Some(new_net);
+                }
+            } else {
+                LASTNETINFO = Some(new_net_info);
+            }
+        }
+    }
+    None
+}
+
+async fn read_block_stat(block_name: &str) -> Option<DiskIoStat> {
     if let Ok(file) = File::open("/proc/diskstats").await {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
@@ -249,7 +304,6 @@ async fn read_block(block_name: &str) -> Option<DiskIoStat> {
             let mut list = list.skip(2);
             let name = list.next();
             if name.unwrap_or("") == block_name {
-                let mut list = list.skip(2);
                 let read_package = list.next().map_or(0, |v| v.parse().unwrap_or(0));
                 let mut list = list.skip(3);
                 let write_package = list.next().map_or(0, |v| v.parse().unwrap_or(0));
@@ -259,6 +313,30 @@ async fn read_block(block_name: &str) -> Option<DiskIoStat> {
                 });
             }
             line.clear();
+        }
+    }
+    None
+}
+
+async fn read_block(interval_time: u64, block_name: &str) -> Option<DiskIoStat> {
+    if let Some(new_block_info) = read_block_stat(block_name).await {
+        unsafe {
+            if let Some(last) = &LASTBLOCKINFO {
+                let delta = new_block_info.delta(last);
+                LASTBLOCKINFO = Some(new_block_info);
+                return Some(delta);
+            } else if interval_time > 1 {
+                LASTBLOCKINFO = Some(new_block_info);
+                time::delay_for(Duration::from_millis(1000)).await;
+                if let Some(new_block) = read_block_stat(block_name).await {
+                    if let Some(last) = &LASTBLOCKINFO {
+                        return Some(new_block.delta(last));
+                    }
+                    LASTBLOCKINFO = Some(new_block);
+                }
+            } else {
+                LASTBLOCKINFO = Some(new_block_info);
+            }
         }
     }
     None
@@ -276,25 +354,47 @@ async fn vm_tick(interval_time: u64) {
     let (used, cpu, net, block) = tokio::join!(
         read_mem(),
         read_cpu(interval_time),
-        read_net(&eth_name),
-        read_block(&block_name)
+        read_net(interval_time, &eth_name),
+        read_block(interval_time, &block_name)
     );
-    let mut mem = used.unwrap() as f32;
-    let mut cpu = cpu.unwrap();
-    let mut net = net.unwrap();
-    let mut block = block.unwrap();
-    let mut mem_str = "KiB";
-    if mem > 1024. {
-        mem = mem / 1024.;
-        mem_str = "MiB";
-        if mem > 1024. {
-            mem = mem / 1024.;
-            mem_str = "GiB";
+    let net = net.unwrap_or(NetIoStat::default());
+    let block = block.unwrap_or(DiskIoStat::default());
+
+    let mongo = match db::mongo_vm_monitor().await {
+        Some(v) => v,
+        None => {
+            eprintln!("open mongodb connection fail");
+            return;
         }
+    };
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("unknown system time")
+        .as_millis() as u64;
+
+    let res = mongo
+        .insert_one(
+            doc! {"data": [
+                (cpu.unwrap_or(0.) * 100.) as u32,
+                used.unwrap_or(0),
+                net.read_bytes,
+                net.write_bytes,
+                net.read_package,
+                net.write_package,
+                block.read_package,
+                block.write_package
+            ],"ts": ts},
+            None,
+        )
+        .await;
+
+    if let Err(err) = res {
+        eprintln!("{}", err);
     }
+
     println!(
-        "mem {}{}, cpu {} net {:?} block {:?}",
-        mem, mem_str, cpu, net, block
+        "mem {:?}, cpu {:?}, net {:?}, block {:?}",
+        used, cpu, net, block,
     );
 }
 
@@ -318,6 +418,8 @@ async fn server_notify_tick(servers_path: String, notify: Arc<Notify>) {
                 if cnt == 0 {
                     break;
                 }
+                // remove last \n
+                line.truncate(line.len() - 1);
                 if name_config.vm_name.len() == 0 {
                     name_config.vm_name = line;
                 } else {
@@ -325,6 +427,11 @@ async fn server_notify_tick(servers_path: String, notify: Arc<Notify>) {
                 }
                 line = String::new();
             }
+            println!(
+                "read vm name is {} servers count {}",
+                name_config.vm_name,
+                name_config.servers_name.len()
+            );
             unsafe {
                 LASTNAMECONFIG = Some(Arc::new(name_config));
             }
@@ -346,18 +453,17 @@ pub async fn init(servers_path: String) {
     tokio::spawn(server_notify_tick(servers_path.clone(), notify));
 
     // start notify thread loop
-    std::thread::spawn(move || watch_thread(servers_path.clone(), notify2));
+    tokio::spawn(watch_main(servers_path.clone(), notify2));
 
     let interval_time = config::get().monitor.interval;
 
     // wait 1 second then servers_name is loaded
-    time::interval(Duration::from_secs(1)).tick().await;
+    time::delay_for(Duration::from_millis(1000)).await;
 
     let mut interval = time::interval(Duration::from_secs(interval_time));
     loop {
-        // run once every tick
-        tokio::spawn(vm_tick(interval_time));
-        tokio::spawn(server_tick(interval_time));
         interval.tick().await;
+        // run once every tick
+        tokio::join!(vm_tick(interval_time), server_tick(interval_time));
     }
 }

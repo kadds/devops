@@ -6,20 +6,12 @@ use tokio::prelude::*;
 
 async fn do_log(log: String, max_size: u32) {
     // remove last \n
-    let log_data = if log.ends_with("\n") {
-        &log[0..log.len() - 1]
-    } else {
-        &log[..]
-    };
-
+    let mut log = log;
+    if log.ends_with("\n") {
+        log.truncate(log.len() - 1);
+    }
     // size overflow
-    let log_data = if log_data.len() > max_size as usize {
-        &log_data[0..max_size as usize]
-    } else {
-        &log_data
-    };
-
-    println!("new line get size {} {}", log_data.len(), log_data);
+    log.truncate(usize::min(max_size as usize, log.len()));
 
     if log.starts_with("0") {
         let logger = match db::mongo_log().await {

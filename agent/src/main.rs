@@ -73,10 +73,10 @@ fn main() {
     }
 
     let mut core = runtime::Builder::new()
+        .basic_scheduler()
         .max_threads(4)
         .core_threads(1)
         .enable_all()
-        .basic_scheduler()
         .build()
         .unwrap();
 
