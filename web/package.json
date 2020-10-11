@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@ant-design/charts": "^1.0.0",
     "antd": "^4.6.6",
     "axios": "^0.20.0",
+    "echarts": "^4.9.0",
+    "echarts-for-react": "^2.0.16",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-redux": "^7.2.1",

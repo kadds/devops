@@ -1,27 +1,27 @@
 const { Router } = require('express')
 let router = new Router()
+const Config = require('../config')
+const MongoClient = require('mongodb').MongoClient
 
 router.get('/vm', async (req, rsp, next) => {
     const vm_name = req.query.name
     if (vm_name) {
+        const config = Config.get()
+        const uri = config.mongodb.uri
+        const dbName = config.mongodb.dbname
+        const collection = config.mongodb.vmMonitorColumnName
+        const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
+        let find_obj = {
+            vm: vm_name,
+            ts: { $gte: 0 }
+        }
+        await db.db(dbName).collection(collection).createIndex({ ts: 1, vm: 1 })
+        const list = await (await db.db(dbName).collection(collection)
+            .find(find_obj).toArray()).map(v => {
+                return [v.ts, ...v.dt]
+            })
         // test data
-        const tmp = [
-            [160189500, 3200, 5120, 150, 24, 1002, 50, 159, 31, 0],
-            [160189560, 3142, 5489, 158, 28, 1432, 32, 598, 22, 0],
-            [160189620, 4799, 4383, 243, 27, 1412, 52, 549, 29, 0],
-            [160189680, 5589, 6534, 255, 15, 701, 42, 1492, 12, 0],
-            [160189740, 8932, 8590, 290, 12, 706, 53, 1124, 15, 0],
-            [160189800, 7829, 10123, 322, 15, 1050, 55, 1000, 13, 0],
-            [160189860, 5601, 8890, 255, 34, 1389, 89, 583, 22, 2],
-            [160189920, 8925, 8802, 213, 23, 1219, 73, 892, 39, 0],
-            [160189980, 6285, 9099, 512, 32, 1024, 49, 1010, 27, 0],
-            [160190040, 4529, 14251, 578, 21, 1589, 89, 982, 58, 1],
-            [160190100, 3859, 13740, 328, 29, 890, 44, 682, 55, 0],
-            [160190160, 3328, 12052, 782, 45, 749, 56, 1592, 33, 0],
-            [160190220, 4417, 7802, 652, 40, 1001, 50, 1493, 31, 0]
-        ]
-
-        rsp.json({ err: 0, data: tmp })
+        rsp.json({ err: 0, data: list })
         return
     }
     throw new Error('unknown params')

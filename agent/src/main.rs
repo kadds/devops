@@ -1,5 +1,3 @@
-use std::fs::File;
-
 extern crate clap;
 extern crate daemonize;
 extern crate tokio;
@@ -12,6 +10,7 @@ use clap::{App, Arg};
 use daemonize::Daemonize;
 use tokio::runtime;
 use tokio::signal::unix::{signal, SignalKind};
+use std::fs::File;
 
 async fn do_async_main(path: &str, server_path: &str) {
     config::load(path).await;

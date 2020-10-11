@@ -1,136 +1,409 @@
 import React, { useState, useEffect, Fragment, useCallback } from 'react'
 import { Row, Col, Card, Select, Spin, InputNumber, Divider } from 'antd'
-import { Line, DualAxes, Area } from '@ant-design/charts'
+import ReactEcharts from 'echarts-for-react'
 import { get_all_vm } from '../../api/vm'
 import { get_monitor_vm } from '../../api/monitor'
+import { useEventListener } from '../../comm/util'
+import echarts from 'echarts'
+import ThemeJson from '../../theme.json'
+
+// register theme object
+echarts.registerTheme('theme', ThemeJson)
+
+const chartStyleMin = {
+    width: 380,
+    height: 220,
+}
+
+const chartStyleNormal = {
+    width: 500,
+    height: 350,
+}
+
+const chartStyleMax = {
+    width: 650,
+    height: 440,
+}
+
+function getChartStyle(width) {
+    if (width > 572) {
+        if (width > 700) {
+            return chartStyleMax
+        }
+        return chartStyleNormal
+    }
+    else {
+        return chartStyleMin
+    }
+}
 
 
 const CommConfig = {
-    padding: 'auto',
-    xField: 'time',
+    toolbox: {
+        feature: {
+            saveAsImage: {},
+            restore: {},
+            dataZoom: {
+                show: true,
+            }
+        }
+    },
+    tooltip: {
+        trigger: 'axis'
+    },
+    legend: {
+        left: 'center'
+    },
     xAxis: {
         type: 'time',
-        tickCount: 50,
-        line: { visible: true },
     },
-    style: {
-        width: 500,
-        height: 300
+    dataZoom: [{
+        type: 'inside',
+        start: 0,
+        end: 100,
+        minValueSpan: 1000,
+        throttle: 0,
     },
+    {
+        start: 0,
+        end: 100,
+        handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+        handleSize: '70%',
+        minValueSpan: 1000,
+        throttle: 0,
+        handleStyle: {
+            color: '#fff',
+            shadowBlur: 3,
+            shadowColor: 'rgba(0, 0, 0, 0.6)',
+            shadowOffsetX: 2,
+            shadowOffsetY: 2
+        }
+    }],
+}
+const
+    areaStyle1 = {
+        color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [{
+                offset: 0, color: '#5068bf' // 0% 处的颜色
+            }, {
+                offset: 1, color: '#80b099' // 100% 处的颜色
+            }],
+        }
+    }
+
+const
+    areaStyle2 = {
+        color: {
+            type: 'linear',
+            x: 0,
+            y: 1,
+            x2: 0,
+            y2: 0,
+            colorStops: [{
+                offset: 0, color: '#a94442'
+            }, {
+                offset: 1, color: '#80b099'
+            }],
+        }
+    }
+
+const size_formatter = (v) => {
+    if (v <= 0) {
+        return '0'
+    }
+    else if (v < 1024) {
+        return `${v} KiB`
+    }
+    else if (v < 1024 * 1024) {
+        return `${(v / 1024).toFixed(1)} MiB`
+    }
+    else {
+        return `${(v / (1024 * 1024)).toFixed(1)} GiB`
+    }
 }
 
 const MonitorVMChart = (props) => {
-    const [data, setData] = useState({ loading: false, cpu: [], mem: [], block: [], net: [[], []], restart: [] })
+    const [data, setData] = useState({ loading: false, cpu: [], mem: [], block: [[], []], net_io: [[], []], net_bytes: [[], []] })
     const CPULineConfig = {
         ...CommConfig,
-        yField: 'cpu',
+        title: {
+            show: true,
+            text: 'CPU'
+        },
         yAxis: {
+            type: 'value',
             min: 0,
             max: 100,
-            label: {
-                formatter: v => (v + ' %')
+            axisLabel: {
+                formatter: '{value} %'
             }
         },
-        data: data.cpu
+        visualMap: {
+            top: 0,
+            right: '100',
+            pieces: [{
+                gt: 0,
+                lte: 80,
+                color: '#89af66',
+            }, {
+                gt: 80,
+                lte: 100,
+                color: '#f55',
+            }],
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: v => (`${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'>${v[0].value[1]} %</span>`)
+        },
+        series: [{
+            color: '#89af66',
+            name: 'CPU used',
+            data: data.cpu,
+            type: 'line',
+            symbol: 'diamond',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            markLine: {
+                silent: true,
+                data: [{
+                    yAxis: 80,
+                }]
+            },
+        }],
     }
 
     const MemLineConfig = {
         ...CommConfig,
-        yField: 'mem',
-        yAxis: {
-            min: 0,
-            label: {
-                formatter: (v) => {
-                    if (v < 1024) {
-                        return `${v} KiB`
-                    }
-                    else if (v < 1024 * 1024) {
-                        return `${(v / 1024).toFixed(1)} MiB`
-                    }
-                    else {
-                        return `${(v / 1024 / 1024).toFixed(1)} GiB`
-                    }
-                },
-            },
+        title: {
+            show: true,
+            text: 'Memory'
         },
-        color: '#90cecf',
-        data: data.mem
+        yAxis: {
+            type: 'value',
+            min: 0,
+            axisLabel: {
+                formatter: size_formatter
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: v => (`${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'>${size_formatter(v[0].value[1])}</span> ${v[0].value[1]} KiB`)
+        },
+        series: [{
+            name: 'Memory used',
+            data: data.mem,
+            type: 'line',
+            symbol: 'diamond',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+        }],
     }
 
     const IOConfig = {
         ...CommConfig,
-        yField: 'io',
+        title: {
+            show: true,
+            text: 'Block IO'
+        },
         yAxis: {
-            min: 0,
+            type: 'value',
+            axisLabel: {
+                formatter: (v) => (Math.abs(v))
+            }
         },
-        seriesField: 'type',
-        legend: {
-            position: 'right-top',
+        tooltip: {
+            trigger: 'axis',
+            formatter: v => {
+                if (v.length > 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${Math.abs(v[1].value[1])} </span>`
+                }
+                else if (v.length === 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span>`
+                }
+                return ''
+            }
         },
-        data: data.block
+        series: [{
+            name: 'Read IO',
+            data: data.block[0],
+            type: 'line',
+            symbol: 'diamond',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
+            },
+            areaStyle: areaStyle1,
+        },
+        {
+            name: 'Write IO',
+            data: data.block[1],
+            type: 'line',
+            symbol: 'triangle',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
+            },
+            areaStyle: areaStyle2,
+        }
+        ]
+    }
+
+    const NetBytesConfig = {
+        ...CommConfig,
+        title: {
+            show: true,
+            text: 'Net Bytes'
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: {
+                formatter: (v) => (size_formatter(Math.abs(v)))
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: v => {
+                if (v.length > 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${size_formatter(Math.abs(v[0].value[1]))} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${size_formatter(Math.abs(v[1].value[1]))} </span>`
+                }
+                else if (v.length === 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${size_formatter(Math.abs(v[0].value[1]))} </span>`
+                }
+                return ''
+            }
+        },
+        series: [{
+            name: 'Read bytes',
+            data: data.net_bytes[0],
+            type: 'line',
+            symbol: 'diamond',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
+            },
+            areaStyle: areaStyle1,
+        },
+        {
+            name: 'Write bytes',
+            data: data.net_bytes[1],
+            type: 'line',
+            symbol: 'triangle',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
+            },
+            areaStyle: areaStyle2,
+        }
+        ]
     }
 
     const NetIOConfig = {
-        xField: 'time',
-        style: {
-            width: 500,
-            height: 300
+        ...CommConfig,
+        title: {
+            show: true,
+            text: 'Net IO'
         },
-        yField: ['io', 'bytes'],
-        geometryOptions: [
-            { geometry: 'line' },
-            {
-                geometry: 'line',
+        yAxis: {
+            type: 'value',
+            axisLabel: {
+                formatter: (v) => (Math.abs(v))
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: v => {
+                if (v.length > 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${Math.abs(v[1].value[1])} </span>`
+                }
+                else if (v.length === 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span>`
+                }
+                return ''
+            }
+        },
+        series: [{
+            name: 'Read IO',
+            data: data.net_io[0],
+            type: 'line',
+            symbol: 'diamond',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
             },
-        ],
-        data: data.net
+            areaStyle: areaStyle1,
+        },
+        {
+            name: 'Write IO',
+            data: data.net_io[1],
+            type: 'line',
+            symbol: 'triangle',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
+            },
+            areaStyle: areaStyle2,
+        }
+        ]
     }
 
-    const RestartLineConfig = {
-        ...CommConfig,
-        yField: 'restart',
-        yAxis: {
-            min: 0,
-        },
-        smooth: true,
-        color: '#faacae',
-        data: data.restart
-    }
 
     const cardStyle = {
     }
+    const [chartStyle, setChartStyle] = useState(getChartStyle(document.getElementById('rightPanel').clientWidth))
+
+    useEventListener('resize', () => {
+        const e = document.getElementById('rightPanel')
+        setChartStyle(getChartStyle(e.clientWidth))
+    })
+
 
     useEffect(() => {
         async function run() {
             setData(data => ({ ...data, loading: true }))
 
+            // timestamp cpu(%) mem(KiB) net_in(KiB) net_out(KiB) net_in_package net_out_package block_in_package block_out_package
             let ret_data = await get_monitor_vm(props.vm)
-            // timestamp cpu(%) mem(KiB) net_in(KiB) net_in_package net_out(KiB) net_out_package block_in_package block_out_package restart
-            const cpu = ret_data.map(v => { return { time: v[0] * 1000, cpu: v[1] / 100 } })
-            let net = [[], []]
-            net[0].length = 0
-            net[1].length = 0
-            let block = []
 
-            let min_mem = 100000000000, max_mem = 0
+            let cpu = []
+            let mem = []
+            let net_io = [[], []]
+            let net_bytes = [[], []]
+            let block = [[], []]
+
             for (const dt of ret_data) {
-                min_mem = Math.min(min_mem, dt[2])
-                max_mem = Math.max(max_mem, dt[2])
-                block.push({ time: dt[0] * 1000, io: dt[7], type: 'read' })
-                block.push({ time: dt[0] * 1000, io: dt[8], type: 'write' })
-                net[0].push({ time: dt[0] * 1000, io: dt[4], type: 'in', bytes: dt[5] })
-                //net[0].push({ time: dt[0] * 1000, io: dt[6], type: 'out' })
-                net[1].push({ time: dt[0] * 1000, bytes: dt[5], type: 'in', io: dt[4] })
-                //net[1].push({ time: dt[0] * 1000, bytes: dt[7], type: 'out' })
+                let time = dt[0] * 1000
+                cpu.push([time, dt[1] / 100])
+                mem.push([time, dt[2]])
+
+                block[0].push([time, dt[7]])
+                block[1].push([time, -dt[8]])
+
+                net_bytes[0].push([time, dt[6]])
+                net_bytes[1].push([time, -dt[7]])
+                net_io[0].push([time, dt[4]])
+                net_io[1].push([time, -dt[5]])
             }
-            // 1g
-            const mem = ret_data.map(v => {
-                return { time: v[0] * 1000, mem: v[2] }
-            })
 
-            const restart = ret_data.map(v => { return { time: v[0] * 1000, restart: v[9] } })
-
-            setData({ loading: false, cpu, mem, block, net, restart })
+            setData({ loading: false, cpu, mem, block, net_io, net_bytes })
         }
         run()
     }, [props.vm])
@@ -141,28 +414,28 @@ const MonitorVMChart = (props) => {
             <Spin spinning={data.loading}>
                 <Row gutter={[16, 16]}>
                     <Col>
-                        <Card size='small' style={cardStyle} title='CPU'>
-                            <Line {...CPULineConfig} />
+                        <Card size='small' style={cardStyle}>
+                            <ReactEcharts theme='theme' style={chartStyle} option={CPULineConfig} />
                         </Card>
                     </Col>
                     <Col>
-                        <Card size='small' style={cardStyle} title='Memory'>
-                            <Line  {...MemLineConfig} />
+                        <Card size='small' style={cardStyle}>
+                            <ReactEcharts theme='theme' style={chartStyle} option={MemLineConfig} />
                         </Card>
                     </Col>
                     <Col>
-                        <Card size='small' style={cardStyle} title='Block IO'>
-                            <Area {...IOConfig} />
+                        <Card size='small' style={cardStyle}>
+                            <ReactEcharts theme='theme' style={chartStyle} option={IOConfig} />
                         </Card>
                     </Col>
                     <Col>
-                        <Card size='small' style={cardStyle} title='Net IO'>
-                            <DualAxes {...NetIOConfig} />
+                        <Card size='small' style={cardStyle}>
+                            <ReactEcharts theme='theme' style={chartStyle} option={NetIOConfig} />
                         </Card>
                     </Col>
                     <Col>
-                        <Card size='small' style={cardStyle} title='Restart'>
-                            <Line {...RestartLineConfig} />
+                        <Card size='small' style={cardStyle}>
+                            <ReactEcharts theme='theme' style={chartStyle} option={NetBytesConfig} />
                         </Card>
                     </Col>
                 </Row>
@@ -175,7 +448,6 @@ const MonitorVMChart = (props) => {
 const MonitorVM = () => {
     const [vmList, setVmList] = useState({ loading: false, list: [] })
     const [selectVm, setSelectVm] = useState(null)
-
 
     const onSelect = useCallback(async (v) => {
         setSelectVm(v)
@@ -212,6 +484,9 @@ const MonitorVM = () => {
                 <Col>
                     <InputNumber defaultValue={1000}>
                     </InputNumber>
+                </Col>
+                <Col>
+
                 </Col>
             </Row>
             {

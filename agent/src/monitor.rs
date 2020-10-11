@@ -13,7 +13,6 @@ static mut WATCHER: Option<RecommendedWatcher> = None;
 fn watch(path: &str, notify: Arc<Notify>) -> Result<()> {
     let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| match res {
         Ok(event) => {
-            println!("event: {:?}", event);
             let ev: event::Event = event;
             if ev.kind
                 == event::EventKind::Access(event::AccessKind::Close(event::AccessMode::Write))
@@ -91,7 +90,7 @@ impl CpuInfo {
             + self.guest_nice;
         // bug check
         if s2 <= s1 || self.idle <= last.idle {
-            println!("{:?}{:?}", self, last);
+            eprintln!("{:?}\n{:?}", self, last);
             return 0.;
         }
 
@@ -343,11 +342,13 @@ async fn read_block(interval_time: u64, block_name: &str) -> Option<DiskIoStat> 
 }
 
 async fn vm_tick(interval_time: u64) {
-    unsafe {
-        if LASTNAMECONFIG.is_none() {
+    let name_config = unsafe {
+        if let Some(v) = LASTNAMECONFIG.clone() {
+            v
+        } else {
             return;
         }
-    }
+    };
 
     let eth_name = &config::get().monitor.eth;
     let block_name = &config::get().monitor.block;
@@ -370,20 +371,27 @@ async fn vm_tick(interval_time: u64) {
     let ts = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("unknown system time")
-        .as_millis() as u64;
+        .as_secs() as u32;
+
+    // all data cast to u32
+    let vm = name_config.vm_name.clone();
 
     let res = mongo
         .insert_one(
-            doc! {"data": [
+            doc! {
+            "dt": [
                 (cpu.unwrap_or(0.) * 100.) as u32,
-                used.unwrap_or(0),
-                net.read_bytes,
-                net.write_bytes,
-                net.read_package,
-                net.write_package,
-                block.read_package,
-                block.write_package
-            ],"ts": ts},
+                used.unwrap_or(0) as u32,
+                // KiB
+                (net.read_bytes / 1024) as u32,
+                (net.write_bytes / 1024) as u32,
+                net.read_package as u32,
+                net.write_package as u32,
+                block.read_package as u32,
+                block.write_package as u32
+            ],
+            "ts": ts,
+            "vm": vm},
             None,
         )
         .await;
@@ -399,11 +407,13 @@ async fn vm_tick(interval_time: u64) {
 }
 
 async fn server_tick(interval_time: u64) {
-    unsafe {
-        if LASTNAMECONFIG.is_none() {
+    let name_config = unsafe {
+        if let Some(v) = LASTNAMECONFIG.clone() {
+            v
+        } else {
             return;
         }
-    }
+    };
 }
 
 async fn server_notify_tick(servers_path: String, notify: Arc<Notify>) {
@@ -419,7 +429,9 @@ async fn server_notify_tick(servers_path: String, notify: Arc<Notify>) {
                     break;
                 }
                 // remove last \n
-                line.truncate(line.len() - 1);
+                if line.ends_with("\n") {
+                    line.truncate(line.len() - 1);
+                }
                 if name_config.vm_name.len() == 0 {
                     name_config.vm_name = line;
                 } else {

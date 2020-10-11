@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react'
+import ReactEcharts from 'echarts-for-react'
 import { Card, Row, Col, Descriptions } from 'antd'
-import { TinyLine } from '@ant-design/charts'
 import { get_pipeline_stat } from '../../api/pipeline'
 import { info } from '../../api/user'
+import echarts from 'echarts'
+import ThemeJson from '../../theme.json'
+
+// register theme object
+echarts.registerTheme('theme', ThemeJson)
 
 const DashBoardIndex = () => {
     const [activity, setActivity] = useState({ list: [] })
@@ -11,7 +16,7 @@ const DashBoardIndex = () => {
     useEffect(() => {
         async function run() {
             const stat_list = await get_pipeline_stat()
-            setActivity({ list: stat_list.map(v => { return v.count }) })
+            setActivity({ list: stat_list.map(v => { return [v.time, v.count] }) })
         }
         run()
         async function run_user() {
@@ -22,18 +27,35 @@ const DashBoardIndex = () => {
     }, [])
 
     const activityConfig = {
-        autoFit: true,
-        smooth: true,
-        data: activity.list,
-        style: {
-            height: 55,
-            width: '100%'
+        yAxis: {
+            type: 'value',
+            min: 0,
+            show: false,
         },
-        color: '#74cf99'
+        xAxis: {
+            type: 'time',
+            show: false,
+        },
+        series: [{
+            name: 'Pipeline commit',
+            data: activity.list,
+            type: 'line',
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 2,
+            smooth: true,
+            color: '#74cf99',
+            lineStyle: {
+                width: 2
+            },
+        }],
+        tooltip: {
+            trigger: 'axis'
+        },
     }
 
     return (
-        <div className='page'>
+        <div className='page' >
             <Row gutter={[16, 16]}>
                 <Col span={16}>
                     <Card size='small' title='Recently pipelines'>
@@ -71,7 +93,7 @@ const DashBoardIndex = () => {
                     <Row>
                         <Col span={24}>
                             <Card size='small' title='Activity chart'>
-                                <TinyLine {...activityConfig} />
+                                <ReactEcharts theme='theme' style={{ width: '100%', height: 180 }} option={activityConfig} />
                             </Card>
                         </Col>
                         <Col span={24}>
@@ -79,7 +101,7 @@ const DashBoardIndex = () => {
                     </Row>
                 </Col>
             </Row>
-        </div>
+        </div >
     )
 }
 

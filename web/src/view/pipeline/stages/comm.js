@@ -3,6 +3,7 @@ import { get_pipeline_log_id } from './../../../api/pipeline'
 import { base_ws_url } from '../../../api/comm'
 import { Tag, Row, Col, Spin, Result, Button } from 'antd'
 import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { useEventListener } from '../../../comm/util'
 
 const TagRender = (props) => {
     if (props.loading === 0) {
@@ -27,28 +28,6 @@ const TagRender = (props) => {
             </Tag>
         )
     }
-}
-
-function useEventListener(eventName, handler, element = window) {
-    const saveHandler = useRef()
-
-    useEffect(() => {
-        saveHandler.current = handler
-    }, [handler])
-
-    useEffect(
-        () => {
-            const isSupported = element && element.addEventListener
-            if (!isSupported) return
-
-            const eventListener = event => saveHandler.current(event)
-            element.addEventListener(eventName, eventListener)
-            return () => {
-                element.removeEventListener(eventName, eventListener);
-            }
-        },
-        [eventName, element]
-    )
 }
 
 const PipeLineStageComm = (props) => {

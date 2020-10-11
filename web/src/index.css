@@ -206,3 +206,7 @@ pre.output {
 .pipeline_form_item {
     margin-bottom: 8px;
 }
+
+.tip-echarts {
+    font-weight: 700;
+}
