@@ -85,7 +85,7 @@ async fn do_log(log: String, max_size: u32) {
 
 async fn process_client(socket: TcpStream, max_size: u32) {
     let addr = socket.peer_addr().unwrap();
-    println!("client join {:?}", addr);
+    // println!("client join {:?}", addr);
 
     let mut stream = tokio::io::BufReader::new(socket);
     let mut log = String::new();
@@ -101,7 +101,7 @@ async fn process_client(socket: TcpStream, max_size: u32) {
 
         log = String::new();
     }
-    println!("client exit {:?}", addr);
+    // println!("client exit {:?}", addr);
 }
 
 pub async fn init() {

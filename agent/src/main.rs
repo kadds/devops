@@ -1,6 +1,8 @@
 extern crate clap;
 extern crate daemonize;
 extern crate tokio;
+#[macro_use]
+extern crate lazy_static;
 
 mod config;
 mod db;
@@ -8,9 +10,10 @@ mod log;
 mod monitor;
 use clap::{App, Arg};
 use daemonize::Daemonize;
+use std::fs::File;
+use std::fs::remove_file;
 use tokio::runtime;
 use tokio::signal::unix::{signal, SignalKind};
-use std::fs::File;
 
 async fn do_async_main(path: &str, server_path: &str) {
     config::load(path).await;
@@ -29,6 +32,11 @@ async fn do_async_main(path: &str, server_path: &str) {
     tokio::select! {_ = sigint.recv() => {}, _=sigquit.recv() => {}, _= sigter.recv() => {}};
 
     println!("recv singal, exit");
+    // remove pid file
+    match remove_file("./agent.pid") {
+        Err(e) => println!("{}", e),
+        _ => ()
+    }
 }
 
 fn main() {
@@ -63,8 +71,6 @@ fn main() {
         let stderr = File::create("/tmp/agent.err").unwrap();
         let daemonize = Daemonize::new()
             .pid_file("./agent.pid")
-            .user("nobody")
-            .group("daemon")
             .stdout(stdout)
             .stderr(stderr)
             .working_directory("./");

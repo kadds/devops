@@ -32,10 +32,30 @@ pub struct Monitor {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DeployServer {
+    pub postfix: String,
+    pub prefix: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Deploy {
+    pub server: DeployServer,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Server {
+    pub deploy: Deploy,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Config {
     pub mongodb: Mongodb,
     pub logger: Logger,
     pub monitor: Monitor,
+    pub server: Server,
 }
 
 static mut CONFIG_VALUE: Option<Arc<Config>> = None;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Fragment } from 'react'
 import { Divider, Row, Col, Spin, Select, InputNumber } from 'antd'
 import { get_server_list } from './../../api/server'
+import { get_monitor_server } from './../../api/monitor'
 
 const MonitorServerChart = (props) => {
     // todo
@@ -18,8 +19,9 @@ const MonitorServerChart = (props) => {
 const MonitorServer = () => {
     const [serverList, setServerList] = useState({ loading: false, list: [] })
     const [selectServer, setSelectServer] = useState(null)
-    const onSelect = (v) => {
+    const onSelect = async (v) => {
         setSelectServer(v)
+        const list = get_monitor_server(v)
     }
 
     useEffect(() => {

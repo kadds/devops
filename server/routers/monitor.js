@@ -27,5 +27,28 @@ router.get('/vm', async (req, rsp, next) => {
     throw new Error('unknown params')
 })
 
+router.get('/server', async (req, rsp, next) => {
+    const server_name = req.query.name
+    if (server_name) {
+        const config = Config.get()
+        const uri = config.mongodb.uri
+        const dbName = config.mongodb.dbname
+        const collection = config.mongodb.serverMonitorColumnName
+        const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
+        let find_obj = {
+            se: server_name,
+            ts: { $gte: 0 }
+        }
+        await db.db(dbName).collection(collection).createIndex({ ts: 1, se: 1 })
+        const list = await (await db.db(dbName).collection(collection)
+            .find(find_obj).toArray()).map(v => {
+                return [v.ts, ...v.dt]
+            })
+        rsp.json({ err: 0, data: list })
+        return
+    }
+    throw new Error('unknown params')
+})
+
 const monitor = router
 module.exports = monitor
