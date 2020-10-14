@@ -25,6 +25,8 @@ pub struct Logger {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Monitor {
+    pub bind: String,
+    pub port: u16,
     pub interval: u64,
     pub eth: String,
     pub block: String,
@@ -32,21 +34,9 @@ pub struct Monitor {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DeployServer {
-    pub postfix: String,
-    pub prefix: String,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Deploy {
-    pub server: DeployServer,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Server {
-    pub deploy: Deploy,
+    pub server_postfix: String,
+    pub server_prefix: String,
 }
 
 #[derive(Deserialize)]
@@ -55,7 +45,7 @@ pub struct Config {
     pub mongodb: Mongodb,
     pub logger: Logger,
     pub monitor: Monitor,
-    pub server: Server,
+    pub deploy: Deploy,
 }
 
 static mut CONFIG_VALUE: Option<Arc<Config>> = None;

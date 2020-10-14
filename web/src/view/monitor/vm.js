@@ -1,11 +1,13 @@
-import React, { useState, useEffect, Fragment, useCallback } from 'react'
-import { Row, Col, Card, Select, Spin, InputNumber, Divider } from 'antd'
+import React, { useState, useEffect, Fragment } from 'react'
+import { Row, Col, Card, Select, Spin, Form, InputNumber, Divider, Typography, Button, DatePicker } from 'antd'
 import ReactEcharts from 'echarts-for-react'
 import { get_all_vm } from '../../api/vm'
 import { get_monitor_vm } from '../../api/monitor'
 import { useEventListener } from '../../comm/util'
+import moment from 'moment'
 import echarts from 'echarts'
 import ThemeJson from '../../theme.json'
+import { useInterval } from '../../comm/util'
 
 // register theme object
 echarts.registerTheme('theme', ThemeJson)
@@ -369,6 +371,7 @@ const MonitorVMChart = (props) => {
     const cardStyle = {
     }
     const [chartStyle, setChartStyle] = useState(getChartStyle(document.getElementById('rightPanel').clientWidth))
+    const [needUpdate, setNeedUpdate] = useState(0)
 
     useEventListener('resize', () => {
         const e = document.getElementById('rightPanel')
@@ -381,7 +384,7 @@ const MonitorVMChart = (props) => {
             setData(data => ({ ...data, loading: true }))
 
             // timestamp cpu(%) mem(KiB) net_in(KiB) net_out(KiB) net_in_package net_out_package block_in_package block_out_package
-            let ret_data = await get_monitor_vm(props.vm)
+            let ret_data = await get_monitor_vm(props.vm, props.timerange)
 
             let cpu = []
             let mem = []
@@ -406,7 +409,11 @@ const MonitorVMChart = (props) => {
             setData({ loading: false, cpu, mem, block, net_io, net_bytes })
         }
         run()
-    }, [props.vm])
+    }, [props.vm, props.timerange, needUpdate])
+
+    useInterval(() => {
+        setNeedUpdate(v => { return v + 1 })
+    }, props.interval * 1000)
 
     return (
         <Fragment>
@@ -448,53 +455,81 @@ const MonitorVMChart = (props) => {
 const MonitorVM = () => {
     const [vmList, setVmList] = useState({ loading: false, list: [] })
     const [selectVm, setSelectVm] = useState(null)
+    const [form] = Form.useForm()
 
-    const onSelect = useCallback(async (v) => {
-        setSelectVm(v)
-    }, [])
+    const onInputChange = async (v, full_value) => {
+        if (!full_value.vm || !full_value.interval || !full_value.timerange) {
+            return
+        }
+        if (!full_value.interval || full_value.interval < 1) {
+            full_value.interval = 1
+        }
+        let timerange = [null, null]
+        if (full_value.timerange[0]) {
+            timerange[0] = Math.floor(full_value.timerange[0] / 1000)
+        }
+        if (full_value.timerange[1]) {
+            timerange[1] = Math.floor(full_value.timerange[1] / 1000)
+        }
+
+        setSelectVm({
+            ...vmList.list.find(v => v.name === full_value.vm), interval: full_value.interval,
+            timerange
+        })
+    }
 
     useEffect(() => {
         async function run() {
             setVmList({ loading: true, list: [] })
             const data = await get_all_vm()
             setVmList({ loading: false, list: data })
-            if (data.length) {
-                setSelectVm(data[0].name)
-            }
         }
         run()
-    }, [onSelect])
+    }, [])
 
     return (
         <div>
-            <Row gutter={[16, 16]}>
-                <Col>
-                    <Spin spinning={vmList.loading}>
-                        <Select value={selectVm} style={{ minWidth: 200, textAlign: 'left' }} onChange={onSelect}>
-                            {
-                                vmList.list.map(v => (
-                                    <Select.Option value={v.name} key={v.name}>
-                                        {v.name}
-                                    </Select.Option>
-                                ))
-                            }
-                        </Select>
-                    </Spin>
-                </Col>
-                <Col>
-                    <InputNumber defaultValue={1000}>
-                    </InputNumber>
-                </Col>
-                <Col>
-
-                </Col>
-            </Row>
+            <Form form={form} initialValues={{ interval: 60, timerange: [moment().subtract(7, 'd'), moment()] }} onValuesChange={onInputChange}>
+                <Row gutter={[12, 12]}>
+                    <Col>
+                        <Form.Item label='Select VM' name='vm'>
+                            <Select allowClear style={{ minWidth: 200, textAlign: 'left' }}>
+                                {
+                                    vmList.list.map(v => (
+                                        <Select.Option value={v.name} key={v.name}>
+                                            {v.name}
+                                        </Select.Option>
+                                    ))
+                                }
+                            </Select>
+                        </Form.Item>
+                    </Col>
+                    <Col>
+                        <Form.Item label='Interval (second)' name='interval'>
+                            <InputNumber />
+                        </Form.Item>
+                    </Col>
+                    <Col>
+                        <Form.Item label='Timerange' name='timerange'>
+                            <DatePicker.RangePicker showTime allowEmpty={[true, true]} format="YYYY-MM-DD HH:mm:ss" />
+                        </Form.Item>
+                    </Col>
+                </Row>
+            </Form>
             {
                 selectVm && (
-                    <MonitorVMChart vm={selectVm} />
+                    <Fragment>
+                        <div style={{ textAlign: 'left' }}>
+                            Address: &nbsp;
+                            <Typography.Text copyable>
+                                {selectVm.ip}:{selectVm.port}
+                            </Typography.Text>
+                        </div>
+                        <MonitorVMChart vm={selectVm.name} interval={selectVm.interval} timerange={selectVm.timerange} />
+                    </Fragment>
                 )
             }
-        </div>
+        </div >
     )
 }
 

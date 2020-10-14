@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { get_server_list, add_server, get_server, destroy_server, stop_server, start_server, restart_server } from '../../api/server'
 import { get_all_vm } from '../../api/vm'
 import { get_module_list } from '../../api/module'
+import { useInterval } from '../../comm/util'
 
 import { Button, Spin, Row, Select, Popconfirm, Typography, Card, Input, Form, Modal, Col, Space, Tag, Badge } from 'antd'
 import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
@@ -24,23 +25,6 @@ const getServerRunningTime = (delta) => {
     }
 }
 
-function useInterval(callback, delay) {
-    const savedCallback = useRef();
-
-    useEffect(() => {
-        savedCallback.current = callback;
-    });
-
-    useEffect(() => {
-        function tick() {
-            savedCallback.current();
-        }
-        if (delay !== null) {
-            let id = setInterval(tick, delay);
-            return () => clearInterval(id);
-        }
-    }, [delay]);
-}
 
 const Server = (props) => {
     const [listDetail, setListDetail] = useState({ loading: false, data: [] })

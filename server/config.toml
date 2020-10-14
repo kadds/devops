@@ -1,29 +1,28 @@
 [mongodb]
-uri="mongodb://localhost:27017"
-dbname="devops_db"
-vmMonitorColumnName="vm_monitor"
-serverMonitorColumnName="server_monitor"
-logColumnName="app_log"
-clickLogColumnName="click_log"
-serverInfoColumnName="server_log"
+dbname = "devops_db"
+uri = "mongodb://localhost:27017"
+
+clickLogColumnName = "click_log"
+logColumnName = "app_log"
+serverInfoColumnName = "server_log"
+serverMonitorColumnName = "server_monitor"
+vmMonitorColumnName = "vm_monitor"
 
 [logger]
-bind="127.0.0.1"
-port=10900
-maxSize=1024
+bind = "127.0.0.1"
+maxSize = 1024
+port = 10900
 
 [monitor]
-interval=5
-eth="eth0"
-block="vda"
+bind = "127.0.0.1"
+port = 10901
 
-[server.deploy.port]
-min=10000
-max=65500
+block = "vda"
+eth = "eth0"
+interval = 60
 
-[server.deploy.image]
-prefix="deploy_"
-postfix=""
-[server.deploy.server]
-prefix="service_"
-postfix=""
+[deploy]
+imagePostfix = ""
+imagePrefix = "deploy_"
+serverPostfix = ""
+serverPrefix = "server_"

@@ -544,7 +544,7 @@ async fn read_cpu_pid(name: &String, pid: &str) -> Option<f32> {
 async fn server_inspect(name: &String) {
     // get pid first
     let config = config::get();
-    let docker_container_name = format!("{}{}{}", config.server.deploy.server.prefix, name, config.server.deploy.server.postfix);
+    let docker_container_name = format!("{}{}{}", config.deploy.server_prefix, name, config.deploy.server_postfix);
     let output = match Command::new("docker")
         .arg("inspect")
         .arg("--format")

@@ -41,14 +41,11 @@ function get_version(image_name) {
 
 function config_get() {
     const config = Config.get()
-    const min = config.server.deploy.port.min
-    const max = config.server.deploy.port.max
-    const prefix = config.server.deploy.image.prefix
-    const postfix = config.server.deploy.image.postfix
-    const log_port = config.log.port
-    const server_prefix = config.server.deploy.server.prefix
-    const server_postfix = config.server.deploy.server.postfix
-    return { min, max, log_port, prefix, postfix, server_prefix, server_postfix }
+    const prefix = config.deploy.imagePrefix
+    const postfix = config.deploy.imagePostfix
+    const server_prefix = config.deploy.serverPrefix
+    const server_postfix = config.deploy.serverPostfix
+    return { prefix, postfix, server_prefix, server_postfix }
 }
 
 function name_get(config, mode, server) {
@@ -163,7 +160,6 @@ async function start(name, version) {
     try {
         const vm = await m_vm.findByPk(server.vm_name)
         const ip = vm.ip
-        // random port
         await exec(ssh, `docker run --network host --env HOST_IP=${ip} -d --name ${container_name} ${image_name}:${version}`, null)
     }
     catch (e) {
