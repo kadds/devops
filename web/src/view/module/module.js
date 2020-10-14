@@ -6,10 +6,12 @@ import { user_list } from '../../api/user'
 import Server from '../server/server'
 import JobSelect from '../compoments/job_select'
 import moment from 'moment'
+import { withRouter } from 'react-router'
+import queryString from 'query-string'
 
 const { Option } = Select
 
-const Module = () => {
+const Module = (props) => {
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
     const [data, setData] = useState([])
     const [userlistData, setUserlistData] = useState([])
@@ -150,6 +152,7 @@ const Module = () => {
         run()
     }, [state.need_update])
 
+    const module_name = queryString.parse(props.location.search).name
 
     return (
         <div className='page'>
@@ -158,7 +161,12 @@ const Module = () => {
                     <div style={{ textAlign: 'left' }}>
                         <Button type='primary' onClick={addModule}>Add</Button>
                     </div>
-                    <Table rowKey={'name'} dataSource={data} columns={columns}></Table>
+                    <Table rowClassName={(record, index) => {
+                        if (record.name === module_name) {
+                            return 'table_item_blink'
+                        }
+                        return 'table_item_noraml'
+                    }} pagination={false} rowKey={'name'} dataSource={data} columns={columns}></Table>
                 </Col>
                 {
                     detail.show && (<Col flex={'1 1 50%'}>
@@ -198,4 +206,4 @@ const Module = () => {
     )
 }
 
-export default Module
+export default withRouter(Module)

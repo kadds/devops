@@ -30,6 +30,7 @@ import Server from './view/server/server'
 import MonitorIndex from './view/monitor/index'
 import LogIndex from './view/log_view/index'
 import Deploy from './view/deploy/deploy'
+import Detail from './view/deploy/detail'
 import P404 from './view/P404'
 import DashboardIndex from './view/dashboard/index'
 import Setting from './view/setting/index'
@@ -45,7 +46,7 @@ const menus = [
     { name: 'Virtual Machine', icon: (<HddOutlined style={style} />), icon2: (<HddFilled style={style} />), path: '/vm' },
     { name: 'Module', icon: (<GoldOutlined style={style} />), icon2: (<GoldFilled style={style} />), path: '/module' },
     { name: 'Cloud Server', icon: (<CloudServerOutlined style={style} />), icon2: (<CloudServerOutlined style={style} />), path: '/server' },
-    { name: 'Deployment', icon: (<DeploymentUnitOutlined style={style} />), icon2: (<DeploymentUnitOutlined style={style} />), path: '/deploy' },
+    { name: 'Deployment', icon: (<DeploymentUnitOutlined style={style} />), icon2: (<DeploymentUnitOutlined style={style} />), path: '/deploy/list' },
     { name: 'Monitor', icon: (<LineChartOutlined style={style} />), icon2: (<LineChartOutlined style={style} />), path: '/monitor' },
     { name: 'Log', icon: (<FilterOutlined style={style} />), icon2: (<FilterFilled style={style} />), path: '/log' }
 ]
@@ -57,7 +58,8 @@ const contents = [
     { path: '/vm', component: VM, title: 'Virtual Machine' },
     { path: '/module', component: Module, title: 'Module Information' },
     { path: '/server', component: Server, title: 'Cloud Server' },
-    { path: '/deploy', component: Deploy, title: 'Deploying list' },
+    { path: '/deploy/list', component: Deploy, title: 'Deploying list' },
+    { path: '/deploy/detail', component: Detail, title: 'Deploying detail' },
     { path: '/monitor', component: MonitorIndex, title: 'Monitor' },
     { path: '/log', component: LogIndex, title: 'Log Query' },
     { path: '/setting', component: Setting, title: 'Configuration' },
@@ -197,7 +199,7 @@ function Main(props) {
                 >
                     <TransitionGroup className='content-page'>
                         <CSSTransition
-                            timeout={300}
+                            timeout={400}
                             classNames='page'
                             mountOnEnter
                             unmountOnExit

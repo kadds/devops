@@ -16,6 +16,8 @@ const PipeLineList = props => {
     }
     const [isDel, setIsDel] = useState(false)
     const [data, setData] = useState([])
+    const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 10 })
+    const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
 
     const deleteClick = async (id) => {
@@ -25,7 +27,11 @@ const PipeLineList = props => {
         setNeedUpdate(needUpdate + 1)
     }
     const goDeployClick = (id) => {
-        props.history.push({ pathname: '/deploy', search: '?id=' + id })
+        props.history.push({ pathname: '/deploy/detail', search: '?id=' + id })
+    }
+
+    const goModule = (module) => {
+        props.history.push({ pathname: '/module', search: '?name=' + encodeURIComponent(module) })
     }
 
     const RenderStage = (props) => {
@@ -63,7 +69,7 @@ const PipeLineList = props => {
             title: 'module',
             dataIndex: 'mode_name',
             key: 'module',
-            render: text => <span>{text}</span>
+            render: text => <Button type='link' onClick={() => goModule(text)}>{text}</Button>
         },
         {
             title: 'Status',
@@ -106,15 +112,21 @@ const PipeLineList = props => {
             )
         }
     ]
-
+    const handleTableChange = (pagination, filters, sorter) => {
+        setPagination({ ...pagination })
+    }
 
     useEffect(() => {
         async function run() {
-            const list = await get_pipelines()
+            setLoading(true)
+            const [list, total] = await get_pipelines(pagination.current - 1, pagination.pageSize)
             setData(list)
+            setPagination({ ...pagination, total })
+            setLoading(false)
         }
         run()
-    }, [needUpdate])
+    }, [needUpdate, pagination.pageSize, pagination.current])
+
     const [form] = Form.useForm()
     const [moduleList, setModuleList] = useState({ loading: false, list: [] })
     const [state, setState] = useState({ loading: false, visible: false })
@@ -301,7 +313,7 @@ const PipeLineList = props => {
         <div className='page'>
             <Row><Col>
                 <Button onClick={addClick} type='primary'>Add</Button></Col> </Row>
-            <Table rowKey='id' dataSource={data} columns={columns}>
+            <Table loading={loading} rowKey='id' onChange={handleTableChange} dataSource={data} pagination={pagination} columns={columns}>
             </Table>
             <Modal
                 visible={state.visible}

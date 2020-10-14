@@ -8,6 +8,7 @@ import { Button, Spin, Row, Select, Popconfirm, Typography, Card, Input, Form, M
 import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { withRouter } from 'react-router'
 import moment from 'moment'
+import { get_monitor_vm } from '../../api/monitor'
 
 const getServerRunningTime = (delta) => {
     if (delta) {
@@ -34,6 +35,14 @@ const Server = (props) => {
     const [vmList, setVmList] = useState({ loading: false, data: [] })
     const [server, setServer] = useState(null)
     const [needUpdate, setNeedUpdate] = useState(0)
+
+    const goVM = (vm) => {
+        props.history.push({ pathname: '/vm', search: '?name=' + encodeURIComponent(vm) })
+    }
+
+    const goModule = (module) => {
+        props.history.push({ pathname: '/module', search: '?name=' + encodeURIComponent(module) })
+    }
 
     const onServerChange = async (server_name) => {
         setListDetail({ ...listDetail, select: server_name })
@@ -320,7 +329,7 @@ const Server = (props) => {
     const ServerVersion = withRouter((props) => {
         if (props.version) {
             return (
-                <Button type='link' onClick={() => props.history.push({ pathname: '/deploy', search: '?id=' + props.version })}>{props.version}</Button>
+                <Button type='link' onClick={() => props.history.push({ pathname: '/deploy/detail', search: '?id=' + props.version })}>{props.version}</Button>
             )
         }
         else {
@@ -376,13 +385,17 @@ const Server = (props) => {
                                         <Typography.Title level={4}>
                                             VM:
                                         </Typography.Title>
-                                        {server.vm_name}
+                                        <Button type='link' onClick={() => goVM(server.vm_name)}>
+                                            {server.vm_name}
+                                        </Button>
                                     </Col>
                                     <Col span={8}>
                                         <Typography.Title level={4}>
                                             Module:
                                         </Typography.Title>
-                                        {server.mode_name}
+                                        <Button type='link' onClick={() => goModule(server.mode_name)}>
+                                            {server.mode_name}
+                                        </Button>
                                     </Col>
                                     <Col span={8}>
                                         <Typography.Title level={4}>

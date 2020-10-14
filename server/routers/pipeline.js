@@ -9,20 +9,20 @@ const { Op } = require('sequelize')
 let router = new Router()
 
 router.get('/list', async (req, rsp, next) => {
-    const offset = req.query.off | 0
-    const size = req.query.size | 10
-    const list = await m_pipeline.findAll({ limit: size, offset, order: [['ctime', 'DESC']] })
-    let ls = []
-    for (const item of list) {
+    const page = req.query.page
+    const size = req.query.size
+    const { count, rows } = await m_pipeline.findAndCountAll({ limit: size ? size : undefined, offset: size ? page * size : undefined, order: [['ctime', 'DESC']] })
+    let list = []
+    for (const item of rows) {
         let it = {}
         it.id = item.id
         it.ctime = item.ctime.valueOf()
         it.mode_name = item.mode_name
         it.stage = item.stage
         it.deploy_id = item.content.deploy_id
-        ls.push(it)
+        list.push(it)
     }
-    rsp.json({ err: 0, list: ls })
+    rsp.json({ err: 0, list: list, total: count })
 })
 
 router.post('/', async (req, rsp, next) => {

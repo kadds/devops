@@ -1,7 +1,13 @@
 import { get, post } from './comm'
 
-async function get_deploy_list() {
-    return (await get('/deploy/list')).list
+async function get_deploy_list(page, size) {
+    if (size) {
+        const ret = (await get('/deploy/list?page=' + page + '&size=' + size))
+        return [ret.list, ret.total]
+    }
+    else {
+        return (await get('/deploy/list')).list
+    }
 }
 
 async function deploy_do_upload(id, servers_name, opt) {

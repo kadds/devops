@@ -1,7 +1,13 @@
 import { get, post } from './comm'
 
-async function get_pipelines() {
-    return (await get('/pipeline/list')).list
+async function get_pipelines(page, size) {
+    if (size) {
+        const ret = (await get('/pipeline/list?page=' + page + '&size=' + size))
+        return [ret.list, ret.total]
+    }
+    else {
+        return (await get('/pipeline/list')).list
+    }
 }
 
 async function get_jobs() {

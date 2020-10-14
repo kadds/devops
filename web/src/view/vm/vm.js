@@ -3,8 +3,11 @@ import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNu
 import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm } from '../../api/vm'
 import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons'
 import moment from 'moment'
+import { withRouter } from 'react-router'
+import queryString from 'query-string'
 
-const VM = () => {
+const VM = (props) => {
+
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
     const [data, setData] = useState([])
     const addVm = () => {
@@ -131,20 +134,27 @@ const VM = () => {
         }
     ]
 
+    const vm_name = queryString.parse(props.location.search).name
+
     useEffect(() => {
         async function run() {
             const list = await get_all_vm()
             setData(list)
         }
         run()
-    }, [state.need_update])
+    }, [state.need_update, vm_name])
 
     return (
         <div className='page'>
             <div style={{ textAlign: 'left' }}>
                 <Button type='primary' onClick={addVm}>Add</Button>
             </div>
-            <Table rowKey={'name'} dataSource={data} columns={columns}></Table>
+            <Table rowClassName={(record, index) => {
+                if (record.name === vm_name) {
+                    return 'table_item_blink'
+                }
+                return 'table_item_noraml'
+            }} pagination={false} rowKey={'name'} dataSource={data} columns={columns}></Table>
             <Modal
                 visible={state.visible}
                 title='Create/Edit VM'
@@ -184,4 +194,4 @@ const VM = () => {
     )
 }
 
-export default VM
+export default withRouter(VM)

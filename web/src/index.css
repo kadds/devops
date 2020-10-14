@@ -77,7 +77,7 @@ pre.output {
     overflow-y: auto;
     overflow-x: auto;
     font-size: 13px;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: Consolas, 'Courier New', Courier, monospace;
     line-height: 1.5em;
 }
 
@@ -93,7 +93,7 @@ pre.output {
 
 .page {
     width: 100%;
-    transition: transform 300ms cubic-bezier(0.23, 0.72, 0.41, 0.98), opacity 300ms ease-in-out;
+    transition: transform 400ms cubic-bezier(0.23, 0.72, 0.41, 0.98), opacity 400ms ease-in-out;
     transform-origin: left top;
     opacity: 1;
 }
@@ -209,4 +209,18 @@ pre.output {
 
 .tip-echarts {
     font-weight: 700;
+}
+
+@keyframes blink
+{
+    0% {background: #fff}
+    60% {background: #f1e99c;}
+    100% {background: #fff}
+}
+
+.table_item_blink {
+    animation-name: blink;
+    animation-duration: 1200ms;
+    animation-iteration-count: 3;
+    animation-delay: 1s;
 }

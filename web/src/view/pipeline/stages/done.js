@@ -7,7 +7,7 @@ import { RollbackOutlined, LinkOutlined } from '@ant-design/icons'
 const PipeLineStageDone = (props) => {
     const [showLog, setShowLog] = useState(false)
     const goDeployClick = (id) => {
-        props.history.push({ pathname: '/deploy', search: '?id=' + id })
+        props.history.push({ pathname: '/deploy/detail', search: '?id=' + id })
     }
     return (
         <div>
