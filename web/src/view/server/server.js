@@ -7,6 +7,7 @@ import { useInterval } from '../../comm/util'
 import { Button, Spin, Row, Select, Popconfirm, Typography, Card, Input, Form, Modal, Col, Space, Tag, Badge } from 'antd'
 import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { withRouter } from 'react-router'
+import moment from 'moment'
 
 const getServerRunningTime = (delta) => {
     if (delta) {
@@ -369,7 +370,7 @@ const Server = (props) => {
                                         <Typography.Title level={4}>
                                             Time:
                                         </Typography.Title>
-                                        {new Date(server.ctime).toLocaleString()}
+                                        {moment(server.ctime).format('lll')}
                                     </Col>
                                     <Col span={8}>
                                         <Typography.Title level={4}>

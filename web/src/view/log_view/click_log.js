@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Form, Tooltip, Row, Col, Typography, Table, Divider, InputNumber, Button, DatePicker } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { click_query } from './../../api/log'
+import moment from 'moment'
 
 const ClickLog = () => {
     const [logList, setLogList] = useState({ loading: false, list: [], count: 0 })
@@ -39,7 +40,7 @@ const ClickLog = () => {
             render: timestamp => (<span>
                 <Tooltip title={
                     <Typography.Text copyable>{timestamp}</Typography.Text>
-                }>{new Date(timestamp).toLocaleString()}</Tooltip></span>)
+                }>{moment(timestamp).format('lll')}</Tooltip></span>)
         },
         {
             title: 'Instance server',

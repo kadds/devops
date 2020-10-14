@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message } from 'antd'
 import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm } from '../../api/vm'
 import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons'
+import moment from 'moment'
 
 const VM = () => {
     const [state, setState] = useState({ visible: false, type: 0, loading: false, need_update: 0 })
@@ -107,7 +108,7 @@ const VM = () => {
             title: 'Create time',
             dataIndex: 'ctime',
             key: 'ctime',
-            render: text => <span>{new Date(text).toLocaleString()}</span>
+            render: text => <span>{moment(text).format('lll')}</span>
         },
         {
             title: 'Op',

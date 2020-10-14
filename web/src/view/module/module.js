@@ -5,6 +5,7 @@ import { add_module, get_module_list, update_module, delete_module, get_module }
 import { user_list } from '../../api/user'
 import Server from '../server/server'
 import JobSelect from '../compoments/job_select'
+import moment from 'moment'
 
 const { Option } = Select
 
@@ -123,7 +124,7 @@ const Module = () => {
             title: 'Create time',
             dataIndex: 'ctime',
             key: 'ctime',
-            render: text => <span>{new Date(text).toLocaleString()}</span>
+            render: text => <span>{moment(text).format('lll')}</span>
         },
         {
             title: 'Op',

@@ -3,6 +3,7 @@ import { get_deploy_list, get_deploy, deploy_do_upload, deploy_do_rollback, stop
 import { withRouter } from "react-router-dom"
 import { Table, Alert, Row, Col, Popconfirm, Tabs, Tag, Divider, Button, Form, Transfer, Progress, InputNumber, Spin, Typography } from 'antd'
 import queryString from 'query-string'
+import moment from 'moment'
 
 const TagRender = (props) => {
     if (props.status === 1) {
@@ -169,19 +170,19 @@ const Deploy = (props) => {
             title: 'Target operation time',
             dataIndex: 'target_time',
             key: 'target_time',
-            render: text => (new Date(text).toLocaleString())
+            render: text => (moment(text).format('lll'))
         },
         {
             title: 'Last operation time',
             dataIndex: 'mtime',
             key: 'mtime',
-            render: text => (new Date(text).toLocaleString())
+            render: text => (moment(text).format('lll'))
         },
         {
             title: 'Create time',
             dataIndex: 'ctime',
             key: 'ctime',
-            render: text => (new Date(text).toLocaleString())
+            render: text => (moment(text).format('lll'))
         },
         {
             title: 'Operation',
@@ -254,7 +255,7 @@ const Deploy = (props) => {
                                 {
                                     data.last_time > 0 && (
                                         <Typography.Title level={5}>
-                                            Expected completion time:{new Date(data.last_time).toLocaleString()}
+                                            Expected completion time:{moment(data.last_time).fromNow()}
                                         </Typography.Title>
                                     )
                                 }

@@ -5,6 +5,7 @@ import { get_pipeline_stat } from '../../api/pipeline'
 import { info } from '../../api/user'
 import echarts from 'echarts'
 import ThemeJson from '../../theme.json'
+import moment from 'moment'
 
 // register theme object
 echarts.registerTheme('theme', ThemeJson)
@@ -71,7 +72,7 @@ const DashBoardIndex = () => {
                                         {user.nick}
                                     </Descriptions.Item>
                                     <Descriptions.Item label='Last login'>
-                                        {new Date(user.last_login_time).toLocaleString()}
+                                        {moment(user.last_login_time).fromNow()}
                                     </Descriptions.Item>
                                     <Descriptions.Item label='Last login ip'>
                                         {user.last_login_ip}

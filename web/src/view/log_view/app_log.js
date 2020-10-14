@@ -4,6 +4,7 @@ import { SearchOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { get_module_list } from '../../api/module'
 import { get_server_list } from '../../api/server'
 import { query_log } from '../../api/log'
+import moment from 'moment'
 
 const AppLog = (props) => {
     const [serverList, setServerList] = useState([])
@@ -112,7 +113,7 @@ const AppLog = (props) => {
             render: timestamp => (<span>
                 <Tooltip title={
                     <Typography.Text copyable>{timestamp}</Typography.Text>
-                }>{new Date(timestamp).toLocaleString()}</Tooltip></span>)
+                }>{moment(timestamp).format('lll')}</Tooltip></span>)
         },
         {
             title: 'Server',

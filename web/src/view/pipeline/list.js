@@ -7,6 +7,7 @@ import { get_all_vm } from '../../api/vm'
 import { get_server_list } from '../../api/server'
 import { QuestionCircleOutlined, SyncOutlined, CloseCircleOutlined, CheckCircleOutlined, LinkOutlined, FundViewOutlined, DeleteOutlined } from '@ant-design/icons'
 import ScriptSelect from './../compoments/script_select'
+import moment from 'moment'
 
 
 const PipeLineList = props => {
@@ -74,7 +75,7 @@ const PipeLineList = props => {
             title: 'Create time',
             dataIndex: 'ctime',
             key: 'ctime',
-            render: text => <span>{new Date(text).toLocaleString()}</span>
+            render: text => <span>{moment(text).format('lll')}</span>
         },
         {
             title: 'Mark',

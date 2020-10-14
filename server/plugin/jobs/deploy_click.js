@@ -28,7 +28,7 @@ async function entry(request, param, opt) {
 
         const config = Config.get()
         const prefix = config.deploy.imagePrefix
-        const postfix = config.server.imagePostfix
+        const postfix = config.deploy.imagePostfix
 
         deploy.content.image_name = prefix + deploy.mode_name + postfix + ':' + opt.id
         if (param.pre_build_cmd) {
