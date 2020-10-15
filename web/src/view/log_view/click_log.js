@@ -1,58 +1,97 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Form, Tooltip, Row, Col, Typography, Table, Divider, InputNumber, Button, DatePicker } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { click_query } from './../../api/log'
 import moment from 'moment'
 
 const ClickLog = () => {
-    const [logList, setLogList] = useState({ loading: false, list: [], count: 0 })
+    const [query, setQuery] = useState(null)
+    const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}` })
+    const [logList, setLogList] = useState([])
+    const [loading, setLoading] = useState(false)
+
     const [form] = Form.useForm()
 
-    const onFinish = async (v) => {
-        setLogList({ ...logList, loading: true })
-        try {
-            const { list, count } = await click_query(v)
-            setLogList({ loading: false, list, count })
+    useEffect(() => {
+        async function run() {
+            setLoading(true)
+            try {
+                const [list, total] = await click_query({ ...query, page: pagination.current - 1, size: pagination.pageSize })
+                setLogList(list)
+                setPagination(v => { return { ...v, total } })
+            }
+            finally {
+                setLoading(false)
+            }
         }
-        catch (e) {
-            setLogList({ ...logList, loading: false })
-            return
+        if (query)
+            run()
+    }, [query, pagination.current, pagination.pageSize])
+
+    const onFinish = async (val) => {
+        let query = {}
+        if (val.vid !== undefined && val.vid !== null)
+            query.vid = parseInt(val.vid)
+        if (val.time) {
+            if (val.time[0])
+                query.time_start = new Date(val.time[0]).valueOf()
+            if (val.time[1])
+                query.time_end = new Date(val.time[1]).valueOf()
         }
+        setQuery(query)
+
+    }
+
+    const handleTableChange = (pagination, filters, sorter) => {
+        setPagination({ ...pagination })
     }
 
     const columns = [
         {
             title: 'Track id',
-            dataIndex: 'tid',
-            key: 'tid',
-            render: tid => (<Typography.Text>{tid}</Typography.Text>)
+            dataIndex: 3,
+            key: 3,
+            render: tid => (<Typography.Text copyable>{tid}</Typography.Text>)
         },
         {
-            title: 'Method',
-            dataIndex: 'method',
-            key: 'level',
-            render: method => (<span>{method}</span>)
+            title: 'URL',
+            dataIndex: 7,
+            key: 7,
+            ellipsis: true,
+            render: (url, r) => (<span>
+                <Tooltip title={
+                    <Typography.Text copyable>{url}</Typography.Text>
+                }>{r[6]} {url}</Tooltip></span>)
+        },
+        {
+            title: 'Host',
+            dataIndex: 8,
+            key: 8,
+        },
+        {
+            title: 'Instance server',
+            dataIndex: 4,
+            key: 4,
+        },
+        {
+            title: 'Cost',
+            dataIndex: 5,
+            key: 5,
         },
         {
             title: 'Request Time',
-            dataIndex: 'timestamp',
-            key: 'timestamp',
+            dataIndex: 2,
+            key: 2,
             render: timestamp => (<span>
                 <Tooltip title={
                     <Typography.Text copyable>{timestamp}</Typography.Text>
                 }>{moment(timestamp).format('lll')}</Tooltip></span>)
         },
         {
-            title: 'Instance server',
-            dataIndex: 'server',
-            key: 'server',
-        },
-        {
-            title: 'URL',
-            dataIndex: 'url',
-            key: 'url',
-            ellipsis: true,
-            render: text => (<span>{text}</span>)
+            title: 'Return code/length',
+            dataIndex: 9,
+            key: 9,
+            render: (v, r) => (<span>{r[9]}/{r[10]}</span>)
         }
     ]
     return (
@@ -70,18 +109,14 @@ const ClickLog = () => {
                         </Form.Item>
                     </Col>
                 </Row>
-                <Button type='primary' icon={<SearchOutlined />} loading={logList.loading} htmlType='submit'>Query</Button>
+                <Button type='primary' icon={<SearchOutlined />} loading={loading} htmlType='submit'>Query</Button>
             </Form>
             <Divider />
-            <Table fixedHeader expandable={{
-                expandedRowRender: record => <Typography.Text copyable>{record.detail}</Typography.Text>,
-                rowExpandable: () => { return true; },
-            }}
-                style={{ width: '100%' }} title={
-                    () =>
-                        (<Typography.Text>{'Full query record ' + logList.count}</Typography.Text>)
-                }
-                rowKey='_id' dataSource={logList.list} columns={columns}>
+            <Table fixedHeader
+                pagination={pagination}
+                onChange={handleTableChange}
+                style={{ width: '100%' }}
+                rowKey={0} dataSource={logList} columns={columns} loading={loading}>
             </Table>
         </div>
     )

@@ -26,8 +26,6 @@ pub struct Logger {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Monitor {
-    pub bind: String,
-    pub port: u16,
     pub interval: u64,
     pub eth: String,
     pub block: String,

@@ -17,60 +17,87 @@ router.post('/search', async (req, rsp, next) => {
     const page = req.body.page || 0
     const size = req.body.size || 100
     let find_obj = {}
-    if (vid) {
-        find_obj.vid = vid
+    if (vid !== undefined && vid !== null) {
+        find_obj.vi = vid
     }
+
     if (tid) {
-        find_obj.tid = tid
+        find_obj.ti = tid
     }
     if (server_name) {
-        find_obj.server = server_name
+        find_obj.sn = server_name
     }
     else if (module_name) {
-        find_obj.server = { $in: (await m_server.findAll({ where: { mode_name: module_name } })).map(v => { return v.name }) }
+        find_obj.sn = { $in: (await m_server.findAll({ where: { mode_name: module_name } })).map(v => { return v.name }) }
     }
 
     if (level) {
         if (Array.isArray(level)) {
-            find_obj.level = { $in: level }
+            find_obj.le = { $in: level }
         }
         else {
-            find_obj.level = level
+            find_obj.le = level
         }
     }
 
     if (time_start || time_end) {
-        find_obj.timestamp = {}
+        find_obj.ts = {}
         if (time_start)
-            find_obj.timestamp.$gte = time_start
+            find_obj.ts.$gte = time_start
         if (time_end)
-            find_obj.timestamp.$lte = time_end
+            find_obj.ts.$lte = time_end
     }
     if (text) {
         find_obj.$text = { $search: text }
     }
     console.log(find_obj)
 
-    let list = []
     const config = Config.get()
 
     const uri = config.mongodb.uri
     const dbName = config.mongodb.dbname
     const collection = config.mongodb.logColumnName
     const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
-    await db.db(dbName).collection(collection).createIndex({ detail: "text" })
-    await db.db(dbName).collection(collection).createIndex({ _id: 1 })
-    list = await db.db(dbName).collection(collection).find(find_obj).skip(page * size).limit(size).toArray()
-    const count = await db.db(dbName).collection(collection).find(find_obj).count()
+    await db.db(dbName).collection(collection).createIndex({ lo: "text", ts: 1 })
 
-    rsp.json({ err: 0, list, count })
+    let list = await db.db(dbName).collection(collection).find(find_obj).skip(page * size).limit(size).toArray()
+    const count = await db.db(dbName).collection(collection).find(find_obj).count()
+    list = list.map(v => { return [v._id, v.vi, v.ts, v.ti, v.sn, v.le, v.lo] })
+
+    rsp.json({ err: 0, list, total: count })
 })
 
 router.post('/click/search', async (req, rsp, next) => {
-    // TODO: do search in mongodb
-    const list = []
-    let count = 0
-    rsp.json({ err: 0, list, count })
+    const vid = req.body.vid
+    const time_start = req.body.time_start
+    const time_end = req.body.time_end
+    const page = req.body.page || 0
+    const size = req.body.size || 100
+    let find_obj = {}
+    if (vid !== undefined && vid !== null) {
+        find_obj.vi = vid
+    }
+    if (time_start || time_end) {
+        find_obj.ts = {}
+        if (time_start)
+            find_obj.ts.$gte = time_start
+        if (time_end)
+            find_obj.ts.$lte = time_end
+    }
+    console.log(find_obj)
+
+    const config = Config.get()
+    const uri = config.mongodb.uri
+    const dbName = config.mongodb.dbname
+    const collection = config.mongodb.clickLogColumnName
+    const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
+    await db.db(dbName).collection(collection).createIndex({ vi: 1, ts: 1 })
+
+    let list = await db.db(dbName).collection(collection).find(find_obj).skip(page * size).limit(size).toArray()
+    const count = await db.db(dbName).collection(collection).find(find_obj).count()
+    list = list.map(v => { return [v._id, v.vi, v.ts, v.ti, v.sn, v.co, v.me, v.ur, v.ho, v.rc, v.rl] })
+
+    rsp.json({ err: 0, list, total: count })
 })
 
 const log = router

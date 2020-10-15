@@ -6,9 +6,32 @@ import { get_server_list } from '../../api/server'
 import { query_log } from '../../api/log'
 import moment from 'moment'
 
+const TagRender = (props) => {
+    if (props.level === 'error') {
+        return (<Tag color='error'>{props.level}</Tag>)
+    }
+    else if (props.level === 'info') {
+        return (<Tag color='processing'>{props.level}</Tag>)
+    }
+    else if (props.level === 'warning') {
+        return (<Tag color='warning'>{props.level}</Tag>)
+    }
+    else if (props.level) {
+        return (<Tag>{props.level}</Tag>)
+    }
+    else {
+        return null
+    }
+}
+
 const AppLog = (props) => {
     const [serverList, setServerList] = useState([])
     const [moduleList, setModuleList] = useState([])
+    const [query, setQuery] = useState(null)
+    const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}` })
+    const [logList, setLogList] = useState([])
+    const [loading, setLoading] = useState(false)
+
     useEffect(() => {
         async function run() {
             setModuleList(await get_module_list())
@@ -28,88 +51,80 @@ const AppLog = (props) => {
         form.setFieldsValue({ server: '' })
     }
 
-    const [logList, setLogList] = useState({ loading: false, list: [], count: 0 })
+    const handleTableChange = (pagination, filters, sorter) => {
+        setPagination({ ...pagination })
+    }
+
+    useEffect(() => {
+        async function run() {
+            setLoading(true)
+            try {
+                const [list, total] = await query_log({ ...query, page: pagination.current - 1, size: pagination.pageSize })
+                setLogList(list)
+                setPagination(v => { return { ...v, total } })
+            }
+            finally {
+                setLoading(false)
+            }
+        }
+        if (query)
+            run()
+    }, [query, pagination.current, pagination.pageSize])
 
     const onFinish = async (val) => {
-        setLogList({ loading: true, list: [], count: 0 })
-        try {
-            let query = {}
-            if (val.vid)
-                query.vid = parseInt(val.vid)
+        let query = {}
+        if (val.vid !== undefined && val.vid !== null)
+            query.vid = val.vid
 
-            if (val.tid)
-                query.tid = val.tid
+        if (val.tid)
+            query.tid = val.tid
 
-            if (val.time) {
-                if (val.time[0])
-                    query.time_start = new Date(val.time[0]).valueOf()
-                if (val.time[1])
-                    query.time_end = new Date(val.time[1]).valueOf()
-            }
-
-            if (val.server) {
-                query.server = val.server
-            }
-            if (val.level && val.level.length !== 0) {
-                query.level = val.level
-            }
-            if (val.module) {
-                query.module = val.module
-            }
-            if (val.detail) {
-                query.detail = val.detail
-            }
-
-            const { list, count } = await query_log(query)
-            setLogList({ loading: false, list, count })
+        if (val.time) {
+            if (val.time[0])
+                query.time_start = new Date(val.time[0]).valueOf()
+            if (val.time[1])
+                query.time_end = new Date(val.time[1]).valueOf()
         }
-        catch (e) {
-            console.log(e)
-            setLogList({ loading: false, list: [], count: 0 })
-            return
+
+        if (val.server) {
+            query.server = val.server
         }
+        if (val.level && val.level.length !== 0) {
+            query.level = val.level
+        }
+        if (val.module) {
+            query.module = val.module
+        }
+        if (val.detail) {
+            query.detail = val.detail
+        }
+        setQuery(query)
     }
-    const TagRender = (props) => {
-        if (props.level === 'error') {
-            return (<Tag color='error'>{props.level}</Tag>)
-        }
-        else if (props.level === 'info') {
-            return (<Tag color='processing'>{props.level}</Tag>)
-        }
-        else if (props.level === 'warning') {
-            return (<Tag color='warning'>{props.level}</Tag>)
-        }
-        else if (props.level) {
-            return (<Tag>{props.level}</Tag>)
-        }
-        else {
-            return null
-        }
-    }
+
 
     const columns = [
         {
             title: 'Vid',
-            dataIndex: 'vid',
-            key: 'vid',
+            dataIndex: 1,
+            key: 1,
             render: vid => (<Typography.Text>{vid}</Typography.Text>)
         },
         {
             title: 'Track id',
-            dataIndex: 'tid',
-            key: 'tid',
+            dataIndex: 3,
+            key: 3,
             render: tid => (<Typography.Text>{tid}</Typography.Text>)
         },
         {
             title: 'Level',
-            dataIndex: 'level',
-            key: 'level',
+            dataIndex: 5,
+            key: 5,
             render: level => (<TagRender level={level}></TagRender>)
         },
         {
             title: 'Time',
-            dataIndex: 'timestamp',
-            key: 'timestamp',
+            dataIndex: 2,
+            key: 2,
             render: timestamp => (<span>
                 <Tooltip title={
                     <Typography.Text copyable>{timestamp}</Typography.Text>
@@ -117,13 +132,13 @@ const AppLog = (props) => {
         },
         {
             title: 'Server',
-            dataIndex: 'server',
-            key: 'server',
+            dataIndex: 4,
+            key: 4,
         },
         {
             title: 'Detail',
-            dataIndex: 'detail',
-            key: 'detail',
+            dataIndex: 6,
+            key: 6,
             ellipsis: true,
             render: detail => (<span>{detail}</span>)
         }
@@ -182,18 +197,17 @@ const AppLog = (props) => {
                         </Form.Item>
                     </Col>
                 </Row>
-                <Button type='primary' icon={<SearchOutlined />} loading={logList.loading} htmlType='submit'>Query</Button>
+                <Button type='primary' icon={<SearchOutlined />} loading={loading} htmlType='submit'>Query</Button>
             </Form>
             <Divider />
             <Table fixedHeader expandable={{
-                expandedRowRender: record => <Typography.Text copyable>{record.detail}</Typography.Text>,
+                expandedRowRender: record => <Typography.Text copyable>{record[6]}</Typography.Text>,
                 rowExpandable: () => { return true; },
             }}
-                style={{ width: '100%' }} title={
-                    () =>
-                        (<Typography.Text>{'Full query record ' + logList.count}</Typography.Text>)
-                }
-                rowKey='_id' dataSource={logList.list} columns={columns}>
+                pagination={pagination}
+                onChange={handleTableChange}
+                style={{ width: '100%' }}
+                rowKey={0} dataSource={logList} loading={loading} columns={columns}>
             </Table>
         </div >
     )
