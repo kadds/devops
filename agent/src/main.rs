@@ -10,8 +10,8 @@ mod log;
 mod monitor;
 use clap::{App, Arg};
 use daemonize::Daemonize;
-use std::fs::File;
 use std::fs::remove_file;
+use std::fs::File;
 use tokio::runtime;
 use tokio::signal::unix::{signal, SignalKind};
 
@@ -35,19 +35,22 @@ async fn do_async_main(path: &str, server_path: &str) {
     // remove pid file
     match remove_file("./agent.pid") {
         Err(e) => println!("{}", e),
-        _ => ()
+        _ => (),
     }
 }
 
 fn main() {
     let matches = App::new("agent")
-        .version("0.1")
+        .version("0.2.0")
         .author("kadds")
         .about("collecting linux system info. (devops component)")
-        .arg(Arg::with_name("daemon").short("d").help("open with daemon"))
+        .arg(Arg::with_name("daemon").long("daemon").short("d").help(
+            "running in daemon \nredirect stdout & stderr to /tmp/agent.out & /tmp/agent.err",
+        ))
         .arg(
             Arg::with_name("config")
                 .short("c")
+                .long("config")
                 .value_name("FILE")
                 .default_value("./agent.toml")
                 .help("config file"),
@@ -55,6 +58,7 @@ fn main() {
         .arg(
             Arg::with_name("server_file")
                 .short("s")
+                .long("server_file")
                 .value_name("FILE")
                 .default_value("./agent_servers.txt")
                 .help("servers file provide by devops.server"),

@@ -143,8 +143,7 @@ static mut LASTNETINFO: Option<NetIoStat> = None;
 static mut LASTBLOCKINFO: Option<DiskIoStat> = None;
 
 fn read_to_cpu_info(line: &str) -> CpuInfo {
-    let mut list = line.split_whitespace();
-    list.next();
+    let mut list = line.split_ascii_whitespace().skip(1);
     let user = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let nice = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let system = list.next().map_or(0, |v| v.parse().unwrap_or(0));
@@ -170,8 +169,7 @@ fn read_to_cpu_info(line: &str) -> CpuInfo {
 }
 
 fn read_to_cpu_info_from_pid(line: &str) -> CpuInfo {
-    let list = line.split_whitespace();
-    let mut list = list.skip(13);
+    let mut list = line.split_ascii_whitespace().skip(13);
     let user = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let nice = 0;
     let system = list.next().map_or(0, |v| v.parse().unwrap_or(0));
@@ -207,7 +205,7 @@ async fn read_mem() -> Option<u64> {
         for _ in 0..3 {
             if let Ok(len) = stream.read_line(&mut line).await {
                 if len != 0 {
-                    let mut rest = line.split_whitespace();
+                    let mut rest = line.split_ascii_whitespace();
                     let type_name = rest.next().unwrap_or("");
                     if type_name == "MemAvailable:" {
                         // available at kernel version 3.14
@@ -252,7 +250,7 @@ async fn read_memory_pid(pid: &str) -> Option<(u64, u64)> {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
         if let Ok(_) = stream.read_line(&mut line).await {
-            let mut list = line.split_whitespace();
+            let mut list = line.split_ascii_whitespace();
             let vm = list.next().map_or(0, |v| v.parse().unwrap_or(0));
             let pm = list.next().map_or(0, |v| v.parse().unwrap_or(0));
             // page size is 4 KiB
@@ -310,7 +308,7 @@ async fn read_net_stat(eth_name: &str) -> Option<NetIoStat> {
             if cnt == 0 {
                 break;
             }
-            let mut list = line.split_whitespace();
+            let mut list = line.split_ascii_whitespace();
             let name = list.next();
             if name.map(|v| v.trim_end_matches(":")).unwrap_or("") == eth_name {
                 let read_bytes = list.next().map_or(0, |v| v.parse().unwrap_or(0));
@@ -362,8 +360,7 @@ async fn read_block_stat(block_name: &str) -> Option<DiskIoStat> {
             if cnt == 0 {
                 break;
             }
-            let list = line.split_whitespace();
-            let mut list = list.skip(2);
+            let mut list = line.split_ascii_whitespace().skip(2);
             let name = list.next();
             if name.unwrap_or("") == block_name {
                 let read_package = list.next().map_or(0, |v| v.parse().unwrap_or(0));
@@ -544,7 +541,10 @@ async fn read_cpu_pid(name: &String, pid: &str) -> Option<f32> {
 async fn server_inspect(name: &String) {
     // get pid first
     let config = config::get();
-    let docker_container_name = format!("{}{}{}", config.deploy.server_prefix, name, config.deploy.server_postfix);
+    let docker_container_name = format!(
+        "{}{}{}",
+        config.deploy.server_prefix, name, config.deploy.server_postfix
+    );
     let output = match Command::new("docker")
         .arg("inspect")
         .arg("--format")
@@ -574,6 +574,12 @@ async fn server_inspect(name: &String) {
         eprintln!("not find server {}", name);
         return;
     }
+
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("unknown system time")
+        .as_secs() as u32;
+
     // println!("pid server {} is {}", name, pid);
 
     let (usage, mm, tcp) = tokio::join!(
@@ -588,10 +594,6 @@ async fn server_inspect(name: &String) {
             return;
         }
     };
-    let ts = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("unknown system time")
-        .as_secs() as u32;
 
     let res = mongo
         .insert_one(

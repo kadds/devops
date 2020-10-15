@@ -4,8 +4,9 @@ uri = "mongodb://localhost:27017"
 
 clickLogColumnName = "click_log"
 logColumnName = "app_log"
-serverInfoColumnName = "server_log"
 serverMonitorColumnName = "server_monitor"
+serverRpcStatisticsColumnName = "server_rpc"
+serverTimeStatisticsColumnName = "server_time"
 vmMonitorColumnName = "vm_monitor"
 
 [logger]
@@ -14,9 +15,6 @@ maxSize = 1024
 port = 10900
 
 [monitor]
-bind = "127.0.0.1"
-port = 10901
-
 block = "vda"
 eth = "eth0"
 interval = 60

@@ -58,11 +58,21 @@ pub async fn mongo_server_monitor() -> Option<Collection> {
     None
 }
 
-pub async fn mongo_server_info() -> Option<Collection> {
+pub async fn mongo_server_rpc() -> Option<Collection> {
     unsafe {
         connect_mongodb().await;
         if let Some(db) = &DATABASE {
-            return Some(db.collection(&config::get().mongodb.server_info_column_name));
+            return Some(db.collection(&config::get().mongodb.server_rpc_statistics_column_name));
+        }
+    }
+    None
+}
+
+pub async fn mongo_server_time() -> Option<Collection> {
+    unsafe {
+        connect_mongodb().await;
+        if let Some(db) = &DATABASE {
+            return Some(db.collection(&config::get().mongodb.server_time_statistics_column_name));
         }
     }
     None
