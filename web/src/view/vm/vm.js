@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message } from 'antd'
-import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm } from '../../api/vm'
+import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message, Spin } from 'antd'
+import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm, get_vm_config, update_vm_config } from '../../api/vm'
 import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons'
 import moment from 'moment'
 import { withRouter } from 'react-router'
@@ -38,6 +38,13 @@ const VM = (props) => {
             }
         }
         else {
+            // update
+            if (!val.password) {
+                val.password = undefined
+            }
+            if (!val.private_key) {
+                val.private_key = undefined
+            }
             const ret = await update_vm({ vm: val })
             if (ret === 0) {
                 // ok
@@ -79,9 +86,35 @@ const VM = (props) => {
         setState({ ...state, need_update: state.need_update + 1 })
     }
 
+    const [form2] = Form.useForm()
+    const [configState, setConfigState] = useState({ visible: false, loading: false, vm: null, dataLoading: false })
+    const onConfigModalOk = async (v) => {
+        setConfigState({ ...configState, loading: true })
+        let val
+        try {
+            val = await form2.validateFields()
+        }
+        catch (e) {
+            setConfigState({ ...configState, loading: false })
+            return
+        }
+        await update_vm_config(configState.vm, val.config)
+        // restart vm
+        await do_prepare_vm(configState.vm)
+        setConfigState({ ...configState, visible: false, loading: false })
+    }
+
+    const onConfigModalCancel = () => {
+        setConfigState({ ...configState, visible: false, loading: false })
+    }
+
     const redoClick = async (name) => {
-        await do_prepare_vm(name)
-        message.success('Redo preparing.')
+        setConfigState({ visible: true, loading: false, vm: name, dataLoading: true })
+        const config = await get_vm_config(name)
+        form2.setFieldsValue({
+            config
+        })
+        setConfigState({ visible: true, loading: false, vm: name, dataLoading: false })
     }
 
     const columns = [
@@ -144,6 +177,7 @@ const VM = (props) => {
         run()
     }, [state.need_update, vm_name])
 
+
     return (
         <div className='page'>
             <div style={{ textAlign: 'left' }}>
@@ -189,6 +223,25 @@ const VM = (props) => {
                     </Form.Item>
                 </Form>
 
+            </Modal>
+            <Modal
+                visible={configState.visible}
+                title='Edit Config'
+                okText='Save And Restart'
+                cancelText='Cancel'
+                onOk={onConfigModalOk}
+                onCancel={onConfigModalCancel}
+                confirmLoading={configState.loading || configState.dataLoading}
+                centered
+            >
+                <Spin spinning={configState.dataLoading}>
+
+                    <Form form={form2}>
+                        <Form.Item label='Config' name='config' rules={[{ required: true, message: 'Please input config' }]}>
+                            <Input.TextArea className='code_edit' autoSize={{ minRows: 10 }} />
+                        </Form.Item>
+                    </Form>
+                </Spin>
             </Modal>
         </div>
     )

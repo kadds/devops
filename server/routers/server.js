@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { conn, m_server, m_mode, m_vm } = require('../data')
+const { conn, m_server, m_mode, m_vm, m_pipeline } = require('../data')
 const { post_task_server_op } = require('./../worker/index')
 const { SVR_STATUS_INIT, SVR_STATUS_STOP, SVR_FLAG_TEST, SVR_FLAG_GRAY } = require('../flags')
 
@@ -42,6 +42,7 @@ router.get('', async (req, rsp, next) => {
     ms_server.status = server.status
     ms_server.flag = server.flag
     ms_server.version = server.content.version || null
+    ms_server.deploy_id = ms_server.version ? (await m_pipeline.findByPk(ms_server.version)).content.deploy_id : null
     if (server.content.res)
         ms_server.start_time = server.content.res.last_start_time
     rsp.json({ err: 0, data: ms_server })

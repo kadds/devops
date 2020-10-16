@@ -1,7 +1,7 @@
 const { m_server, m_mode, m_vm } = require('../data')
 const NodeSSH = require('node-ssh').NodeSSH
 const FLAGS = require('../flags')
-const { update_vm_servers, exec } = require('./../utils/vmutils')
+const { update_vm_servers, exec, connect_shell } = require('./../utils/vmutils')
 const Config = require('../config')
 
 async function update_vm_agent(vm_name) {
@@ -11,7 +11,7 @@ async function update_vm_agent(vm_name) {
     for (const it of data) {
         servers.push(it.name)
     }
-    await update_vm_servers(servers, vm.name, vm.ip, vm.port, vm.password, vm.private_key, vm.user, vm.base_dir)
+    await update_vm_servers(servers, vm.name, vm)
 }
 
 async function connect(vm_name) {
@@ -19,16 +19,7 @@ async function connect(vm_name) {
     if (vm === undefined || vm === null) {
         throw new Error('query vm fail name is ' + vm_name)
     }
-    let ssh = new NodeSSH()
-    await ssh.connect({
-        host: vm.ip,
-        port: vm.port,
-        password: vm.password,
-        private_key: vm.private_key,
-        username: vm.user,
-        readyTimeout: 2000
-    })
-    return ssh
+    return await connect_shell(vm)
 }
 
 function get_version(image_name) {

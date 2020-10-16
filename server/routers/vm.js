@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { conn, m_vm, m_server } = require('../data')
-const { check_connection, copy_to_vm, clear_vm } = require('../utils/vmutils')
+const { copy_to_vm, clear_vm, get_vm_config, update_vm_config, connect_shell } = require('../utils/vmutils')
 const { VM_FLAG_READY } = require('../flags')
 
 let router = new Router()
@@ -20,7 +20,7 @@ router.get('/', async (req, rsp, next) => {
 async function do_sync(vm) {
     try {
         await m_vm.update({ flag: 0 }, { where: { name: vm.name } })
-        await copy_to_vm(__dirname + '/../upload/vm/', vm.ip, vm.port, vm.password, vm.private_key, vm.user, vm.base_dir)
+        await copy_to_vm(__dirname + '/../upload/vm/', vm)
         await m_vm.update({ flag: VM_FLAG_READY }, { where: { name: vm.name } })
     }
     catch (e) {
@@ -34,7 +34,7 @@ router.post('/prepare', async (req, rsp, next) => {
         rsp.json({ err: 404, msg: 'vm not find' })
         return
     }
-    await do_sync(vm)
+    do_sync(vm)
     rsp.json({ err: 0 })
 })
 
@@ -55,7 +55,7 @@ router.post('/create', async (req, rsp, next) => {
     const vm = req.body.vm
     let ok = false
     try {
-        await check_connection(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+        await check_connection(vm)
         ok = true
     }
     catch (e) {
@@ -67,22 +67,14 @@ router.post('/create', async (req, rsp, next) => {
     }
     req.body.vm.flag = 0
 
-    await m_vm.create(req.body.vm)
+    await m_vm.create(vm)
     do_sync(vm) // sync
     rsp.json({ err: 0, status: 0 })
 })
 
 router.post('/update', async (req, rsp, next) => {
-    if (req.body.vm.password === undefined && req.body.vm.private_key === undefined) {
-        rsp.json({ err: 101, msg: 'invalid param password & private key' })
-        return
-    }
     const vm = req.body.vm
     const vm2 = await m_vm.findByPk(vm.name)
-    if (vm.ip !== vm2.ip) {
-        rsp.json({ err: 102, msg: "can't update ip/host" })
-        return
-    }
     if (vm.port) {
         vm2.port = vm.port
     }
@@ -105,7 +97,8 @@ router.post('/update', async (req, rsp, next) => {
 
     let ok = false
     try {
-        await check_connection(vm2.ip, vm2.port, vm2.password, vm2.private_key, vm2.user)
+        if (vm2.password || vm2.private_key) // only check connection when update password or private_key
+            await connect_shell(vm2)
         ok = true
     }
     catch (e) {
@@ -116,8 +109,8 @@ router.post('/update', async (req, rsp, next) => {
         return
     }
 
-    await vm2.save()
-    do_sync(vm) // sync
+    await m_vm.update(vm2, { where: { name: vm.name } })
+    do_sync(await m_vm.findByPk(vm.name)) // sync
     rsp.json({ err: 0, status: 0 })
 })
 
@@ -147,7 +140,22 @@ router.post('/del', async (req, rsp, next) => {
 
     const vm2 = await m_vm.findByPk(name)
     await m_vm.destroy({ where: { name: name } })
-    clear_vm(vm2.ip, vm2.port, vm2.password, vm2.private_key, vm2.user, vm2.base_dir)
+    clear_vm(vm2)
+    rsp.json({ err: 0 })
+})
+
+router.get('/config', async (req, rsp, next) => {
+    const vm_name = req.query.name
+    const vm = await m_vm.findByPk(vm_name)
+    let config = await get_vm_config(vm)
+    rsp.json({ err: 0, data: config })
+})
+
+router.post('/config', async (req, rsp, next) => {
+    const vm_name = req.body.name
+    const config = req.body.config
+    const vm = await m_vm.findByPk(vm_name)
+    await update_vm_config(vm, config)
     rsp.json({ err: 0 })
 })
 

@@ -13,7 +13,7 @@ async function entry(request, param, opt) {
         await logger.write('- target vm is ' + param.vm_name + '\n')
         const vm = await m_vm.findByPk(param.vm_name)
         await logger.write('- connecting environment\n')
-        const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+        const ssh = await connect_shell(vm)
         const base_dir = param.base_dir + '/' + opt.id + '/'
         await logger.write('- checking directory\n')
         if (param.base_dir.indexOf(' ') >= 0) {
@@ -39,7 +39,7 @@ async function entry(request, param, opt) {
         try {
             if (ssh === undefined || ssh === null) {
                 const vm = await m_vm.findByPk(param.vm_name)
-                ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+                ssh = await connect_shell(vm)
             }
         }
         catch (e) {

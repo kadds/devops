@@ -1,30 +1,26 @@
+const { get } = require('../config')
+
 const NodeSSH = require('node-ssh').NodeSSH
 
-async function check_connection(ip, port, password, private_key, user) {
+async function connect_shell(vm) {
     let ssh = new NodeSSH()
     await ssh.connect({
-        host: ip,
-        port: port,
-        password: password,
-        private_key: private_key,
-        username: user,
-        readyTimeout: 3000,
-    })
-}
-
-async function copy_to_vm(local_dir, ip, port, password, private_key, user, dir) {
-    let ssh = new NodeSSH()
-    await ssh.connect({
-        host: ip,
-        port: port,
-        password: password,
-        private_key: private_key,
-        username: user,
+        host: vm.ip,
+        port: vm.port,
+        password: vm.password,
+        private_key: vm.private_key,
+        username: vm.user,
         readyTimeout: 2000
     })
+    ssh.base_dir = '/'
+    return ssh
+}
+
+async function copy_to_vm(local_dir, vm) {
+    let ssh = await connect_shell(vm)
     try {
         console.log('kill agent')
-        const pid = (await ssh.execCommand('cat ' + dir + '/agent/agent.pid')).stdout
+        const pid = (await ssh.execCommand('cat ./agent.pid', { cwd: vm.base_dir + '/agent' })).stdout
         if (pid !== undefined && pid !== null && pid !== '') {
             await ssh.execCommand('kill ' + pid)
         }
@@ -34,10 +30,22 @@ async function copy_to_vm(local_dir, ip, port, password, private_key, user, dir)
         throw new Error('ssh kill fail')
     }
     console.log('try to copy agent files')
-    if (!await ssh.putDirectory(local_dir, dir + '/agent', {
+    // if need upload agent.toml
+    let res = await ssh.execCommand('cat ./agent.toml', { cwd: vm.base_dir + '/agent' })
+
+    if (!await ssh.putDirectory(local_dir, vm.base_dir + '/agent', {
         recursive: false, concurrency: 1,
+        validate: file => {
+            if (file.endsWith('agent.toml')) {
+                if (res.code !== null && res.code !== 0) {
+                    return true
+                }
+                return false
+            }
+            return true
+        },
         tick: (local, remote, err) => {
-            console.log('local ' + local + ' transfer ')
+            console.log('local ' + local + ' transfer to ' + remote)
             if (err) { console.error(err) }
         },
     })) {
@@ -45,25 +53,17 @@ async function copy_to_vm(local_dir, ip, port, password, private_key, user, dir)
         throw new Error('ssh put directory fail')
     }
     console.log('try start agent')
-    await ssh.execCommand('chmod +x ' + dir + '/agent/agent')
+    await ssh.execCommand('chmod +x ' + vm.base_dir + '/agent/agent')
     await ssh.exec('./agent -d ./agent.toml', [], {
-        cwd: dir + '/agent'
+        cwd: vm.base_dir + '/agent'
     })
     console.log('reload agent done')
 }
 
-async function restart_agent(ip, port, password, private_key, user, dir) {
-    let ssh = new NodeSSH()
-    await ssh.connect({
-        host: ip,
-        port: port,
-        password: password,
-        private_key: private_key,
-        username: user,
-        readyTimeout: 2000
-    })
+async function restart_agent(vm) {
+    let ssh = await connect_shell(vvm)
     try {
-        const pid = (await ssh.execCommand('cat ' + dir + '/agent/agent.pid')).stdout
+        const pid = (await ssh.execCommand('cat ./agent.pid', { cwd: vm.base_dir + '/agent' })).stdout
         if (pid !== undefined && pid !== null && pid !== '') {
             await ssh.execCommand('kill ' + pid)
         }
@@ -77,18 +77,10 @@ async function restart_agent(ip, port, password, private_key, user, dir) {
     console.log('restart agent done')
 }
 
-async function clear_vm(ip, port, password, private_key, user, dir) {
-    let ssh = new NodeSSH()
-    await ssh.connect({
-        host: ip,
-        port: port,
-        password: password,
-        private_key: private_key,
-        username: user,
-        readyTimeout: 2000
-    })
+async function clear_vm(vm) {
+    let ssh = await connect_shell(vm)
     try {
-        const pid = (await ssh.execCommand('cat ' + dir + '/agent/agent.pid')).stdout
+        const pid = (await ssh.execCommand('cat ./agent.pid', { cwd: vm.base_dir + '/agent' })).stdout
         if (pid !== undefined && pid !== null && pid !== '') {
             await ssh.execCommand('kill ' + pid)
         }
@@ -96,38 +88,32 @@ async function clear_vm(ip, port, password, private_key, user, dir) {
     catch (err) {
         console.log(err)
     }
-    await ssh.execCommand('rm -f ./agent ./agent.toml ./agent_servers.txt ./agent.pid', { cwd: dir + '/agent' })
+    await ssh.execCommand('rm -f ./agent ./agent.toml ./agent_servers.txt ./agent.pid', { cwd: vm.base_dir + '/agent' })
 }
 
-async function connect_shell(ip, port, password, private_key, user) {
-    let ssh = new NodeSSH()
-    await ssh.connect({
-        host: ip,
-        port: port,
-        password: password,
-        private_key: private_key,
-        username: user,
-        readyTimeout: 2000
-    })
-    ssh.base_dir = '/'
-    return ssh
+async function get_vm_config(vm) {
+    let ssh = await connect_shell(vm)
+    let res = await ssh.execCommand('cat ./agent.toml', { cwd: vm.base_dir + '/agent' })
+    return res.stdout
 }
 
-async function update_vm_servers(servers, vm_name, ip, port, password, private_key, user, dir) {
-    let ssh = new NodeSSH()
-    await ssh.connect({
-        host: ip,
-        port: port,
-        password: password,
-        private_key: private_key,
-        username: user,
-        readyTimeout: 2000
-    })
+async function update_vm_config(vm, config) {
+    let ssh = await connect_shell(vm)
+    if (config) {
+        await ssh.execCommand('cat > ./agent.toml', { stdin: config, cwd: vm.base_dir + '/agent' })
+    }
+    else {
+        await ssh.execCommand('rm -f ./agent.toml', { cwd: vm.base_dir + '/agent' })
+    }
+}
+
+async function update_vm_servers(servers, vm_name, vm) {
+    let ssh = await connect_shell(vm)
     let str = vm_name + '\n'
     for (const name of servers) {
         str += name + '\n'
     }
-    await ssh.execCommand('cat > ./agent_servers.txt', { stdin: str, cwd: dir + '/agent' })
+    await ssh.execCommand('cat > ./agent_servers.txt', { stdin: str, cwd: vm.base_dir + '/agent' })
     console.log('update agent_servers.txt done')
 }
 
@@ -226,4 +212,7 @@ async function build_docker_image(ssh, dir, docker_file, tag, version, logger) {
     return do_result(res, logger)
 }
 
-module.exports = { check_connection, copy_to_vm, restart_agent, clear_vm, connect_shell, update_vm_servers, exec, copy, build_docker_image }
+module.exports = {
+    copy_to_vm, restart_agent, clear_vm, connect_shell,
+    update_vm_servers, exec, copy, build_docker_image, get_vm_config, update_vm_config
+}

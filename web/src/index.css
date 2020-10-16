@@ -8,8 +8,7 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', Courier, monospace;
 }
 
 .card_normal {
@@ -77,7 +76,7 @@ pre.output {
     overflow-y: auto;
     overflow-x: auto;
     font-size: 13px;
-    font-family: Consolas, 'Courier New', Courier, monospace;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', Courier, monospace;
     line-height: 1.5em;
 }
 
@@ -87,8 +86,9 @@ pre.output {
     color: #eee;
     background: #222;
     text-align: left;
-    font-size: 13px;
-    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', Courier, monospace;
+    line-height: 1.8em;
 }
 
 .page {

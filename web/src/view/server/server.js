@@ -7,8 +7,8 @@ import { useInterval } from '../../comm/util'
 import { Button, Spin, Row, Select, Popconfirm, Typography, Card, Input, Form, Modal, Col, Space, Tag, Badge } from 'antd'
 import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { withRouter } from 'react-router'
+import queryString from 'query-string'
 import moment from 'moment'
-import { get_monitor_vm } from '../../api/monitor'
 
 const getServerRunningTime = (delta) => {
     if (delta) {
@@ -29,7 +29,8 @@ const getServerRunningTime = (delta) => {
 
 
 const Server = (props) => {
-    const [listDetail, setListDetail] = useState({ loading: false, data: [] })
+    const server_name = props.location.pathname === '/server' ? queryString.parse(props.location.search).name : null
+    const [listDetail, setListDetail] = useState({ loading: false, data: [], select: server_name })
     const [state, setState] = useState({ visible: false, loading: false, type: 0 })
     const [moduleList, setModuleList] = useState({ loading: false, data: [] })
     const [vmList, setVmList] = useState({ loading: false, data: [] })
@@ -329,7 +330,7 @@ const Server = (props) => {
     const ServerVersion = withRouter((props) => {
         if (props.version) {
             return (
-                <Button type='link' onClick={() => props.history.push({ pathname: '/deploy/detail', search: '?id=' + props.version })}>{props.version}</Button>
+                <Button type='link' onClick={() => props.history.push({ pathname: '/deploy/detail', search: '?id=' + props.deploy_id })}>{props.version}</Button>
             )
         }
         else {
@@ -407,7 +408,7 @@ const Server = (props) => {
                                         <Typography.Title level={4}>
                                             Version:
                                         </Typography.Title>
-                                        <ServerVersion version={server.version} />
+                                        <ServerVersion deploy_id={server.deploy_id} version={server.version} />
                                     </Col>
                                 </Row>
                             </Card>

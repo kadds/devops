@@ -14,7 +14,7 @@ async function entry(request, param, opt) {
         await logger.write('- target vm is ' + param.vm_name + '\n')
         const vm = await m_vm.findByPk(param.vm_name)
         await logger.write('- connecting environment\n')
-        const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+        const ssh = await connect_shell(vm)
 
         const pipeline = await m_pipeline.findByPk(opt.id)
 
@@ -100,7 +100,7 @@ async function entry(request, param, opt) {
         try {
             if (ssh === undefined || ssh === null) {
                 const vm = await m_vm.findByPk(param.vm_name)
-                ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+                ssh = await connect_shell(vm)
             }
         }
         catch (e) {
@@ -139,7 +139,7 @@ async function entry(request, param, opt) {
     }
     else if (request === 'clean') {
         const vm = await m_vm.findByPk(param.vm_name)
-        const ssh = await connect_shell(vm.ip, vm.port, vm.password, vm.private_key, vm.user)
+        const ssh = await connect_shell(vm)
         const pipeline = await m_pipeline.findByPk(opt.id)
         let cache = await m_docker_cache.findOne({ where: { mode_name: pipeline.mode_name, vm_name: param.vm_name } })
         // select cached docker 
