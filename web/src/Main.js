@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Fragment } from 'react'
 import { Route, Switch, NavLink } from 'react-router-dom'
-import { Layout, Menu, Avatar, Row, Col, Dropdown } from 'antd'
+import { Layout, BackTop, Menu, Avatar, Row, Col, Dropdown } from 'antd'
 import { info, logout } from './api/user'
 import {
     UserOutlined,
@@ -156,6 +156,7 @@ function Main(props) {
                 <MenuRender location={props.location}></MenuRender>
             </Sider>
             <Layout className="site-layout" id='rightPanel' style={{ overflowX: 'visible', overflowY: 'auto' }}>
+                <BackTop target={() => document.getElementById('rightPanel')} />
                 <Header className="site-layout-background" style={{ padding: 0 }}>
                     <Row justify='space-between'>
                         <Col>

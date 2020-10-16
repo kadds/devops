@@ -7,6 +7,7 @@ import moment from 'moment'
 import { useInterval, useEventListener } from '../../comm/util'
 import echarts from 'echarts'
 import ThemeJson from '../../theme.json'
+import ProgressHint from '../compoments/progress_hint'
 
 echarts.registerTheme('theme', ThemeJson)
 
@@ -115,7 +116,7 @@ const MonitorServerChart = (props) => {
 
     useInterval(() => {
         setNeedUpdate(v => { return v + 1 })
-    }, props.interval * 1000)
+    }, props.interval * 1000, [props.active])
 
     const cardStyle = {
     }
@@ -266,7 +267,7 @@ const MonitorServerChart = (props) => {
     )
 }
 
-const MonitorServer = () => {
+const MonitorServer = (props) => {
     const [serverList, setServerList] = useState({ loading: false, list: [] })
     const [selectServer, setSelectServer] = useState(null)
     const [form] = Form.useForm()
@@ -305,6 +306,7 @@ const MonitorServer = () => {
 
     return (
         <div>
+            <ProgressHint size={24} interval={selectServer ? selectServer.interval : 0} />
             <Form form={form} initialValues={{ interval: 60, timerange: [moment().subtract(7, 'd'), moment()] }} onValuesChange={onInputChange}>
                 <Row gutter={[12, 12]}>
                     <Col>
@@ -334,7 +336,7 @@ const MonitorServer = () => {
             </Form>
             {
                 selectServer && (
-                    <MonitorServerChart server={selectServer.servers} interval={selectServer.interval} timerange={selectServer.timerange} />
+                    <MonitorServerChart active={props.active} server={selectServer.servers} interval={selectServer.interval} timerange={selectServer.timerange} />
                 )
             }
         </div>

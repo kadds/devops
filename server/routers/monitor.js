@@ -11,7 +11,6 @@ router.post('/vm', async (req, rsp, next) => {
         const uri = config.mongodb.uri
         const dbName = config.mongodb.dbname
         const collection = config.mongodb.vmMonitorColumnName
-        const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
         let find_obj = {
             vm: vm_name,
         }
@@ -21,12 +20,19 @@ router.post('/vm', async (req, rsp, next) => {
         if (time[1]) {
             find_obj.ts = { ...find_obj.ts, $lte: time[1] }
         }
-
-        await db.db(dbName).collection(collection).createIndex({ ts: 1, vm: 1 })
-        const list = await (await db.db(dbName).collection(collection)
-            .find(find_obj).toArray()).map(v => {
-                return [v.ts, ...v.dt]
-            })
+        let db = null
+        let list = null
+        try {
+            db = await MongoClient.connect(uri, { useUnifiedTopology: true })
+            await db.db(dbName).collection(collection).createIndex({ ts: 1, vm: 1 })
+            list = await (await db.db(dbName).collection(collection)
+                .find(find_obj).toArray()).map(v => {
+                    return [v.ts, ...v.dt]
+                })
+        }
+        finally {
+            db && db.close()
+        }
         // test data
         rsp.json({ err: 0, data: list })
         return
@@ -43,7 +49,6 @@ router.post('/server', async (req, rsp, next) => {
         const uri = config.mongodb.uri
         const dbName = config.mongodb.dbname
         const collection = config.mongodb.serverMonitorColumnName
-        const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
         let find_obj = {
             se: { $in: server_name },
         }
@@ -53,11 +58,19 @@ router.post('/server', async (req, rsp, next) => {
         if (time[1]) {
             find_obj.ts = { ...find_obj.ts, $lte: time[1] }
         }
-        await db.db(dbName).collection(collection).createIndex({ ts: 1, se: 1 })
-        const list = await (await db.db(dbName).collection(collection)
-            .find(find_obj).toArray()).map(v => {
-                return [v.ts, ...v.dt]
-            })
+        let db = null
+        let list = null
+        try {
+            db = await MongoClient.connect(uri, { useUnifiedTopology: true })
+            await db.db(dbName).collection(collection).createIndex({ ts: 1, se: 1 })
+            list = await (await db.db(dbName).collection(collection)
+                .find(find_obj).toArray()).map(v => {
+                    return [v.ts, ...v.dt]
+                })
+        }
+        finally {
+            db && db.close()
+        }
         rsp.json({ err: 0, data: list })
         return
     }

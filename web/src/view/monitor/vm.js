@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Fragment } from 'react'
-import { Row, Col, Card, Select, Spin, Form, InputNumber, Divider, Typography, Button, DatePicker } from 'antd'
+import { Row, Col, Progress, Card, Select, Spin, Form, InputNumber, Divider, Typography, Button, DatePicker } from 'antd'
 import ReactEcharts from 'echarts-for-react'
 import { get_all_vm } from '../../api/vm'
 import { get_monitor_vm } from '../../api/monitor'
@@ -8,6 +8,7 @@ import moment from 'moment'
 import echarts from 'echarts'
 import ThemeJson from '../../theme.json'
 import { useInterval } from '../../comm/util'
+import ProgressHint from '../compoments/progress_hint'
 
 // register theme object
 echarts.registerTheme('theme', ThemeJson)
@@ -119,18 +120,53 @@ const size_formatter = (v) => {
         return '0'
     }
     else if (v < 1024) {
-        return `${v} KiB`
+        return `${v} B`
     }
     else if (v < 1024 * 1024) {
-        return `${(v / 1024).toFixed(1)} MiB`
+        return `${(v / 1024).toFixed(1)} KiB`
+    }
+    else if (v < 1024 * 1024 * 1024) {
+        return `${(v / (1024 * 1024)).toFixed(1)} MiB`
     }
     else {
-        return `${(v / (1024 * 1024)).toFixed(1)} GiB`
+        return `${(v / (1024 * 1024 * 1024)).toFixed(1)} GiB`
+    }
+}
+
+const iops_formatter = (v) => {
+    v = Math.abs(v)
+    if (v <= 0) {
+        return '0'
+    }
+    else if (v < 1000) {
+        return `${v} /s`
+    }
+    else {
+        return `${(v / 1000).toFixed(1)} k/s`
+    }
+}
+
+const bps_formatter = (v) => {
+    v = Math.abs(v)
+    if (v <= 0) {
+        return '0'
+    }
+    else if (v < 1024) {
+        return `${v} bps`
+    }
+    else if (v < 1024 * 1024) {
+        return `${(v / 1024).toFixed(1)} Kbps`
+    }
+    else if (v < 1024 * 1024 * 1024) {
+        return `${(v / (1024 * 1024)).toFixed(1)} Mbps`
+    }
+    else {
+        return `${(v / (1024 * 1024 * 1024)).toFixed(1)} Gbps`
     }
 }
 
 const MonitorVMChart = (props) => {
-    const [data, setData] = useState({ loading: false, cpu: [], mem: [], block: [[], []], net_io: [[], []], net_bytes: [[], []] })
+    const [data, setData] = useState({ loading: false, cpu: [], mem: [], block_bytes: [[], []], block_io: [[], []], net_io: [[], []], net_bytes: [[], []] })
     const CPULineConfig = {
         ...CommConfig,
         title: {
@@ -195,7 +231,7 @@ const MonitorVMChart = (props) => {
         },
         tooltip: {
             trigger: 'axis',
-            formatter: v => (`${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'>${size_formatter(v[0].value[1])}</span> ${v[0].value[1]} KiB`)
+            formatter: v => (`${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'>${size_formatter(v[0].value[1])}</span> ${v[0].value[1]} B`)
         },
         series: [{
             name: 'Memory used',
@@ -212,29 +248,29 @@ const MonitorVMChart = (props) => {
         ...CommConfig,
         title: {
             show: true,
-            text: 'Block IO'
+            text: 'Block IOPS'
         },
         yAxis: {
             type: 'value',
             axisLabel: {
-                formatter: (v) => (Math.abs(v))
+                formatter: (v) => (iops_formatter(v))
             }
         },
         tooltip: {
             trigger: 'axis',
             formatter: v => {
                 if (v.length > 1) {
-                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${Math.abs(v[1].value[1])} </span>`
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${iops_formatter(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${iops_formatter(v[1].value[1])} </span>`
                 }
                 else if (v.length === 1) {
-                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span>`
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${iops_formatter(v[0].value[1])} </span>`
                 }
                 return ''
             }
         },
         series: [{
-            name: 'Read IO',
-            data: data.block[0],
+            name: 'Read IOPS',
+            data: data.block_io[0],
             type: 'line',
             symbol: 'diamond',
             showSymbol: false,
@@ -246,8 +282,61 @@ const MonitorVMChart = (props) => {
             areaStyle: areaStyle1,
         },
         {
-            name: 'Write IO',
-            data: data.block[1],
+            name: 'Write IOPS',
+            data: data.block_io[1],
+            type: 'line',
+            symbol: 'triangle',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
+            },
+            areaStyle: areaStyle2,
+        }
+        ]
+    }
+
+    const IOBytesConfig = {
+        ...CommConfig,
+        title: {
+            show: true,
+            text: 'Block IO Bytes'
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: {
+                formatter: (v) => (bps_formatter(v))
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: v => {
+                if (v.length > 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${bps_formatter(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${bps_formatter(v[1].value[1])} </span>`
+                }
+                else if (v.length === 1) {
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${bps_formatter(v[0].value[1])} </span>`
+                }
+                return ''
+            }
+        },
+        series: [{
+            name: 'Read bytes',
+            data: data.block_bytes[0],
+            type: 'line',
+            symbol: 'diamond',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+            lineStyle: {
+                width: 0,
+            },
+            areaStyle: areaStyle1,
+        },
+        {
+            name: 'Write bytes',
+            data: data.block_bytes[1],
             type: 'line',
             symbol: 'triangle',
             showSymbol: false,
@@ -265,28 +354,28 @@ const MonitorVMChart = (props) => {
         ...CommConfig,
         title: {
             show: true,
-            text: 'Net Bytes'
+            text: 'Net IO Bytes'
         },
         yAxis: {
             type: 'value',
             axisLabel: {
-                formatter: (v) => (size_formatter(Math.abs(v)))
+                formatter: (v) => (bps_formatter(v))
             }
         },
         tooltip: {
             trigger: 'axis',
             formatter: v => {
                 if (v.length > 1) {
-                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${size_formatter(Math.abs(v[0].value[1]))} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${size_formatter(Math.abs(v[1].value[1]))} </span>`
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${bps_formatter(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${bps_formatter(v[1].value[1])} </span>`
                 }
                 else if (v.length === 1) {
-                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${size_formatter(Math.abs(v[0].value[1]))} </span>`
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${bps_formatter(v[0].value[1])} </span>`
                 }
                 return ''
             }
         },
         series: [{
-            name: 'Read bytes',
+            name: 'Recv bytes',
             data: data.net_bytes[0],
             type: 'line',
             symbol: 'diamond',
@@ -299,7 +388,7 @@ const MonitorVMChart = (props) => {
             areaStyle: areaStyle1,
         },
         {
-            name: 'Write bytes',
+            name: 'Send bytes',
             data: data.net_bytes[1],
             type: 'line',
             symbol: 'triangle',
@@ -318,28 +407,28 @@ const MonitorVMChart = (props) => {
         ...CommConfig,
         title: {
             show: true,
-            text: 'Net IO'
+            text: 'Net IOPS'
         },
         yAxis: {
             type: 'value',
             axisLabel: {
-                formatter: (v) => (Math.abs(v))
+                formatter: (v) => (iops_formatter(v))
             }
         },
         tooltip: {
             trigger: 'axis',
             formatter: v => {
                 if (v.length > 1) {
-                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${Math.abs(v[1].value[1])} </span>`
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${iops_formatter(v[0].value[1])} </span> <br/> ${v[1].seriesName}: <span class='tip-echarts'> ${iops_formatter(v[1].value[1])} </span>`
                 }
                 else if (v.length === 1) {
-                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${Math.abs(v[0].value[1])} </span>`
+                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${iops_formatter(v[0].value[1])} </span>`
                 }
                 return ''
             }
         },
         series: [{
-            name: 'Read IO',
+            name: 'Recv IOPS',
             data: data.net_io[0],
             type: 'line',
             symbol: 'diamond',
@@ -352,7 +441,7 @@ const MonitorVMChart = (props) => {
             areaStyle: areaStyle1,
         },
         {
-            name: 'Write IO',
+            name: 'Send IOPS',
             data: data.net_io[1],
             type: 'line',
             symbol: 'triangle',
@@ -383,37 +472,43 @@ const MonitorVMChart = (props) => {
         async function run() {
             setData(data => ({ ...data, loading: true }))
 
-            // timestamp cpu(%) mem(KiB) net_in(KiB) net_out(KiB) net_in_package net_out_package block_in_package block_out_package
+            // timestamp cpu(%) mem(KiB) net_in(bps) net_out(bps) net_in(iops) net_out(iops)
+            // block_read(bps) block_write(bps) block_read(iops) block_write(iops)
             let ret_data = await get_monitor_vm(props.vm, props.timerange)
 
             let cpu = []
             let mem = []
             let net_io = [[], []]
             let net_bytes = [[], []]
-            let block = [[], []]
+            let block_io = [[], []]
+            let block_bytes = [[], []]
 
             for (const dt of ret_data) {
                 let time = dt[0] * 1000
                 cpu.push([time, dt[1] / 100])
                 mem.push([time, dt[2]])
 
-                block[0].push([time, dt[7]])
-                block[1].push([time, -dt[8]])
+                block_bytes[0].push([time, dt[7] * 8])
+                block_bytes[1].push([time, -dt[8] * 8])
 
-                net_bytes[0].push([time, dt[6]])
-                net_bytes[1].push([time, -dt[7]])
-                net_io[0].push([time, dt[4]])
-                net_io[1].push([time, -dt[5]])
+                block_io[0].push([time, dt[9]])
+                block_io[1].push([time, -dt[10]])
+
+                net_bytes[0].push([time, dt[3] * 8])
+                net_bytes[1].push([time, -dt[4] * 8])
+                net_io[0].push([time, dt[5]])
+                net_io[1].push([time, -dt[6]])
             }
 
-            setData({ loading: false, cpu, mem, block, net_io, net_bytes })
+            setData({ loading: false, cpu, mem, block_io, block_bytes, net_io, net_bytes })
         }
         run()
     }, [props.vm, props.timerange, needUpdate])
 
     useInterval(() => {
-        setNeedUpdate(v => { return v + 1 })
-    }, props.interval * 1000)
+        if (props.active)
+            setNeedUpdate(v => { return v + 1 })
+    }, props.interval * 1000, [props.active])
 
     return (
         <Fragment>
@@ -437,6 +532,11 @@ const MonitorVMChart = (props) => {
                     </Col>
                     <Col>
                         <Card size='small' style={cardStyle}>
+                            <ReactEcharts theme='theme' style={chartStyle} option={IOBytesConfig} />
+                        </Card>
+                    </Col>
+                    <Col>
+                        <Card size='small' style={cardStyle}>
                             <ReactEcharts theme='theme' style={chartStyle} option={NetIOConfig} />
                         </Card>
                     </Col>
@@ -452,7 +552,7 @@ const MonitorVMChart = (props) => {
     )
 }
 
-const MonitorVM = () => {
+const MonitorVM = (props) => {
     const [vmList, setVmList] = useState({ loading: false, list: [] })
     const [selectVm, setSelectVm] = useState(null)
     const [form] = Form.useForm()
@@ -489,6 +589,7 @@ const MonitorVM = () => {
 
     return (
         <div>
+            <ProgressHint size={24} interval={selectVm ? selectVm.interval : 0} />
             <Form form={form} initialValues={{ interval: 60, timerange: [moment().subtract(7, 'd'), moment()] }} onValuesChange={onInputChange}>
                 <Row gutter={[12, 12]}>
                     <Col>
@@ -525,7 +626,7 @@ const MonitorVM = () => {
                                 {selectVm.ip}:{selectVm.port}
                             </Typography.Text>
                         </div>
-                        <MonitorVMChart vm={selectVm.name} interval={selectVm.interval} timerange={selectVm.timerange} />
+                        <MonitorVMChart active={props.active} vm={selectVm.name} interval={selectVm.interval} timerange={selectVm.timerange} />
                     </Fragment>
                 )
             }

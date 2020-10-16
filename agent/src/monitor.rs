@@ -103,30 +103,55 @@ struct NetIoStat {
     write_bytes: u64,
     read_package: u64,
     write_package: u64,
+    time: u64,
 }
 
 impl NetIoStat {
     fn delta(&self, last: &NetIoStat) -> NetIoStat {
+        let dt = if self.time - last.time > 0 {
+            self.time - last.time
+        }
+        else {
+            1
+        };
         NetIoStat {
-            read_bytes: self.read_bytes - last.read_bytes,
-            write_bytes: self.write_bytes - last.write_bytes,
-            read_package: self.read_package - last.read_package,
-            write_package: self.write_package - last.write_package,
+            // iops
+            read_package: (self.read_package - last.read_package) * 1000 / dt,
+            write_package: (self.write_package - last.write_package) * 1000 / dt,
+            // bps
+            read_bytes: (self.read_bytes - last.read_bytes) * 1000 / dt,
+            write_bytes: (self.write_bytes - last.write_bytes) * 1000 / dt,
+            time: dt
         }
     }
 }
 
 #[derive(Default, Debug, Clone)]
 struct DiskIoStat {
+    read_bytes: u64,
+    write_bytes: u64,
     read_package: u64,
     write_package: u64,
+    time: u64,
 }
 
 impl DiskIoStat {
     fn delta(&self, last: &DiskIoStat) -> DiskIoStat {
+        let dt = if self.time - last.time > 0 {
+            self.time - last.time
+        }
+        else {
+            1
+        };
+
         DiskIoStat {
-            read_package: self.read_package - last.read_package,
-            write_package: self.write_package - last.write_package,
+            // iops
+            read_package: (self.read_package - last.read_package) * 1000 / dt,
+            write_package: (self.write_package - last.write_package) * 1000 / dt,
+            // bps (selector size 512B )
+            read_bytes: (self.read_bytes - last.read_bytes) * 1000 * 512 / dt,
+            write_bytes: (self.write_bytes - last.write_bytes) * 1000 * 512 / dt,
+            time: dt
         }
     }
 }
@@ -218,7 +243,7 @@ async fn read_mem() -> Option<u64> {
             line.clear();
         }
         let used = total - avl;
-        return Some(used);
+        return Some(used * 1024);
     }
     None
 }
@@ -322,6 +347,9 @@ async fn read_net_stat(eth_name: &str) -> Option<NetIoStat> {
                     write_bytes,
                     read_package,
                     write_package,
+                    time: SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map_or(0, |v| v.as_millis() as u64)
                 });
             }
             line.clear();
@@ -364,11 +392,20 @@ async fn read_block_stat(block_name: &str) -> Option<DiskIoStat> {
             let name = list.next();
             if name.unwrap_or("") == block_name {
                 let read_package = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-                let mut list = list.skip(3);
+                let mut list = list.skip(1);
+                let read_bytes = list.next().map_or(0, |v| v.parse().unwrap_or(0));
+                let mut list = list.skip(1);
                 let write_package = list.next().map_or(0, |v| v.parse().unwrap_or(0));
+                let mut list = list.skip(1);
+                let write_bytes = list.next().map_or(0, |v| v.parse().unwrap_or(0));
                 return Some(DiskIoStat {
                     read_package,
                     write_package,
+                    read_bytes,
+                    write_bytes,
+                    time: SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map_or(0, |v| v.as_millis() as u64)
                 });
             }
             line.clear();
@@ -438,15 +475,21 @@ async fn vm_tick() {
         .insert_one(
             doc! {
             "dt": [
-                (cpu.unwrap_or(0.) * 100.) as u32,
-                used.unwrap_or(0) as u32,
-                // KiB
-                (net.read_bytes / 1024) as u32,
-                (net.write_bytes / 1024) as u32,
-                net.read_package as u32,
-                net.write_package as u32,
-                block.read_package as u32,
-                block.write_package as u32
+               (cpu.unwrap_or(0.) * 100.) as u32,
+                used.unwrap_or(0),
+                // Bps
+                net.read_bytes,
+                net.write_bytes,
+
+                net.read_package,
+                net.write_package,
+
+                // Bps
+                block.read_bytes,
+                block.write_bytes,
+
+                block.read_package,
+                block.write_package
             ],
             "ts": ts,
             "vm": vm},

@@ -25,7 +25,7 @@ function useEventListener(eventName, handler, element = window) {
     )
 }
 
-function useInterval(callback, delay) {
+function useInterval(callback, delay, dependence = []) {
     const savedCallback = useRef();
 
     useEffect(() => {
@@ -40,7 +40,7 @@ function useInterval(callback, delay) {
             let id = setInterval(tick, delay);
             return () => clearInterval(id);
         }
-    }, [delay]);
+    }, [delay, ...dependence]);
 }
 
 export { useEventListener, useInterval }

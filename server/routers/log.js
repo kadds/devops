@@ -57,13 +57,20 @@ router.post('/search', async (req, rsp, next) => {
     const uri = config.mongodb.uri
     const dbName = config.mongodb.dbname
     const collection = config.mongodb.logColumnName
-    const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
-    await db.db(dbName).collection(collection).createIndex({ lo: "text", ts: 1 })
+    let db = null
+    let list = null
+    let count = null
+    try {
+        db = await MongoClient.connect(uri, { useUnifiedTopology: true })
+        await db.db(dbName).collection(collection).createIndex({ lo: "text", ts: 1 })
+        list = await db.db(dbName).collection(collection).find(find_obj).skip(page * size).limit(size).toArray()
+        count = await db.db(dbName).collection(collection).find(find_obj).count()
+    }
+    finally {
+        db && db.close()
+    }
 
-    let list = await db.db(dbName).collection(collection).find(find_obj).skip(page * size).limit(size).toArray()
-    const count = await db.db(dbName).collection(collection).find(find_obj).count()
     list = list.map(v => { return [v._id, v.vi, v.ts, v.ti, v.sn, v.le, v.lo] })
-
     rsp.json({ err: 0, list, total: count })
 })
 
@@ -90,11 +97,18 @@ router.post('/click/search', async (req, rsp, next) => {
     const uri = config.mongodb.uri
     const dbName = config.mongodb.dbname
     const collection = config.mongodb.clickLogColumnName
-    const db = await MongoClient.connect(uri, { useUnifiedTopology: true })
-    await db.db(dbName).collection(collection).createIndex({ vi: 1, ts: 1 })
-
-    let list = await db.db(dbName).collection(collection).find(find_obj).skip(page * size).limit(size).toArray()
-    const count = await db.db(dbName).collection(collection).find(find_obj).count()
+    let db = null
+    let list = null
+    let count = null
+    try {
+        db = await MongoClient.connect(uri, { useUnifiedTopology: true })
+        await db.db(dbName).collection(collection).createIndex({ vi: 1, ts: 1 })
+        list = await db.db(dbName).collection(collection).find(find_obj).skip(page * size).limit(size).toArray()
+        count = await db.db(dbName).collection(collection).find(find_obj).count()
+    }
+    finally {
+        db && db.close()
+    }
     list = list.map(v => { return [v._id, v.vi, v.ts, v.ti, v.sn, v.co, v.me, v.ur, v.ho, v.rc, v.rl] })
 
     rsp.json({ err: 0, list, total: count })
