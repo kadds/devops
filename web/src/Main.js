@@ -26,7 +26,7 @@ import PipeLineList from './view/pipeline/list'
 import PipeLineDetail from './view/pipeline/detail'
 import VM from './view/vm/vm'
 import Module from './view/module/module'
-import Server from './view/server/server'
+import ServerIndex from './view/server/index'
 import MonitorIndex from './view/monitor/index'
 import LogIndex from './view/log_view/index'
 import Deploy from './view/deploy/deploy'
@@ -57,7 +57,7 @@ const contents = [
     { path: '/pipeline/detail', component: PipeLineDetail, title: 'Pipeline detail' },
     { path: '/vm', component: VM, title: 'Virtual Machine' },
     { path: '/module', component: Module, title: 'Module Information' },
-    { path: '/server', component: Server, title: 'Cloud Server' },
+    { path: '/server', component: ServerIndex, title: 'Cloud Server' },
     { path: '/deploy/list', component: Deploy, title: 'Deploying list' },
     { path: '/deploy/detail', component: Detail, title: 'Deploying detail' },
     { path: '/monitor', component: MonitorIndex, title: 'Monitor' },
