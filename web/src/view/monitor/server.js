@@ -8,6 +8,8 @@ import { useInterval, useEventListener } from '../../comm/util'
 import echarts from 'echarts'
 import ThemeJson from '../../theme.json'
 import ProgressHint from '../compoments/progress_hint'
+import queryString from 'query-string'
+import { withRouter } from 'react-router'
 
 echarts.registerTheme('theme', ThemeJson)
 
@@ -268,6 +270,8 @@ const MonitorServerChart = (props) => {
 }
 
 const MonitorServer = (props) => {
+    const server = queryString.parse(props.location.search).server
+    const initVal = { interval: 60, timerange: [moment().subtract(7, 'd'), moment()], servers: server ? [server] : [] }
     const [serverList, setServerList] = useState({ loading: false, list: [] })
     const [selectServer, setSelectServer] = useState(null)
     const [form] = Form.useForm()
@@ -300,14 +304,19 @@ const MonitorServer = (props) => {
             setServerList({ loading: true, list: [] })
             const data = await get_server_list()
             setServerList({ loading: false, list: data })
+            if (server && data.find(v => { return v.name === server })) {
+                setTimeout(() => {
+                    onInputChange(null, initVal)
+                }, 300)
+            }
         }
         run()
-    }, [])
+    }, [server])
 
     return (
         <div>
             <ProgressHint size={24} interval={selectServer ? selectServer.interval : 0} />
-            <Form form={form} initialValues={{ interval: 60, timerange: [moment().subtract(7, 'd'), moment()] }} onValuesChange={onInputChange}>
+            <Form form={form} initialValues={initVal} onValuesChange={onInputChange}>
                 <Row gutter={[12, 12]}>
                     <Col>
                         <Form.Item label='Select Server' name='servers'>
@@ -343,4 +352,4 @@ const MonitorServer = (props) => {
     )
 }
 
-export default MonitorServer
+export default withRouter(MonitorServer)

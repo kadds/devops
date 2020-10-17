@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message, Spin } from 'antd'
 import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm, get_vm_config, update_vm_config } from '../../api/vm'
-import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons'
+import { LineChartOutlined, QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons'
 import moment from 'moment'
 import { withRouter } from 'react-router'
 import queryString from 'query-string'
@@ -59,6 +59,10 @@ const VM = (props) => {
     }
     const onModalCancel = () => {
         setState({ ...state, visible: false })
+    }
+
+    const goMonitor = (name) => {
+        props.history.push({ pathname: '/monitor', search: '?vm=' + encodeURIComponent(name) })
     }
 
     const editClick = (e) => {
@@ -161,6 +165,9 @@ const VM = (props) => {
                     <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                         <Button danger type='link' icon={<DeleteOutlined />} loading={isDel}>Delete</Button>
                     </Popconfirm>
+                </Col>
+                <Col>
+                    <Button type='link' disabled={isDel} icon={<LineChartOutlined />} onClick={() => goMonitor(r.name)}>Monitor</Button>
                 </Col>
             </Row>)
 

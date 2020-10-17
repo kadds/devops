@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Fragment } from 'react'
-import { Row, Col, Progress, Card, Select, Spin, Form, InputNumber, Divider, Typography, Button, DatePicker } from 'antd'
+import React, { useState, useEffect, Fragment, useRef } from 'react'
+import { Row, Col, Card, Select, Spin, Form, InputNumber, Divider, Typography, Button, DatePicker } from 'antd'
 import ReactEcharts from 'echarts-for-react'
 import { get_all_vm } from '../../api/vm'
 import { get_monitor_vm } from '../../api/monitor'
@@ -9,6 +9,8 @@ import echarts from 'echarts'
 import ThemeJson from '../../theme.json'
 import { useInterval } from '../../comm/util'
 import ProgressHint from '../compoments/progress_hint'
+import queryString from 'query-string'
+import { withRouter } from 'react-router'
 
 // register theme object
 echarts.registerTheme('theme', ThemeJson)
@@ -553,9 +555,15 @@ const MonitorVMChart = (props) => {
 }
 
 const MonitorVM = (props) => {
+    const vm = queryString.parse(props.location.search).vm
+    const initVal = { interval: 60, timerange: [moment().subtract(7, 'd'), moment()], vm: vm }
+
     const [vmList, setVmList] = useState({ loading: false, list: [] })
     const [selectVm, setSelectVm] = useState(null)
     const [form] = Form.useForm()
+
+    const vmRef = useRef()
+    vmRef.current = vmList
 
     const onInputChange = async (v, full_value) => {
         if (!full_value.vm || !full_value.interval || !full_value.timerange) {
@@ -571,26 +579,32 @@ const MonitorVM = (props) => {
         if (full_value.timerange[1]) {
             timerange[1] = Math.floor(full_value.timerange[1] / 1000)
         }
-
+        let sam = vmRef.current.list.find(v => v.name === full_value.vm)
         setSelectVm({
-            ...vmList.list.find(v => v.name === full_value.vm), interval: full_value.interval,
+            ...sam, interval: full_value.interval,
             timerange
         })
     }
+
 
     useEffect(() => {
         async function run() {
             setVmList({ loading: true, list: [] })
             const data = await get_all_vm()
             setVmList({ loading: false, list: data })
+            if (vm && data.find(v => { return v.name === vm })) {
+                setTimeout(() => {
+                    onInputChange(null, initVal)
+                }, 300)
+            }
         }
         run()
-    }, [])
+    }, [vm])
 
     return (
         <div>
             <ProgressHint size={24} interval={selectVm ? selectVm.interval : 0} />
-            <Form form={form} initialValues={{ interval: 60, timerange: [moment().subtract(7, 'd'), moment()] }} onValuesChange={onInputChange}>
+            <Form form={form} initialValues={initVal} onValuesChange={onInputChange}>
                 <Row gutter={[12, 12]}>
                     <Col>
                         <Form.Item label='Select VM' name='vm'>
@@ -634,4 +648,4 @@ const MonitorVM = (props) => {
     )
 }
 
-export default MonitorVM
+export default withRouter(MonitorVM)

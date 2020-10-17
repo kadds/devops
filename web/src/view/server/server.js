@@ -45,6 +45,10 @@ const Server = (props) => {
         props.history.push({ pathname: '/module', search: '?name=' + encodeURIComponent(module) })
     }
 
+    const goMonitor = (name) => {
+        props.history.push({ pathname: '/monitor', search: '?server=' + encodeURIComponent(name) })
+    }
+
     const onServerChange = async (server_name) => {
         setListDetail({ ...listDetail, select: server_name })
         try {
@@ -56,6 +60,7 @@ const Server = (props) => {
             setServer(null)
         }
     }
+
     const ref = useRef()
     ref.current = { listDetail, onServerChange }
     useEffect(() => {
@@ -409,6 +414,14 @@ const Server = (props) => {
                                             Version:
                                         </Typography.Title>
                                         <ServerVersion deploy_id={server.deploy_id} version={server.version} />
+                                    </Col>
+                                    <Col span={8}>
+                                        <Typography.Title level={4}>
+                                            Monitor:
+                                        </Typography.Title>
+                                        <Button type='link' onClick={() => goMonitor(server.name)}>
+                                            Go
+                                        </Button>
                                     </Col>
                                 </Row>
                             </Card>

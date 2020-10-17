@@ -13,26 +13,21 @@ router.get('/list', async (req, rsp, next) => {
     const { count, rows } = await m_deploy.findAndCountAll({ limit: size ? size : undefined, offset: size ? page * size : undefined, order: [['ctime', 'DESC']] })
     let list = []
     const fns = []
-    const svs = []
     for (const it of rows) {
         let item = {}
         fns.push(m_pipeline.findByPk(it.pipeline_id))
-        svs.push(m_server.count({ where: { mode_name: it.mode_name } }))
         item.id = it.id
         item.mode_name = it.mode_name
         item.pipeline_id = it.pipeline_id
         item.status = it.status
-        item.test_server = it.content.test_server
-        item.do_count = it.content.do_count
+        item.ctime = it.ctime.valueOf()
         list.push(item)
     }
 
     const pipelines = await Promise.allSettled(fns)
-    const servers = await Promise.allSettled(svs)
     for (let i = 0; i < list.length; i++) {
         const pipeline = pipelines[i].value
         list[i].mark = pipeline.mark
-        list[i].all_count = servers[i].value
     }
 
     rsp.json({ err: 0, list, total: count })

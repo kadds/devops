@@ -44,7 +44,7 @@ const Detail = (props) => {
                 rollback_targets: [],
                 op_list: dt.op_list,
                 all_cnt: dt.all.length,
-                done_cnt: dt.op_list.filter(v => { return v.status === 'done' }).length,
+                done_cnt: dt.op_list.filter(v => { return v.status === 100 }).length,
                 is_active: true,
                 upload_loading: false,
                 rollback_loading: false,
@@ -171,7 +171,7 @@ const Detail = (props) => {
                 <Tabs.TabPane tab='Summary' key='0'>
                     <Spin spinning={data.loading}>
                         {
-                            data.last_time > 0 && (
+                            data.last_time > 0 && data.last_time > new Date().valueOf() && (
                                 <Typography.Title level={5}>
                                     Expected completion time:{moment(data.last_time).fromNow()}
                                 </Typography.Title>

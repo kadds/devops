@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { get_deploy_list, get_deploy, deploy_do_upload, deploy_do_rollback, stop_deploy } from '../../api/deploy'
 import { withRouter } from "react-router-dom"
 import { Table, Alert, Row, Col, Popconfirm, Tabs, Tag, Divider, Button, Form, Transfer, Progress, InputNumber, Spin, Typography } from 'antd'
-import queryString from 'query-string'
 import moment from 'moment'
 
 const TagRender = (props) => {
@@ -75,10 +74,10 @@ const Deploy = (props) => {
             render: status => (<TagRender status={status} />)
         },
         {
-            title: 'Progress',
-            dataIndex: 'do_count',
-            key: 'do_count',
-            render: (cnt, r) => (<span>{r.do_count + ' / ' + r.all_count}</span>)
+            title: 'Create time',
+            dataIndex: 'ctime',
+            key: 'ctime',
+            render: ctime => (<span>{moment(ctime).format('lll')}</span>)
         },
         {
             title: 'Reason',
