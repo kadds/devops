@@ -116,9 +116,10 @@ const MonitorServerChart = (props) => {
         run()
     }, [props.server, props.timerange, needUpdate])
 
+    const interval = props.active ? props.interval * 1000 : null
     useInterval(() => {
         setNeedUpdate(v => { return v + 1 })
-    }, props.interval * 1000, [props.active])
+    }, interval)
 
     const cardStyle = {
     }
@@ -271,7 +272,7 @@ const MonitorServerChart = (props) => {
 
 const MonitorServer = (props) => {
     const server = queryString.parse(props.location.search).server
-    const initVal = { interval: 60, timerange: [moment().subtract(7, 'd'), moment()], servers: server ? [server] : [] }
+    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(7, 'd'), moment()], servers: server ? [server] : [] })
     const [serverList, setServerList] = useState({ loading: false, list: [] })
     const [selectServer, setSelectServer] = useState(null)
     const [form] = Form.useForm()
@@ -311,7 +312,7 @@ const MonitorServer = (props) => {
             }
         }
         run()
-    }, [server])
+    }, [server, initVal])
 
     return (
         <div>

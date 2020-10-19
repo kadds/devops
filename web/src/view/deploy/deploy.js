@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { get_deploy_list, get_deploy, deploy_do_upload, deploy_do_rollback, stop_deploy } from '../../api/deploy'
+import React, { useState, useEffect, useRef } from 'react'
+import { get_deploy_list } from '../../api/deploy'
 import { withRouter } from "react-router-dom"
-import { Table, Alert, Row, Col, Popconfirm, Tabs, Tag, Divider, Button, Form, Transfer, Progress, InputNumber, Spin, Typography } from 'antd'
+import { Table, Tag, Button } from 'antd'
 import moment from 'moment'
 
 const TagRender = (props) => {
@@ -35,20 +35,26 @@ const TagRender = (props) => {
 const Deploy = (props) => {
     const [list, setList] = useState({ list: [], loading: false })
     const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 10 })
+    const [needUpdate, setNeedUpdate] = useState(0)
 
     const handleTableChange = (pagination, filters, sorter) => {
         setPagination({ ...pagination })
+        setNeedUpdate(needUpdate + 1)
     }
+
+    const ref = useRef()
+    ref.current = pagination
 
     useEffect(() => {
         async function run() {
             setList({ loading: true, list: [] })
+            const pagination = ref.current
             const [data, total] = await get_deploy_list(pagination.current - 1, pagination.pageSize)
             setList({ loading: false, list: data })
-            setPagination({ ...pagination, total })
+            setPagination(v => { return { ...v, total } })
         }
         run()
-    }, [pagination.pageSize, pagination.current])
+    }, [needUpdate])
 
 
     const goModule = (name) => {

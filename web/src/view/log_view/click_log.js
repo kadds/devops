@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Form, Tooltip, Row, Col, Typography, Table, Divider, InputNumber, Button, DatePicker } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { click_query } from './../../api/log'
@@ -9,13 +9,17 @@ const ClickLog = () => {
     const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}` })
     const [logList, setLogList] = useState([])
     const [loading, setLoading] = useState(false)
+    const [needUpdate, setNeedUpdate] = useState(0)
 
     const [form] = Form.useForm()
+    const ref = useRef()
+    ref.current = pagination
 
     useEffect(() => {
         async function run() {
             setLoading(true)
             try {
+                const pagination = ref.current
                 const [list, total] = await click_query({ ...query, page: pagination.current - 1, size: pagination.pageSize })
                 setLogList(list)
                 setPagination(v => { return { ...v, total } })
@@ -26,7 +30,7 @@ const ClickLog = () => {
         }
         if (query)
             run()
-    }, [query, pagination.current, pagination.pageSize])
+    }, [query, needUpdate])
 
     const onFinish = async (val) => {
         let query = {}
@@ -44,6 +48,7 @@ const ClickLog = () => {
 
     const handleTableChange = (pagination, filters, sorter) => {
         setPagination({ ...pagination })
+        setNeedUpdate(needUpdate + 1)
     }
 
     const columns = [

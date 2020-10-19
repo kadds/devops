@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Row, Col, Tooltip, Input, InputNumber, Form, Table, Select, Divider, DatePicker, Button, Typography, Tag } from 'antd'
 import { SearchOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { get_module_list } from '../../api/module'
@@ -31,6 +31,7 @@ const AppLog = (props) => {
     const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}` })
     const [logList, setLogList] = useState([])
     const [loading, setLoading] = useState(false)
+    const [needUpdate, setNeedUpdate] = useState(0)
 
     useEffect(() => {
         async function run() {
@@ -53,12 +54,17 @@ const AppLog = (props) => {
 
     const handleTableChange = (pagination, filters, sorter) => {
         setPagination({ ...pagination })
+        setNeedUpdate(needUpdate + 1)
     }
+
+    const ref = useRef()
+    ref.current = pagination
 
     useEffect(() => {
         async function run() {
             setLoading(true)
             try {
+                const pagination = ref.current
                 const [list, total] = await query_log({ ...query, page: pagination.current - 1, size: pagination.pageSize })
                 setLogList(list)
                 setPagination(v => { return { ...v, total } })
@@ -69,7 +75,7 @@ const AppLog = (props) => {
         }
         if (query)
             run()
-    }, [query, pagination.current, pagination.pageSize])
+    }, [query, needUpdate])
 
     const onFinish = async (val) => {
         let query = {}

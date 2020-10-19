@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from 'react'
+import React, { useState, useEffect, Fragment, useRef } from 'react'
 import { Table, Typography, Tag, Button, Popconfirm, Modal, Row, Col, Form, Select, Input, Tooltip } from 'antd'
 import { get_pipelines, delete_pipeline, create_pipeline } from './../../api/pipeline'
 import { withRouter } from 'react-router-dom';
@@ -8,6 +8,27 @@ import { get_server_list } from '../../api/server'
 import { QuestionCircleOutlined, SyncOutlined, CloseCircleOutlined, CheckCircleOutlined, LinkOutlined, FundViewOutlined, DeleteOutlined } from '@ant-design/icons'
 import ScriptSelect from './../compoments/script_select'
 import moment from 'moment'
+
+const RenderStage = (props) => {
+    if (props.stage === 1) {
+        return <Tag color='processing' icon={<SyncOutlined spin />}>Prepare</Tag>
+    }
+    else if (props.stage === 2) {
+        return <Tag color='processing' icon={<SyncOutlined spin />}>Source</Tag>
+    }
+    else if (props.stage === 3) {
+        return <Tag color='processing' icon={<SyncOutlined spin />}>Build</Tag>
+    }
+    else if (props.stage === 4) {
+        return <Tag color='processing' icon={<SyncOutlined spin />}>Deploy</Tag>
+    }
+    else if (props.stage === 100) {
+        return <Tag color='success' icon={<CheckCircleOutlined />}>Done</Tag>
+    }
+    else {
+        return <Tag color='error' icon={<CloseCircleOutlined />}>Error</Tag>
+    }
+}
 
 
 const PipeLineList = props => {
@@ -34,26 +55,6 @@ const PipeLineList = props => {
         props.history.push({ pathname: '/module', search: '?name=' + encodeURIComponent(module) })
     }
 
-    const RenderStage = (props) => {
-        if (props.stage === 1) {
-            return <Tag color='processing' icon={<SyncOutlined spin />}>Prepare</Tag>
-        }
-        else if (props.stage === 2) {
-            return <Tag color='processing' icon={<SyncOutlined spin />}>Source</Tag>
-        }
-        else if (props.stage === 3) {
-            return <Tag color='processing' icon={<SyncOutlined spin />}>Build</Tag>
-        }
-        else if (props.stage === 4) {
-            return <Tag color='processing' icon={<SyncOutlined spin />}>Deploy</Tag>
-        }
-        else if (props.stage === 100) {
-            return <Tag color='success' icon={<CheckCircleOutlined />}>Done</Tag>
-        }
-        else {
-            return <Tag color='error' icon={<CloseCircleOutlined />}>Error</Tag>
-        }
-    }
     const columns = [
         {
             title: 'id',
@@ -112,20 +113,26 @@ const PipeLineList = props => {
             )
         }
     ]
+
     const handleTableChange = (pagination, filters, sorter) => {
         setPagination({ ...pagination })
+        setNeedUpdate(needUpdate + 1)
     }
+
+    const ref = useRef()
+    ref.current = pagination
 
     useEffect(() => {
         async function run() {
             setLoading(true)
+            const pagination = ref.current
             const [list, total] = await get_pipelines(pagination.current - 1, pagination.pageSize)
             setData(list)
-            setPagination({ ...pagination, total })
+            setPagination(v => { return { ...v, total } })
             setLoading(false)
         }
         run()
-    }, [needUpdate, pagination.pageSize, pagination.current])
+    }, [needUpdate])
 
     const [form] = Form.useForm()
     const [moduleList, setModuleList] = useState({ loading: false, list: [] })

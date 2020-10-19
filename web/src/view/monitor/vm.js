@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react'
-import { Row, Col, Card, Select, Spin, Form, InputNumber, Divider, Typography, Button, DatePicker } from 'antd'
+import { Row, Col, Card, Select, Spin, Form, InputNumber, Divider, Typography, DatePicker } from 'antd'
 import ReactEcharts from 'echarts-for-react'
 import { get_all_vm } from '../../api/vm'
 import { get_monitor_vm } from '../../api/monitor'
@@ -507,10 +507,11 @@ const MonitorVMChart = (props) => {
         run()
     }, [props.vm, props.timerange, needUpdate])
 
+    const interval = props.active ? props.interval * 1000 : null
+
     useInterval(() => {
-        if (props.active)
-            setNeedUpdate(v => { return v + 1 })
-    }, props.interval * 1000, [props.active])
+        setNeedUpdate(v => { return v + 1 })
+    }, interval)
 
     return (
         <Fragment>
@@ -556,8 +557,7 @@ const MonitorVMChart = (props) => {
 
 const MonitorVM = (props) => {
     const vm = queryString.parse(props.location.search).vm
-    const initVal = { interval: 60, timerange: [moment().subtract(7, 'd'), moment()], vm: vm }
-
+    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(7, 'd'), moment()], vm: vm })
     const [vmList, setVmList] = useState({ loading: false, list: [] })
     const [selectVm, setSelectVm] = useState(null)
     const [form] = Form.useForm()
@@ -599,7 +599,7 @@ const MonitorVM = (props) => {
             }
         }
         run()
-    }, [vm])
+    }, [vm, initVal])
 
     return (
         <div>
