@@ -76,7 +76,8 @@ router.post('/', async (req, rsp, next) => {
 })
 
 router.post('/del', async (req, rsp, next) => {
-    // wait del
+    // stop current pipeeline job
+
     await post_pipeline_op('stop', req.body.id)
     const pipeline = await m_pipeline.findByPk(req.body.id)
     if (pipeline.content.deploy_id) {
@@ -86,18 +87,21 @@ router.post('/del', async (req, rsp, next) => {
                 status: [FLAGS.DEPLOY_STREAM_STATUS_PREPARE, FLAGS.DEPLOY_STREAM_STATUS_DOING]
             }
         }) > 0) {
+            // there are some deployment plans is preparing
             rsp.json({ err: 403, msg: 'stop deployment first' })
             return
         }
-        // delete deployment
+        // remove all deployment plans
         await m_deploy_stream.destroy({
             where: {
                 deploy_id: pipeline.content.deploy_id,
             }
         })
+        // remove deployment
         await m_deploy.destroy({ where: { id: pipeline.content.deploy_id } })
     }
 
+    // remove from database last
     await m_pipeline.destroy({ where: { id: req.body.id } })
     rsp.json({ err: 0 })
 })

@@ -137,6 +137,7 @@ router.post('/del', async (req, rsp, next) => {
         rsp.json({ err: 101, msg: 'there are servers still use this VM' })
         return
     }
+    // TODO: clear all docker cache
 
     const vm2 = await m_vm.findByPk(name)
     await m_vm.destroy({ where: { name: name } })
