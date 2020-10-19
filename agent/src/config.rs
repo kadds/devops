@@ -12,7 +12,6 @@ pub struct Mongodb {
     pub log_column_name: String,
     pub click_log_column_name: String,
     pub server_rpc_statistics_column_name: String,
-    pub server_time_statistics_column_name: String,
 }
 
 #[derive(Deserialize)]

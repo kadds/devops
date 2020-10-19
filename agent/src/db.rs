@@ -67,13 +67,3 @@ pub async fn mongo_server_rpc() -> Option<Collection> {
     }
     None
 }
-
-pub async fn mongo_server_time() -> Option<Collection> {
-    unsafe {
-        connect_mongodb().await;
-        if let Some(db) = &DATABASE {
-            return Some(db.collection(&config::get().mongodb.server_time_statistics_column_name));
-        }
-    }
-    None
-}

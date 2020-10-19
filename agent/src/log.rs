@@ -77,37 +77,6 @@ async fn do_click_log(log: String) {
     send_mongodb(logger, doc).await;
 }
 
-async fn do_server_time_log(log: String) {
-    let logger = match db::mongo_server_time().await {
-        Some(v) => v,
-        None => {
-            return;
-        }
-    };
-    // type(2) serverName functionName timestamp(13) cost errorCode timestamp(13) cost errorCode
-    let mut list = log.split_ascii_whitespace().skip(1);
-    let server_name = list.next().unwrap_or("");
-    let function_name = list.next().unwrap_or("");
-    let mut docs = vec![];
-
-    while let Some(ts) = list.next() {
-        let ts = ts.parse().unwrap_or(0);
-        let cost = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-        let error_code = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-        docs.push(doc! {
-            "sn": server_name.clone(),
-            "fn": function_name.clone(),
-            "ts": ts,
-            "co": cost,
-            "rc": error_code,
-        });
-    }
-    let ret = logger.insert_many(docs, None).await;
-    if ret.is_err() {
-        eprintln!("save to mongodb fail (rpc_log) {}", ret.unwrap_err());
-    }
-}
-
 async fn do_server_rpc_log(log: String) {
     let logger = match db::mongo_server_rpc().await {
         Some(v) => v,
@@ -115,7 +84,7 @@ async fn do_server_rpc_log(log: String) {
             return;
         }
     };
-    // type(3) serverName rpcInterfaceName tid timestamp(13) cost returnCode tid timestamp(13) cost returnCode
+    // type(2) serverName rpcInterfaceName tid timestamp(13) cost returnCode tid timestamp(13) cost returnCode
     let mut list = log.split_ascii_whitespace().skip(1);
     let server_name = list.next().unwrap_or("");
     let function_name = list.next().unwrap_or("");
@@ -153,8 +122,6 @@ async fn do_log(log: String, max_size: u32) {
     } else if log.starts_with("1") {
         do_click_log(log).await;
     } else if log.starts_with("2") {
-        do_server_time_log(log).await;
-    } else if log.starts_with("3") {
         do_server_rpc_log(log).await;
     } else {
         eprintln!("save to mongodb fail (unknown type)");

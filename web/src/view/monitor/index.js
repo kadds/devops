@@ -4,6 +4,7 @@ import MonitorServer from './server'
 import MonitorVM from './vm'
 import { withRouter } from 'react-router'
 import queryString from 'query-string'
+import Call from './call'
 
 const MonitorIndex = (props) => {
     const [activeKey, setActiveKey] = useState('1')
@@ -34,6 +35,7 @@ const MonitorIndex = (props) => {
                     <MonitorServer active={activeKey === '2'} />
                 </Tabs.TabPane>
                 <Tabs.TabPane tab='Call Graph' key='3'>
+                    <Call active={activeKey === '3'} />
                 </Tabs.TabPane>
             </Tabs>
         </div>
