@@ -1,6 +1,7 @@
 const { Router } = require('express')
 const { conn, m_mode, m_server, m_pipeline } = require('../data')
 const { get_job_pipeline_params } = require('../plugin/index')
+const { post_clean_task } = require('../worker/index')
 
 let router = new Router()
 
@@ -117,6 +118,7 @@ router.post('/del', async (req, rsp, next) => {
     }
     await m_mode.destroy({ where: { name: name } })
     // remote cache
+    post_clean_task({ vm_name: null, module_name: name })
     rsp.json({ err: 0 })
 })
 

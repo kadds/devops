@@ -59,7 +59,7 @@ async function entry(request, param, opt) {
             if (is_new)
                 docker_names.names.push(docker_name)
 
-            await m_docker_cache.create({ docker_names: docker_names, mode_name: pipeline.mode_name, vm_name: param.vm_name, version: 0 })
+            await m_docker_cache.create({ docker_names: docker_names, mode_name: pipeline.mode_name, vm_name: param.vm_name, version: 0, pipeline_id: pipeline.id })
         }
 
         if (is_new) {

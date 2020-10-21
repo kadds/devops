@@ -231,6 +231,10 @@ const m_docker_cache = sequelize.define('docker_cache', {
         type: DataTypes.JSON,
         allowNull: false,
     },
+    pipeline_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     version: {
         type: DataTypes.INTEGER,
         allowNull: false,

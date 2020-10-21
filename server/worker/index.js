@@ -53,8 +53,17 @@ async function post_deploy_task_op(op, param) {
     }
 }
 
+async function post_clean_task(param) {
+    try {
+        await pipeline.clean_cache(param.vm_name, param.module_name)
+    }
+    catch (e) {
+        console.error(e)
+    }
+}
+
 function init_worker() {
     deploy.init()
 }
 
-module.exports = { init_worker, post_task_server_op, post_pipeline_op, post_deploy_task_op }
+module.exports = { init_worker, post_task_server_op, post_pipeline_op, post_deploy_task_op, post_clean_task }

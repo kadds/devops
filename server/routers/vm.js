@@ -1,7 +1,8 @@
 const { Router } = require('express')
 const { conn, m_vm, m_server } = require('../data')
-const { copy_to_vm, clear_vm, get_vm_config, update_vm_config, connect_shell } = require('../utils/vmutils')
+const { copy_to_vm, update_vm_servers, clear_vm, get_vm_config, update_vm_config, connect_shell } = require('../utils/vmutils')
 const { VM_FLAG_READY } = require('../flags')
+const { post_clean_task } = require('../worker/index')
 
 let router = new Router()
 
@@ -21,6 +22,7 @@ async function do_sync(vm) {
     try {
         await m_vm.update({ flag: 0 }, { where: { name: vm.name } })
         await copy_to_vm(__dirname + '/../upload/vm/', vm)
+        await update_vm_servers(vm.name)
         await m_vm.update({ flag: VM_FLAG_READY }, { where: { name: vm.name } })
     }
     catch (e) {
@@ -137,10 +139,10 @@ router.post('/del', async (req, rsp, next) => {
         rsp.json({ err: 101, msg: 'there are servers still use this VM' })
         return
     }
-    // TODO: clear all docker cache
-
     const vm2 = await m_vm.findByPk(name)
     await m_vm.destroy({ where: { name: name } })
+    // clear all docker cache
+    post_clean_task({ vm_name: name, moduel_name: null })
     clear_vm(vm2)
     rsp.json({ err: 0 })
 })

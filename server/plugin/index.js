@@ -73,4 +73,4 @@ async function get_job_pipeline_params(job_name) {
 
 init()
 
-module.exports = { get_job_list, job_param_valid, run_job, get_job_deps, get_job_pipeline_params, close_job }
+module.exports = { get_job_list, job_param_valid, run_job, get_job_deps, get_job_pipeline_params, close_job, clean_job }

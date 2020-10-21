@@ -72,7 +72,7 @@ const DashBoardIndex = () => {
                                         {user.nick}
                                     </Descriptions.Item>
                                     <Descriptions.Item label='Last login'>
-                                        {moment(user.last_login_time).fromNow()}
+                                        {user.last_login_time ? moment(user.last_login_time).fromNow() : 'Never login'}
                                     </Descriptions.Item>
                                     <Descriptions.Item label='Last login ip'>
                                         {user.last_login_ip}

@@ -1,6 +1,5 @@
-const { get } = require('../config')
-
 const NodeSSH = require('node-ssh').NodeSSH
+const { m_server, m_vm } = require('../data')
 
 async function connect_shell(vm) {
     let ssh = new NodeSSH()
@@ -21,11 +20,15 @@ async function copy_to_vm(local_dir, vm) {
     try {
         console.log('kill agent')
         await ssh.execCommand('./agent signal -a stop', { cwd: vm.base_dir + '/agent' })
+        // wait
+        await new Promise((res) => {
+            setTimeout(() => res(), 1000)
+        })
     }
     catch (err) {
         console.error(err)
-        throw new Error('ssh kill fail')
     }
+
     console.log('try to copy agent files')
     // if need upload agent.toml
     let res = await ssh.execCommand('cat ./agent.toml', { cwd: vm.base_dir + '/agent' })
@@ -54,7 +57,7 @@ async function copy_to_vm(local_dir, vm) {
     await ssh.exec('./agent run -d', [], {
         cwd: vm.base_dir + '/agent'
     })
-    console.log('reload agent done')
+    console.log('start agent done')
 }
 
 async function restart_agent(vm) {
@@ -69,7 +72,7 @@ async function restart_agent(vm) {
     catch (err) {
         console.error(err)
     }
-    await ssh.exec('./agent run -d ./agent.toml', [], {
+    await ssh.exec('./agent run -d', [], {
         cwd: dir + '/agent'
     })
     console.log('restart agent done')
@@ -96,22 +99,30 @@ async function update_vm_config(vm, config) {
     let ssh = await connect_shell(vm)
     if (config) {
         await ssh.execCommand('cat > ./agent.toml', { stdin: config, cwd: vm.base_dir + '/agent' })
-        await ssh.execCommand('./agent signal -a reload', { cwd: vm.base_dir + '/agent' })
+        await restart_agent(vm)
     }
     else {
         await ssh.execCommand('rm -f ./agent.toml', { cwd: vm.base_dir + '/agent' })
     }
 }
 
-async function update_vm_servers(servers, vm_name, vm) {
+async function update_vm_servers(vm_name) {
+    const data = await m_server.findAll({ where: { vm_name: vm_name } })
+    const vm = await m_vm.findByPk(vm_name)
+    let servers = []
+    for (const it of data) {
+        servers.push(it.name)
+    }
     let ssh = await connect_shell(vm)
     let str = vm_name + '\n'
     for (const name of servers) {
         str += name + '\n'
     }
     await ssh.execCommand('cat > ./agent_servers.txt', { stdin: str, cwd: vm.base_dir + '/agent' })
+    await ssh.execCommand('./agent signal -a reload', { cwd: vm.base_dir + '/agent' })
     console.log('update agent_servers.txt done')
 }
+
 
 function do_result(res, logger) {
     console.log(res)

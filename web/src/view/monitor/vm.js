@@ -207,8 +207,9 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'diamond',
             showSymbol: false,
-            smooth: true,
             sampling: 'max',
+            smooth: 0.1,
+            smoothMonotone: 'x',
             markLine: {
                 silent: true,
                 data: [{
@@ -239,9 +240,10 @@ const MonitorVMChart = (props) => {
             name: 'Memory used',
             data: data.mem,
             type: 'line',
+            smooth: 0.9,
+            smoothMonotone: 'x',
             symbol: 'diamond',
             showSymbol: false,
-            smooth: true,
             sampling: 'max',
         }],
     }
@@ -276,8 +278,9 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'diamond',
             showSymbol: false,
-            smooth: true,
             sampling: 'max',
+            smooth: 0.9,
+            smoothMonotone: 'x',
             lineStyle: {
                 width: 0,
             },
@@ -289,7 +292,8 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'triangle',
             showSymbol: false,
-            smooth: true,
+            smooth: 0.9,
+            smoothMonotone: 'x',
             sampling: 'max',
             lineStyle: {
                 width: 0,
@@ -329,7 +333,8 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'diamond',
             showSymbol: false,
-            smooth: true,
+            smooth: 0.9,
+            smoothMonotone: 'x',
             sampling: 'max',
             lineStyle: {
                 width: 0,
@@ -342,7 +347,8 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'triangle',
             showSymbol: false,
-            smooth: true,
+            smooth: 0.9,
+            smoothMonotone: 'x',
             sampling: 'max',
             lineStyle: {
                 width: 0,
@@ -382,7 +388,8 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'diamond',
             showSymbol: false,
-            smooth: true,
+            smooth: 0.9,
+            smoothMonotone: 'x',
             sampling: 'max',
             lineStyle: {
                 width: 0,
@@ -395,7 +402,8 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'triangle',
             showSymbol: false,
-            smooth: true,
+            smooth: 0.9,
+            smoothMonotone: 'x',
             sampling: 'max',
             lineStyle: {
                 width: 0,
@@ -435,7 +443,8 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'diamond',
             showSymbol: false,
-            smooth: true,
+            smooth: 0.9,
+            smoothMonotone: 'x',
             sampling: 'max',
             lineStyle: {
                 width: 0,
@@ -448,7 +457,8 @@ const MonitorVMChart = (props) => {
             type: 'line',
             symbol: 'triangle',
             showSymbol: false,
-            smooth: true,
+            smooth: 0.9,
+            smoothMonotone: 'x',
             sampling: 'max',
             lineStyle: {
                 width: 0,

@@ -1,4 +1,4 @@
-const { conn, m_pipeline, m_server, m_mode, m_vm } = require('../data')
+const { conn, m_pipeline, m_docker_cache } = require('../data')
 const { run_job, get_job_deps, close_job, clean_job } = require('../plugin/index')
 const { LogStream, remove, log_path } = require('../utils/log_stream')
 const fs = require('fs').promises
@@ -124,16 +124,61 @@ async function stop(id) {
         v.close = true
         pipes.set(id, v)
     }
-    // remove log file
-    await remove(id)
-    // TODO: remove pipeline cache
+    // remove pipeline cache
     try {
         const pipeline = await m_pipeline.findByPk(id)
         const env_job = pipeline.content.jobs.env[0]
-        ssh = await clean_job(env_job.name, env_job.param, { id })
+        await clean_job(env_job.name, env_job.param, { id })
     }
     catch (e) { console.error(e) }
 
+    try {
+        // remove log file
+        await remove(id)
+    }
+    catch (e) { console.error(e) }
+}
+
+async function clean_cache(vm_name, module_name) {
+    let pipelines = []
+    if (vm_name && module_name) {
+        pipelines = await m_docker_cache.findAll({ where: { mode_name: module_name, vm_name } })
+    }
+    else if (vm_name) {
+        pipelines = await m_docker_cache.findAll({ where: { vm_name: vm_name } })
+    }
+    else if (module_name) {
+        pipelines = await m_docker_cache.findAll({ where: { mode_name: module_name } })
+    }
+    let jobs = []
+    for (const p of pipelines) {
+        jobs.push(m_pipeline.findByPk(p.pipeline_id))
+    }
+    pipelines = []
+    try {
+        const data = await Promise.allSettled(jobs)
+        for (const d of data) {
+            pipelines.push(d.value)
+        }
+    }
+    catch (e) {
+        console.error(e)
+    }
+    jobs = []
+
+    for (const pipeline of pipelines) {
+        try {
+            const env_job = pipeline.value.content.jobs.env[0]
+            jobs.push(clean_job(env_job.name, env_job.param, { id: pipeline.value.id }))
+        }
+        catch (e) { console.error(e) }
+    }
+    try {
+        await Promise.allSettled(jobs)
+    }
+    catch (e) {
+        console.error(e)
+    }
 }
 
 function do_ws_send(send, msg) {
@@ -223,4 +268,4 @@ async function listen_log(id, send, close) {
     }
 }
 
-module.exports = { run, stop, listen_log }
+module.exports = { run, stop, listen_log, clean_cache }

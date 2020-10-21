@@ -4,15 +4,6 @@ const FLAGS = require('../flags')
 const { update_vm_servers, exec, connect_shell } = require('./../utils/vmutils')
 const Config = require('../config')
 
-async function update_vm_agent(vm_name) {
-    const data = await m_server.findAll({ where: { vm_name: vm_name } })
-    const vm = await m_vm.findByPk(vm_name)
-    let servers = []
-    for (const it of data) {
-        servers.push(it.name)
-    }
-    await update_vm_servers(servers, vm.name, vm)
-}
 
 async function connect(vm_name) {
     const vm = await m_vm.findByPk(vm_name)
@@ -139,7 +130,6 @@ async function start(name, version) {
         const ret = name_get(config_get(), server.mode_name, server.name)
         container_name = ret.container_name
         image_name = ret.image_name
-
         // await exec(ssh, `docker pull ${image_name}:${version}`, null)
     }
     catch (e) {
@@ -151,7 +141,9 @@ async function start(name, version) {
     try {
         const vm = await m_vm.findByPk(server.vm_name)
         const ip = vm.ip
-        await exec(ssh, `docker run --network host --env HOST_IP=${ip} -d --name ${container_name} ${image_name}:${version}`, null)
+        const env = `--env HOST_IP=${ip} --env MODUEL_NAME=${server.mode_name} --env SERVER_NAME=${server.name} --env ENV_FLAG=${server.flag} --env VM_NAME=${server.vm_name}`
+        await exec(ssh,
+            `docker run --restart=on-failure --network host ${env} -d --name ${container_name} ${image_name}:${version}`, null)
     }
     catch (e) {
         await m_server.update({ status: FLAGS.SVR_STATUS_STOPPED }, { where: { name } })
@@ -188,8 +180,14 @@ async function is_server_start(name) {
 async function restart(name, version) {
     console.log(name + ' restarting')
     let old_version = await stop(name)
-    await start(name, version)
-    console.log(name + ' restarted. old_version is ' + old_version)
+    if (version !== null) {
+        await start(name, version)
+        console.log(name + ' restarted. old_version is ' + old_version)
+    }
+    else {
+        console.log(name + ' start version is null')
+    }
+
     return old_version
 }
 
@@ -198,7 +196,7 @@ async function init(name) {
     if (server.status !== FLAGS.SVR_STATUS_INIT) {
         throw new Error(`server state is ${server.status} cannot start`)
     }
-    await update_vm_agent(server.vm_name)
+    await update_vm_servers(server.vm_name)
     await m_server.update({ status: FLAGS.SVR_STATUS_STOPPED }, { where: { name, status: FLAGS.SVR_STATUS_INIT } })
 }
 
@@ -214,7 +212,7 @@ async function destroy(name) {
     if (num !== 1) {
         throw new Error('server destroy fail ' + name)
     }
-    await update_vm_agent(server.vm_name)
+    await update_vm_servers(server.vm_name)
     await m_server.update({ status: FLAGS.SVR_STATUS_DESTROYED }, { where: { name, status: FLAGS.SVR_STATUS_DESTROYING } })
     await m_server.destroy({ where: { name } })
 }
