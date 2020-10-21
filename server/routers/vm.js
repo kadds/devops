@@ -55,7 +55,7 @@ router.post('/create', async (req, rsp, next) => {
     const vm = req.body.vm
     let ok = false
     try {
-        await check_connection(vm)
+        await connect_shell(vm)
         ok = true
     }
     catch (e) {

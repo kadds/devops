@@ -1,57 +1,16 @@
 use super::config;
 use super::db;
+use super::signal;
+
 use mongodb::bson::doc;
-use notify::{event, RecommendedWatcher, RecursiveMode, Result, Watcher};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncBufReadExt;
 use tokio::process::Command;
-use tokio::sync::{Notify, RwLock};
+use tokio::sync::{broadcast, RwLock};
 use tokio::{fs::File, io::BufReader, time, time::Duration};
 
-static mut WATCHER: Option<RecommendedWatcher> = None;
-
-fn watch(path: &str, notify: Arc<Notify>) -> Result<()> {
-    let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| match res {
-        Ok(event) => {
-            let ev: event::Event = event;
-            if ev.kind
-                == event::EventKind::Access(event::AccessKind::Close(event::AccessMode::Write))
-            {
-                notify.notify();
-            }
-        }
-        Err(e) => {
-            eprintln!("watch error: {:?}", e);
-            // may be need notify it
-            notify.notify();
-        }
-    })?;
-    watcher.watch(path, RecursiveMode::Recursive)?;
-    unsafe {
-        WATCHER = Some(watcher);
-    }
-    Ok(())
-}
-
-// watching servers_name.txt has changed and reloading it
-// normal std thread
-async fn watch_main(path: String, notify: Arc<Notify>) {
-    match watch(&path, notify.clone()) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("watch api returns {} fallback to tick", e);
-            // fallback to tick
-            loop {
-                // do loop
-                tokio::time::delay_for(Duration::from_secs(60)).await;
-                //  call load
-                notify.notify();
-            }
-        }
-    }
-}
 
 #[derive(Default, Debug, Clone)]
 struct CpuInfo {
@@ -110,8 +69,7 @@ impl NetIoStat {
     fn delta(&self, last: &NetIoStat) -> NetIoStat {
         let dt = if self.time - last.time > 0 {
             self.time - last.time
-        }
-        else {
+        } else {
             1
         };
         NetIoStat {
@@ -121,7 +79,7 @@ impl NetIoStat {
             // bps
             read_bytes: (self.read_bytes - last.read_bytes) * 1000 / dt,
             write_bytes: (self.write_bytes - last.write_bytes) * 1000 / dt,
-            time: dt
+            time: dt,
         }
     }
 }
@@ -139,8 +97,7 @@ impl DiskIoStat {
     fn delta(&self, last: &DiskIoStat) -> DiskIoStat {
         let dt = if self.time - last.time > 0 {
             self.time - last.time
-        }
-        else {
+        } else {
             1
         };
 
@@ -151,7 +108,7 @@ impl DiskIoStat {
             // bps (selector size 512B )
             read_bytes: (self.read_bytes - last.read_bytes) * 1000 * 512 / dt,
             write_bytes: (self.write_bytes - last.write_bytes) * 1000 * 512 / dt,
-            time: dt
+            time: dt,
         }
     }
 }
@@ -252,7 +209,7 @@ async fn read_cpu_stat() -> Option<CpuInfo> {
     if let Ok(file) = File::open("/proc/stat").await {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
-        if let Ok(_) = stream.read_line(&mut line).await {
+        if stream.read_line(&mut line).await.is_ok() {
             return Some(read_to_cpu_info(&line));
         }
     }
@@ -263,7 +220,7 @@ async fn read_cpu_stat_pid(pid: &str) -> Option<CpuInfo> {
     if let Ok(file) = File::open(format!("/proc/{}/stat", pid)).await {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
-        if let Ok(_) = stream.read_line(&mut line).await {
+        if stream.read_line(&mut line).await.is_ok() {
             return Some(read_to_cpu_info_from_pid(&line));
         }
     }
@@ -290,10 +247,10 @@ async fn read_tcp_count(pid: &str) -> Option<u64> {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
         let mut num = 0;
-        if let Ok(_) = stream.read_line(&mut line).await {
+        if stream.read_line(&mut line).await.is_ok() {
             // page size is 4 KiB
             if !line.trim().starts_with("sl") {
-                num = num + 1;
+                num += 1;
             }
             line.clear();
         }
@@ -335,7 +292,7 @@ async fn read_net_stat(eth_name: &str) -> Option<NetIoStat> {
             }
             let mut list = line.split_ascii_whitespace();
             let name = list.next();
-            if name.map(|v| v.trim_end_matches(":")).unwrap_or("") == eth_name {
+            if name.map(|v| v.trim_end_matches(':')).unwrap_or("") == eth_name {
                 let read_bytes = list.next().map_or(0, |v| v.parse().unwrap_or(0));
                 let read_package = list.next().map_or(0, |v| v.parse().unwrap_or(0));
                 let mut next = list.skip(6);
@@ -349,7 +306,7 @@ async fn read_net_stat(eth_name: &str) -> Option<NetIoStat> {
                     write_package,
                     time: SystemTime::now()
                         .duration_since(UNIX_EPOCH)
-                        .map_or(0, |v| v.as_millis() as u64)
+                        .map_or(0, |v| v.as_millis() as u64),
                 });
             }
             line.clear();
@@ -405,7 +362,7 @@ async fn read_block_stat(block_name: &str) -> Option<DiskIoStat> {
                     write_bytes,
                     time: SystemTime::now()
                         .duration_since(UNIX_EPOCH)
-                        .map_or(0, |v| v.as_millis() as u64)
+                        .map_or(0, |v| v.as_millis() as u64),
                 });
             }
             line.clear();
@@ -453,8 +410,8 @@ async fn vm_tick() {
         read_net(&eth_name),
         read_block(&block_name)
     );
-    let net = net.unwrap_or(NetIoStat::default());
-    let block = block.unwrap_or(DiskIoStat::default());
+    let net = net.unwrap_or_default();
+    let block = block.unwrap_or_default();
 
     let mongo = match db::mongo_vm_monitor().await {
         Some(v) => v,
@@ -518,7 +475,7 @@ lazy_static! {
         RwLock::new(HashMap::new());
 }
 
-async fn read_cpu_pid(name: &String, pid: &str) -> Option<f32> {
+async fn read_cpu_pid(name: &str, pid: &str) -> Option<f32> {
     let mut old_info = {
         let val = LASTSERVERS.read().await;
         val.get(name).map(Clone::clone)
@@ -581,7 +538,7 @@ async fn read_cpu_pid(name: &String, pid: &str) -> Option<f32> {
     usage
 }
 
-async fn server_inspect(name: &String) {
+async fn server_inspect(name: &str) {
     // get pid first
     let config = config::get();
     let docker_container_name = format!(
@@ -609,11 +566,11 @@ async fn server_inspect(name: &String) {
             return;
         }
     };
-    if pid.ends_with("\n") {
+    if pid.ends_with('\n') {
         pid = &pid[0..pid.len() - 1];
     }
 
-    if pid.len() == 0 {
+    if pid.is_empty() {
         eprintln!("not find server {}", name);
         return;
     }
@@ -626,7 +583,7 @@ async fn server_inspect(name: &String) {
     // println!("pid server {} is {}", name, pid);
 
     let (usage, mm, tcp) = tokio::join!(
-        read_cpu_pid(&name, pid),
+        read_cpu_pid(name, pid),
         read_memory_pid(pid),
         read_tcp_count(pid)
     );
@@ -674,10 +631,11 @@ async fn server_tick() {
     }
 }
 
-async fn server_notify_tick(servers_path: String, notify: Arc<Notify>) {
+async fn server_notify_tick(servers_path: String, tx: broadcast::Receiver<signal::Types>) {
+    let mut tx = tx;
     loop {
-        notify.notified().await;
         // load new map
+        println!("load servers");
         if let Ok(file) = File::open(&servers_path).await {
             let mut stream = BufReader::new(file);
             let mut line: String = String::new();
@@ -687,10 +645,10 @@ async fn server_notify_tick(servers_path: String, notify: Arc<Notify>) {
                     break;
                 }
                 // remove last \n
-                if line.ends_with("\n") {
+                if line.ends_with('\n') {
                     line.truncate(line.len() - 1);
                 }
-                if name_config.vm_name.len() == 0 {
+                if name_config.vm_name.is_empty() {
                     name_config.vm_name = line;
                 } else {
                     name_config.servers_name.push(line);
@@ -711,29 +669,43 @@ async fn server_notify_tick(servers_path: String, notify: Arc<Notify>) {
                 servers_path
             );
         }
+        loop {
+            if let Ok(v) = tx.recv().await {
+                if v == signal::Types::InnerStopNet {
+                    return;
+                }
+                else if v == signal::Types::ReloadServers {
+                    break;
+                }
+            }
+        }
     }
 }
 
-pub async fn init(servers_path: String) {
-    let notify = Arc::new(Notify::new());
-    let notify2 = notify.clone();
-    // notify first, loading servers_name at once
-    notify2.notify();
-
-    tokio::spawn(server_notify_tick(servers_path.clone(), notify));
-
-    // start notify thread loop
-    tokio::spawn(watch_main(servers_path.clone(), notify2));
+pub async fn init(servers_path: String, tx: broadcast::Sender<signal::Types>) {
+    tokio::spawn(server_notify_tick(servers_path.clone(), tx.subscribe()));
 
     let interval_time = config::get().monitor.interval;
 
+    let mut interval = time::interval(Duration::from_secs(interval_time));
+    let mut rx = tx.subscribe();
     // wait 1 second then servers_name is loaded
     time::delay_for(Duration::from_millis(1000)).await;
 
-    let mut interval = time::interval(Duration::from_secs(interval_time));
     loop {
-        interval.tick().await;
-        // run once every tick
-        tokio::join!(vm_tick(), server_tick());
+        tokio::select!(
+            _ = interval.tick() => {
+                // run once every tick
+                tokio::join!(vm_tick(), server_tick());
+            },
+            Ok(v) = rx.recv() => {
+                if v == signal::Types::InnerStopNet {
+                    break;
+                }
+            }
+        );
+    }
+    if let Err(e) =  tx.send(signal::Types::InnerStopOk) {
+        eprintln!("{:?}", e);
     }
 }

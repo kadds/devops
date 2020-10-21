@@ -20,10 +20,7 @@ async function copy_to_vm(local_dir, vm) {
     let ssh = await connect_shell(vm)
     try {
         console.log('kill agent')
-        const pid = (await ssh.execCommand('cat ./agent.pid', { cwd: vm.base_dir + '/agent' })).stdout
-        if (pid !== undefined && pid !== null && pid !== '') {
-            await ssh.execCommand('kill ' + pid)
-        }
+        await ssh.execCommand('./agent signal -a stop', { cwd: vm.base_dir + '/agent' })
     }
     catch (err) {
         console.error(err)
@@ -54,7 +51,7 @@ async function copy_to_vm(local_dir, vm) {
     }
     console.log('try start agent')
     await ssh.execCommand('chmod +x ' + vm.base_dir + '/agent/agent')
-    await ssh.exec('./agent -d ./agent.toml', [], {
+    await ssh.exec('./agent run -d', [], {
         cwd: vm.base_dir + '/agent'
     })
     console.log('reload agent done')
@@ -63,15 +60,16 @@ async function copy_to_vm(local_dir, vm) {
 async function restart_agent(vm) {
     let ssh = await connect_shell(vvm)
     try {
-        const pid = (await ssh.execCommand('cat ./agent.pid', { cwd: vm.base_dir + '/agent' })).stdout
-        if (pid !== undefined && pid !== null && pid !== '') {
-            await ssh.execCommand('kill ' + pid)
-        }
+        await ssh.execCommand('./agent signal -a stop', { cwd: vm.base_dir + '/agent' })
+        // wait 1s
+        await new Promise((res) => {
+            setTimeout(() => res(), 1000)
+        })
     }
     catch (err) {
         console.error(err)
     }
-    await ssh.exec('./agent -d ./agent.toml', [], {
+    await ssh.exec('./agent run -d ./agent.toml', [], {
         cwd: dir + '/agent'
     })
     console.log('restart agent done')
@@ -80,15 +78,12 @@ async function restart_agent(vm) {
 async function clear_vm(vm) {
     let ssh = await connect_shell(vm)
     try {
-        const pid = (await ssh.execCommand('cat ./agent.pid', { cwd: vm.base_dir + '/agent' })).stdout
-        if (pid !== undefined && pid !== null && pid !== '') {
-            await ssh.execCommand('kill ' + pid)
-        }
+        await ssh.execCommand('./agent signal -a stop', { cwd: vm.base_dir + '/agent' })
     }
     catch (err) {
         console.log(err)
     }
-    await ssh.execCommand('rm -f ./agent ./agent.toml ./agent_servers.txt ./agent.pid', { cwd: vm.base_dir + '/agent' })
+    await ssh.execCommand('rm -f ./agent ./agent.toml ./agent_servers.txt', { cwd: vm.base_dir + '/agent' })
 }
 
 async function get_vm_config(vm) {
@@ -101,6 +96,7 @@ async function update_vm_config(vm, config) {
     let ssh = await connect_shell(vm)
     if (config) {
         await ssh.execCommand('cat > ./agent.toml', { stdin: config, cwd: vm.base_dir + '/agent' })
+        await ssh.execCommand('./agent signal -a reload', { cwd: vm.base_dir + '/agent' })
     }
     else {
         await ssh.execCommand('rm -f ./agent.toml', { cwd: vm.base_dir + '/agent' })

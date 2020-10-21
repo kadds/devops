@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use std::sync::Arc;
-use toml;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -2,7 +2,7 @@
 authors = ["kadds <itmyxyf@gmail.com>"]
 edition = "2018"
 name = "agent"
-version = "0.2.0"
+version = "0.3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,11 +11,11 @@ clap = {version = "2.33", default-features = false}
 daemonize = "0.4"
 lazy_static = "1.4"
 mongodb = {version = "1.1", default-features = false, features = ["tokio-runtime"]}
-notify = "5.0.0-pre.3"
 serde = "1.0"
 tokio = {version = "0.2", features = ["full"]}
 toml = "0.5"
 
 [profile.release]
-lto = "thin"
-opt-level = "s"
+codegen-units = 1
+lto = "fat"
+opt-level = "z"

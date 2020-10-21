@@ -1,10 +1,13 @@
 use super::config;
 use super::db;
+use super::signal;
+
 use mongodb::bson::doc;
 use mongodb::*;
 use std::time::SystemTime;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::prelude::*;
+use tokio::sync::broadcast;
 
 async fn send_mongodb(logger: Collection, doc: bson::Document) {
     let ret = logger.insert_one(doc, None).await;
@@ -110,18 +113,18 @@ async fn do_server_rpc_log(log: String) {
 }
 
 async fn do_log(log: String, max_size: u32) {
-    if log.starts_with("0") {
+    if log.starts_with('0') {
         // remove last \n
         let mut log = log;
-        if log.ends_with("\n") {
+        if log.ends_with('\n') {
             log.truncate(log.len() - 1);
         }
         // size overflow
         log.truncate(usize::min(max_size as usize, log.len()));
         do_app_log(log).await;
-    } else if log.starts_with("1") {
+    } else if log.starts_with('1') {
         do_click_log(log).await;
-    } else if log.starts_with("2") {
+    } else if log.starts_with('2') {
         do_server_rpc_log(log).await;
     } else {
         eprintln!("save to mongodb fail (unknown type)");
@@ -142,14 +145,16 @@ async fn process_client(socket: TcpStream, max_size: u32) {
     let mut log = String::new();
 
     // read lines and parse it
-    while let Ok(size) = stream.read_line(&mut log).await {
-        if size == 0 {
-            break;
-        }
-        // save log to mongodb async
-        tokio::spawn(do_log(log, max_size));
+    loop {
+        if let Ok(size) = stream.read_line(&mut log).await {
+            if size == 0 {
+                break;
+            }
+            // save log to mongodb async
+            tokio::spawn(do_log(log, max_size));
 
-        log = String::new();
+            log = String::new();
+        }
     }
     println!(
         "client exit {} at {}",
@@ -160,16 +165,25 @@ async fn process_client(socket: TcpStream, max_size: u32) {
     );
 }
 
-pub async fn init() {
+pub async fn init(tx: broadcast::Sender<signal::Types>) {
     let config = config::get();
     let addr = format!("{}:{}", config.logger.bind, config.logger.port);
     let max = config.logger.max_size;
 
     let mut listener = TcpListener::bind(addr).await.expect("bind address fail");
-
+    let mut rx = tx.subscribe();
     loop {
-        if let Ok((socket, _)) = listener.accept().await {
+        tokio::select!(Ok((socket, _)) = listener.accept() => {
             tokio::spawn(process_client(socket, max));
+        },
+        Ok(v) = rx.recv() => {
+            if v == signal::Types::InnerStopNet {
+                break;
+            }
         }
+        );
+    }
+    if let Err(e) =  tx.send(signal::Types::InnerStopOk) {
+        eprintln!("{:?}", e);
     }
 }
