@@ -148,6 +148,25 @@ const iops_formatter = (v) => {
     }
 }
 
+const bps_axis_formatter = (v) => {
+    v = Math.abs(v)
+    if (v <= 0) {
+        return '0'
+    }
+    else if (v < 1024) {
+        return `${v}\nbps`
+    }
+    else if (v < 1024 * 1024) {
+        return `${(v / 1024).toFixed(1)}\nKbps`
+    }
+    else if (v < 1024 * 1024 * 1024) {
+        return `${(v / (1024 * 1024)).toFixed(1)}\nMbps`
+    }
+    else {
+        return `${(v / (1024 * 1024 * 1024)).toFixed(1)}\nGbps`
+    }
+}
+
 const bps_formatter = (v) => {
     v = Math.abs(v)
     if (v <= 0) {
@@ -307,13 +326,13 @@ const MonitorVMChart = (props) => {
         ...CommConfig,
         title: {
             show: true,
-            text: 'Block IO Bytes'
+            text: 'Block IO Bytes',
         },
         yAxis: {
             type: 'value',
             axisLabel: {
-                formatter: (v) => (bps_formatter(v))
-            }
+                formatter: (v) => (bps_axis_formatter(v)),
+            },
         },
         tooltip: {
             trigger: 'axis',
@@ -367,7 +386,7 @@ const MonitorVMChart = (props) => {
         yAxis: {
             type: 'value',
             axisLabel: {
-                formatter: (v) => (bps_formatter(v))
+                formatter: (v) => (bps_axis_formatter(v))
             }
         },
         tooltip: {

@@ -183,7 +183,7 @@ pre.output {
     margin-bottom: 0;
 }
 
-.ant-tooltip-inner > .ant-typography{
+.ant-tooltip-inner .ant-typography.text{
     color: inherit;
 }
 

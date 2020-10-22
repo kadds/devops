@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Form, Tooltip, Row, Col, Typography, Table, Divider, InputNumber, Button, DatePicker } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined, RadarChartOutlined, } from '@ant-design/icons'
 import { click_query } from './../../api/log'
 import moment from 'moment'
+import { withRouter } from 'react-router'
 
-const ClickLog = () => {
+const ClickLog = (props) => {
     const [query, setQuery] = useState(null)
     const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}` })
     const [logList, setLogList] = useState([])
@@ -56,7 +57,10 @@ const ClickLog = () => {
             title: 'Track id',
             dataIndex: 3,
             key: 3,
-            render: tid => (<Typography.Text copyable>{tid}</Typography.Text>)
+            render: tid => (<Tooltip title={
+                <Button type='link' icon={<RadarChartOutlined />}
+                    onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid }) }}></Button>
+            }><Typography.Text copyable>{tid}</Typography.Text></Tooltip>)
         },
         {
             title: 'URL',
@@ -65,7 +69,7 @@ const ClickLog = () => {
             ellipsis: true,
             render: (url, r) => (<span>
                 <Tooltip title={
-                    <Typography.Text copyable>{url}</Typography.Text>
+                    <Typography.Text className='text' copyable>{url}</Typography.Text>
                 }>{r[6]} {url}</Tooltip></span>)
         },
         {
@@ -89,8 +93,12 @@ const ClickLog = () => {
             key: 2,
             render: timestamp => (<span>
                 <Tooltip title={
-                    <Typography.Text copyable>{timestamp}</Typography.Text>
-                }>{moment(timestamp).format('lll')}</Tooltip></span>)
+                    <span>
+                        <Typography.Text className='text' copyable>{timestamp}</Typography.Text>
+                        <br />
+                        {moment(timestamp).format('lll')}
+                    </span>
+                }>{moment(timestamp).format('DD, HH:mm:ss.SSS')}</Tooltip></span>)
         },
         {
             title: 'Return code/length',
@@ -127,4 +135,4 @@ const ClickLog = () => {
     )
 }
 
-export default ClickLog
+export default withRouter(ClickLog)

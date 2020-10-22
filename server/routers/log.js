@@ -1,6 +1,8 @@
 const { Router } = require('express')
 const { m_server } = require('../data')
 const { get_mongodb_log, get_mongodb_click_log } = require('../utils/mogodb')
+const { tid2text, text2tid } = require('../utils/tid')
+const Long = require('mongodb').Long
 
 let router = new Router()
 
@@ -19,9 +21,8 @@ router.post('/search', async (req, rsp, next) => {
     if (vid !== undefined && vid !== null) {
         find_obj.vi = vid
     }
-
     if (tid) {
-        find_obj.ti = tid
+        find_obj.ti = Long.fromString(text2tid(tid.trim()))
     }
     if (server_name) {
         find_obj.sn = server_name
@@ -54,7 +55,7 @@ router.post('/search', async (req, rsp, next) => {
     const cli = await get_mongodb_log()
     await cli.createIndex({ lo: "text", ts: 1 })
     const list = (await cli.find(find_obj).skip(page * size).limit(size).toArray()).map(v => {
-        return [v._id, v.vi, v.ts, v.ti, v.sn, v.le, v.lo]
+        return [v._id, v.vi, v.ts, tid2text(v.ti), v.sn, v.le, v.lo]
     })
     const count = await cli.find(find_obj).count()
     rsp.json({ err: 0, list, total: count })
@@ -81,7 +82,7 @@ router.post('/click/search', async (req, rsp, next) => {
     const cli = await get_mongodb_click_log()
     await cli.createIndex({ vi: 1, ts: 1 })
     const list = (await cli.find(find_obj).skip(page * size).limit(size).toArray()).map(v => {
-        return [v._id, v.vi, v.ts, v.ti, v.sn, v.co, v.me, v.ur, v.ho, v.rc, v.rl]
+        return [v._id, v.vi, v.ts, tid2text(v.ti), v.sn, v.co, v.me, v.ur, v.ho, v.rc, v.rl]
     })
     const count = await cli.find(find_obj).count()
     rsp.json({ err: 0, list, total: count })

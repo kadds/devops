@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Form, Spin, Row, Col, InputNumber, Divider, DatePicker } from 'antd'
-import queryString from 'querystring'
+import { Form, Spin, Row, Col, Input, Divider, DatePicker } from 'antd'
+import queryString from 'query-string'
 import { withRouter } from 'react-router'
 import { get_call_graph } from '../../api/monitor'
 import moment from 'moment'
@@ -48,7 +48,7 @@ const Call = (props) => {
         }
 
         setSelect({
-            tid: full_value.tid + '',
+            tid: full_value.tid,
             timerange
         })
     }
@@ -61,7 +61,7 @@ const Call = (props) => {
                 <Row gutter={[12, 12]}>
                     <Col>
                         <Form.Item name='tid' label="tid">
-                            <InputNumber />
+                            <Input />
                         </Form.Item>
                     </Col>
                     <Col>

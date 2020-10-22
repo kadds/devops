@@ -163,10 +163,10 @@ async fn do_send_signal(signal: &str) {
 }
 
 fn main() {
-    let matches = App::new("agent")
-        .version("0.4.0")
-        .author("kadds")
-        .about("collecting linux system info. (devops component)")
+    let matches = App::new(clap::crate_name!())
+        .version(clap::crate_version!())
+        .author(clap::crate_authors!("\n"))
+        .about(clap::crate_description!())
         .subcommand(SubCommand::with_name("signal")
             .about("Sends signal to agent which is running")
             .arg(Arg::with_name("action").short("a").long("action").required(true)

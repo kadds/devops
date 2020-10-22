@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Row, Col, Tooltip, Input, InputNumber, Form, Table, Select, Divider, DatePicker, Button, Typography, Tag } from 'antd'
-import { SearchOutlined, QuestionCircleOutlined } from '@ant-design/icons'
+import { SearchOutlined, QuestionCircleOutlined, RadarChartOutlined } from '@ant-design/icons'
 import { get_module_list } from '../../api/module'
 import { get_server_list } from '../../api/server'
 import { query_log } from '../../api/log'
 import moment from 'moment'
+import { withRouter } from 'react-router'
 
 const TagRender = (props) => {
     if (props.level === 'error') {
@@ -119,7 +120,18 @@ const AppLog = (props) => {
             title: 'Track id',
             dataIndex: 3,
             key: 3,
-            render: tid => (<Typography.Text>{tid}</Typography.Text>)
+            render: tid => (<span>
+                <Tooltip title={
+                    <span>
+                        <Typography.Text className='text' copyable>{tid}</Typography.Text>
+
+                        <Button type='link' icon={<RadarChartOutlined />}
+                            onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid }) }}></Button>
+                    </span>
+                }>
+                    {tid}
+                </Tooltip>
+            </span>)
         },
         {
             title: 'Level',
@@ -133,8 +145,12 @@ const AppLog = (props) => {
             key: 2,
             render: timestamp => (<span>
                 <Tooltip title={
-                    <Typography.Text copyable>{timestamp}</Typography.Text>
-                }>{moment(timestamp).format('lll')}</Tooltip></span>)
+                    <span>
+                        <Typography.Text className='text' copyable>{timestamp}</Typography.Text>
+                        <br />
+                        {moment(timestamp).format('lll')}
+                    </span>
+                }>{moment(timestamp).format('DD, HH:mm:ss.SSS')}</Tooltip></span>)
         },
         {
             title: 'Server',
@@ -219,4 +235,4 @@ const AppLog = (props) => {
     )
 }
 
-export default AppLog
+export default withRouter(AppLog)
