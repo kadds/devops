@@ -1,6 +1,7 @@
 # DevOps Tools
-* Manage all docker/vm
-* Auto online system with pipeline 
-* Gray env support
-* Configure shrink/expand
+* Upload & Start & Stop & Rollback docker container service.
+* Shrink & Expand module at once.
+* Performance monitor for virtual machine and service.
+* Log viewer.
+* Distributed service invoke tracking.
 
