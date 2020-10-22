@@ -3,6 +3,7 @@ extern crate daemonize;
 extern crate tokio;
 #[macro_use]
 extern crate lazy_static;
+extern crate num;
 
 mod config;
 mod db;
@@ -13,10 +14,10 @@ use clap::{App, Arg, SubCommand};
 use daemonize::Daemonize;
 use std::fs::File;
 use tokio::net::{UnixListener, UnixStream};
-use tokio::stream::StreamExt;
 use tokio::prelude::*;
 use tokio::runtime;
 use tokio::signal::unix::{signal, SignalKind};
+use tokio::stream::StreamExt;
 use tokio::sync::broadcast;
 
 async fn cmd_client(socket: UnixStream, tx: broadcast::Sender<signal::Types>) {
@@ -37,23 +38,17 @@ async fn cmd_client(socket: UnixStream, tx: broadcast::Sender<signal::Types>) {
         println!("command {}", cmd);
         // execute command
         if cmd == "stop" {
-            if let Err(e) =  tx.send(signal::Types::Stop) {
+            if let Err(e) = tx.send(signal::Types::Stop) {
                 eprintln!("{:?}", e);
             }
-            if let Err(e) = write_socket
-                .write_all(b"stopped")
-                .await
-            {
+            if let Err(e) = write_socket.write_all(b"stopped").await {
                 eprintln!("send fail {}", e);
             }
         } else if cmd == "reload" {
-            if let Err(e) =  tx.send(signal::Types::ReloadServers) {
+            if let Err(e) = tx.send(signal::Types::ReloadServers) {
                 eprintln!("{:?}", e);
             }
-            if let Err(e) = write_socket
-                .write_all(b"reloaded")
-                .await
-            {
+            if let Err(e) = write_socket.write_all(b"reloaded").await {
                 eprintln!("send fail {}", e);
             }
         } else if cmd == "pid" {
@@ -75,7 +70,7 @@ async fn cmd_main(tx: broadcast::Sender<signal::Types>) {
     let mut listener = UnixListener::bind("./agent.sock").unwrap();
     let mut rx = tx.subscribe();
     loop {
-        tokio::select!{
+        tokio::select! {
             Some(stream) = listener.next() => {
                 tokio::spawn(cmd_client(stream.unwrap(), tx.clone()));
             },
@@ -90,7 +85,7 @@ async fn cmd_main(tx: broadcast::Sender<signal::Types>) {
     if let Err(e) = tokio::fs::remove_file("./agent.sock").await {
         eprintln!("{}", e);
     }
-    if let Err(e) =  tx.send(signal::Types::InnerStopOk) {
+    if let Err(e) = tx.send(signal::Types::InnerStopOk) {
         eprintln!("{:?}", e);
     }
 }
@@ -99,8 +94,7 @@ async fn check_instant_exist() -> bool {
     if UnixStream::connect("./agent.sock").await.is_ok() {
         println!("old agent is running.");
         return true;
-    }
-    else{
+    } else {
         let _ = tokio::fs::remove_file("./agent.sock").await;
         return false;
     }
@@ -139,11 +133,10 @@ async fn do_async_main(path: &str, server_path: &str) {
         };
         if sig_type == signal::Types::Nothing || sig_type == signal::Types::Stop {
             println!("recv signal");
-            if let Err(e) =  tx.send(signal::Types::InnerStopNet) {
+            if let Err(e) = tx.send(signal::Types::InnerStopNet) {
                 eprintln!("{:?}", e);
             }
-        }
-        else if sig_type == signal::Types::InnerStopOk {
+        } else if sig_type == signal::Types::InnerStopOk {
             i += 1;
             if i >= 3 {
                 break;
@@ -171,7 +164,7 @@ async fn do_send_signal(signal: &str) {
 
 fn main() {
     let matches = App::new("agent")
-        .version("0.3.0")
+        .version("0.4.0")
         .author("kadds")
         .about("collecting linux system info. (devops component)")
         .subcommand(SubCommand::with_name("signal")

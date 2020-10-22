@@ -3,6 +3,7 @@ use super::db;
 use super::signal;
 
 use mongodb::bson::doc;
+use num::ToPrimitive;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -10,7 +11,6 @@ use tokio::io::AsyncBufReadExt;
 use tokio::process::Command;
 use tokio::sync::{broadcast, RwLock};
 use tokio::{fs::File, io::BufReader, time, time::Duration};
-
 
 #[derive(Default, Debug, Clone)]
 struct CpuInfo {
@@ -176,7 +176,7 @@ fn read_to_cpu_info_from_pid(line: &str) -> CpuInfo {
     }
 }
 
-async fn read_mem() -> Option<u64> {
+async fn read_mem() -> Option<u32> {
     if let Ok(file) = File::open("/proc/meminfo").await {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
@@ -199,8 +199,9 @@ async fn read_mem() -> Option<u64> {
             }
             line.clear();
         }
-        let used = total - avl;
-        return Some(used * 1024);
+        let used: u64 = total - avl;
+        // 1 = 4 KiB
+        return Some((used / 4) as u32);
     }
     None
 }
@@ -227,34 +228,37 @@ async fn read_cpu_stat_pid(pid: &str) -> Option<CpuInfo> {
     None
 }
 
-async fn read_memory_pid(pid: &str) -> Option<(u64, u64)> {
+async fn read_memory_pid(pid: &str) -> Option<(u32, u32)> {
     if let Ok(file) = File::open(format!("/proc/{}/statm", pid)).await {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
         if let Ok(_) = stream.read_line(&mut line).await {
             let mut list = line.split_ascii_whitespace();
-            let vm = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-            let pm = list.next().map_or(0, |v| v.parse().unwrap_or(0));
+            let vm: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
+            let pm: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
             // page size is 4 KiB
-            return Some((vm * 4, pm * 4));
+            // max represent memory size is 16TiB (uint32)
+            return Some((
+                vm.to_u32().unwrap_or(u32::MAX),
+                pm.to_u32().unwrap_or(u32::MAX),
+            ));
         }
     }
     None
 }
 
-async fn read_tcp_count(pid: &str) -> Option<u64> {
+async fn read_tcp_count(pid: &str) -> Option<u32> {
     if let Ok(file) = File::open(format!("/proc/{}/net/tcp", pid)).await {
         let mut stream = BufReader::new(file);
         let mut line: String = String::new();
-        let mut num = 0;
+        let mut num: u64 = 0;
         if stream.read_line(&mut line).await.is_ok() {
-            // page size is 4 KiB
             if !line.trim().starts_with("sl") {
                 num += 1;
             }
             line.clear();
         }
-        return Some(num);
+        return Some(num.to_u32().unwrap_or(u32::MAX));
     }
     None
 }
@@ -425,28 +429,28 @@ async fn vm_tick() {
         .expect("unknown system time")
         .as_secs() as u32;
 
-    // all data cast to u32
     let vm = name_config.vm_name.clone();
 
     let res = mongo
         .insert_one(
             doc! {
-            "dt": [
-               (cpu.unwrap_or(0.) * 100.) as u32,
+            "d": [
+               (cpu.unwrap_or(0.) * 100.).to_u32().unwrap_or(u32::MAX),
+               // 4 KiB
                 used.unwrap_or(0),
                 // Bps
-                net.read_bytes,
-                net.write_bytes,
+                net.read_bytes.to_u32().unwrap_or(u32::MAX),
+                net.write_bytes.to_u32().unwrap_or(u32::MAX),
 
-                net.read_package,
-                net.write_package,
+                net.read_package.to_u32().unwrap_or(u32::MAX),
+                net.write_package.to_u32().unwrap_or(u32::MAX),
 
                 // Bps
-                block.read_bytes,
-                block.write_bytes,
+                block.read_bytes.to_u32().unwrap_or(u32::MAX),
+                block.write_bytes.to_u32().unwrap_or(u32::MAX),
 
-                block.read_package,
-                block.write_package
+                block.read_package.to_u32().unwrap_or(u32::MAX),
+                block.write_package.to_u32().unwrap_or(u32::MAX),
             ],
             "ts": ts,
             "vm": vm},
@@ -548,7 +552,7 @@ async fn server_inspect(name: &str) {
     let output = match Command::new("docker")
         .arg("inspect")
         .arg("--format")
-        .arg("{{.State.Pid}}")
+        .arg("{{.State.Pid}} {{.RestartCount}} {{.State.StartedAt}}")
         .arg(docker_container_name)
         .output()
         .await
@@ -559,19 +563,34 @@ async fn server_inspect(name: &str) {
             return;
         }
     };
-    let mut pid = match std::str::from_utf8(&output.stdout) {
+    let stdout = match std::str::from_utf8(&output.stdout) {
         Ok(v) => v,
         Err(err) => {
             eprintln!("error parse pid {}", err);
             return;
         }
     };
-    if pid.ends_with('\n') {
-        pid = &pid[0..pid.len() - 1];
-    }
+    let mut stdlist = stdout.split_ascii_whitespace();
+    let pid = stdlist.next().unwrap_or("");
+    let restart_count = stdlist.next().map_or(0, |v| v.parse().unwrap_or(0));
+    let start_at = stdlist.next().unwrap_or("");
+    let start_at_ts = chrono::DateTime::parse_from_rfc3339(start_at).map_or_else(
+        |_| {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_or(0, |v| v.as_secs()) as u32
+        },
+        |v| v.timestamp() as u32,
+    );
 
     if pid.is_empty() {
         eprintln!("not find server {}", name);
+        return;
+    }
+
+    if pid == "0" {
+        // server is restarting or stopped
+        eprintln!("server is not running {}", name);
         return;
     }
 
@@ -598,15 +617,16 @@ async fn server_inspect(name: &str) {
     let res = mongo
         .insert_one(
             doc! {
-            "dt": [
-                (usage.unwrap_or(0.) * 100.) as u32,
-                // KiB
-                mm.unwrap_or((0, 0)).1 as u32,
-                mm.unwrap_or((0, 0)).0 as u32,
-                tcp.unwrap_or(0) as u32,
-            ],
-            "ts": ts,
-            "se": name},
+                "cp": (usage.unwrap_or(0.) * 100.).to_u32().unwrap_or(u32::MAX),
+                    // 4 KiB
+                "vm": mm.unwrap_or((0, 0)).0,
+                "mm": mm.unwrap_or((0, 0)).1,
+                "tc": tcp.unwrap_or(0),
+                "rc": restart_count.to_u32().unwrap_or(u32::MAX),
+                "st": start_at_ts,
+                "ts": ts,
+                "se": name,
+            },
             None,
         )
         .await;
@@ -673,8 +693,7 @@ async fn server_notify_tick(servers_path: String, tx: broadcast::Receiver<signal
             if let Ok(v) = tx.recv().await {
                 if v == signal::Types::InnerStopNet {
                     return;
-                }
-                else if v == signal::Types::ReloadServers {
+                } else if v == signal::Types::ReloadServers {
                     break;
                 }
             }
@@ -705,7 +724,7 @@ pub async fn init(servers_path: String, tx: broadcast::Sender<signal::Types>) {
             }
         );
     }
-    if let Err(e) =  tx.send(signal::Types::InnerStopOk) {
+    if let Err(e) = tx.send(signal::Types::InnerStopOk) {
         eprintln!("{:?}", e);
     }
 }

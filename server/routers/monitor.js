@@ -19,7 +19,7 @@ router.post('/vm', async (req, rsp, next) => {
         const cli = await get_mongodb_vm_monitor()
         await cli.createIndex({ ts: 1, vm: 1 })
         const list = (await cli.find(find_obj).toArray()).map(v => {
-            return [v.ts, ...v.dt]
+            return [v.ts, ...v.d]
         })
         // test data
         rsp.json({ err: 0, data: list })
@@ -44,8 +44,19 @@ router.post('/server', async (req, rsp, next) => {
         }
         const cli = await get_mongodb_server_monitor()
         await cli.createIndex({ ts: 1, se: 1 })
+        let last_ts = 0
+        let last_restart_count = 0
         const list = (await cli.find(find_obj).toArray()).map(v => {
-            return [v.ts, ...v.dt]
+            let rc = 0
+            if (v.st > last_ts) {
+                rc = v.rc
+                last_restart_count = v.rc
+            }
+            else {
+                rc = v.rc - last_restart_count
+                last_restart_count = v.rc
+            }
+            return [v.ts, v.cp, v.mm, v.vm, v.tc, rc]
         })
         rsp.json({ err: 0, data: list })
         return

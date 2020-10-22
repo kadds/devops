@@ -498,7 +498,7 @@ const MonitorVMChart = (props) => {
             for (const dt of ret_data) {
                 let time = dt[0] * 1000
                 cpu.push([time, dt[1] / 100])
-                mem.push([time, dt[2]])
+                mem.push([time, dt[2] * 4 * 1024])
 
                 block_bytes[0].push([time, dt[7] * 8])
                 block_bytes[1].push([time, -dt[8] * 8])

@@ -89,27 +89,31 @@ const size_formatter = (v) => {
         return '0'
     }
     else if (v < 1024) {
-        return `${v} KiB`
+        return `${v} B`
     }
     else if (v < 1024 * 1024) {
-        return `${(v / 1024).toFixed(1)} MiB`
+        return `${(v / 1024).toFixed(1)} KiB`
+    }
+    else if (v < 1024 * 1024 * 1024) {
+        return `${(v / (1024 * 1024)).toFixed(1)} MiB`
     }
     else {
-        return `${(v / (1024 * 1024)).toFixed(1)} GiB`
+        return `${(v / (1024 * 1024 * 1024)).toFixed(1)} GiB`
     }
 }
 
 const MonitorServerChart = (props) => {
     const [needUpdate, setNeedUpdate] = useState(0)
-    const [data, setData] = useState({ loading: false, cpu: [], mem: [[], []], tcp: [] })
+    const [data, setData] = useState({ loading: false, cpu: [], mem: [[], []], tcp: [], restart: [] })
     useEffect(() => {
         async function run() {
             setData(v => { return { ...v, loading: true } })
             const data = await get_monitor_server(props.server, props.timerange)
             setData({
                 cpu: data.map(v => { return [v[0], v[1] / 100] }),
-                mem: [data.map(v => { return [v[0], v[2]] }), data.map(v => { return [v[0], v[3]] })],
+                mem: [data.map(v => { return [v[0], v[2] * 4 * 1024] }), data.map(v => { return [v[0], v[3] * 4 * 1024] })],
                 tcp: data.map(v => { return [v[0], v[4]] }),
+                restart: data.map(v => { return [v[0], v[5]] }),
                 loading: false,
             })
         }
@@ -186,17 +190,17 @@ const MonitorServerChart = (props) => {
             }
         },
         series: [{
-            name: 'Memory used Phy',
-            data: data.mem[0],
+            name: 'Memory used Virtual',
+            data: data.mem[1],
             type: 'line',
-            symbol: 'diamond',
+            symbol: 'triangle',
             showSymbol: false,
             smooth: true,
             sampling: 'max',
         },
         {
-            name: 'Memory used Virtual',
-            data: data.mem[1],
+            name: 'Memory used Phy',
+            data: data.mem[0],
             type: 'line',
             symbol: 'diamond',
             showSymbol: false,
@@ -214,18 +218,9 @@ const MonitorServerChart = (props) => {
         },
         yAxis: {
             type: 'value',
-            axisLabel: {
-                formatter: (v) => (Math.abs(v))
-            }
         },
         tooltip: {
             trigger: 'axis',
-            formatter: v => {
-                if (v.length === 1) {
-                    return `${v[0].axisValueLabel}<br/> ${v[0].seriesName}: <span class='tip-echarts'> ${(v[0].value[1])} </span>`
-                }
-                return ''
-            }
         },
         series: [{
             name: 'TCP count',
@@ -235,13 +230,33 @@ const MonitorServerChart = (props) => {
             showSymbol: false,
             smooth: true,
             sampling: 'max',
-            lineStyle: {
-                width: 2,
-            },
         },
         ]
     }
 
+    const RestartConfig = {
+        ...CommConfig,
+        title: {
+            show: true,
+            text: 'Restart count'
+        },
+        yAxis: {
+            type: 'value',
+        },
+        tooltip: {
+            trigger: 'axis',
+        },
+        series: [{
+            name: 'Restart count',
+            data: data.restart,
+            type: 'line',
+            symbol: 'diamond',
+            showSymbol: false,
+            smooth: true,
+            sampling: 'max',
+        },
+        ]
+    }
 
     // todo
     return (
@@ -262,6 +277,11 @@ const MonitorServerChart = (props) => {
                     <Col>
                         <Card size='small' style={cardStyle}>
                             <ReactEcharts theme='theme' style={chartStyle} option={TCPConfig} />
+                        </Card>
+                    </Col>
+                    <Col>
+                        <Card size='small' style={cardStyle}>
+                            <ReactEcharts theme='theme' style={chartStyle} option={RestartConfig} />
                         </Card>
                     </Col>
                 </Row>

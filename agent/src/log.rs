@@ -3,6 +3,7 @@ use super::db;
 use super::signal;
 
 use mongodb::bson::doc;
+use num::ToPrimitive;
 use mongodb::*;
 use std::time::SystemTime;
 use tokio::net::{TcpListener, TcpStream};
@@ -30,7 +31,7 @@ async fn do_app_log(log: String) {
     let mut list = log.splitn(7, |c: char| c.is_ascii_whitespace()).skip(1);
     let vid: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let timestamp: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-    let tid: &str = list.next().unwrap_or("");
+    let tid: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let server_name: &str = list.next().unwrap_or("");
     let level: &str = list.next().unwrap_or("");
     let detail: &str = list.next().unwrap_or("");
@@ -53,18 +54,18 @@ async fn do_click_log(log: String) {
             return;
         }
     };
-    // type(1) vid timestamp(13) tid serverName cost method url host returnCode returnLength
+    // type(1) vid timestamp(13) tid serverName cost(ms) method url host returnCode returnLength
     let mut list = log.split_ascii_whitespace().skip(1);
     let vid: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let timestamp: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-    let tid: &str = list.next().unwrap_or("");
+    let tid: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let server_name: &str = list.next().unwrap_or("");
     let cost: u32 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
     let method: &str = list.next().unwrap_or("");
     let url: &str = list.next().unwrap_or("");
     let host: &str = list.next().unwrap_or("");
     let return_code: i64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-    let return_length: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
+    let return_length: u32 = list.next().map_or(0, |v| v.parse().unwrap_or(0)).to_u32().unwrap_or(u32::MAX);
     let doc = doc! {
         "vi": vid,
         "ts": timestamp,
@@ -87,15 +88,16 @@ async fn do_server_rpc_log(log: String) {
             return;
         }
     };
-    // type(2) serverName rpcInterfaceName tid timestamp(13) cost returnCode tid timestamp(13) cost returnCode
+    // type(2) serverName rpcInterfaceName tid timestamp(13) cost(ms) errorCode tid timestamp(13) cost errorCode
     let mut list = log.split_ascii_whitespace().skip(1);
     let server_name = list.next().unwrap_or("");
     let function_name = list.next().unwrap_or("");
     let mut docs = vec![];
 
     while let Some(tid) = list.next() {
+        let tid = tid.parse().unwrap_or(0);
         let ts: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
-        let cost: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
+        let cost: u32 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
         let error_code: i64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
         docs.push(doc! {
             "sn": server_name.clone(),
