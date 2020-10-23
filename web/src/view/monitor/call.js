@@ -9,11 +9,9 @@ const Call = (props) => {
     const tid = queryString.parse(props.location.search).tid
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(false)
-    const [select, setSelect] = useState(null)
     const [initVal] = useState({ tid, timerange: [moment().subtract(1, 'd'), moment()] })
-
+    const [select, setSelect] = useState(tid ? { tid, timerange: [moment().subtract(1, 'd').valueOf(), moment().valueOf()] } : null)
     const [form] = Form.useForm()
-
 
     useEffect(() => {
         async function run() {
@@ -26,7 +24,6 @@ const Call = (props) => {
                 setLoading(false)
             }
         }
-        console.log(select)
         if (select && select.tid)
             run()
     }, [select])
@@ -39,12 +36,13 @@ const Call = (props) => {
         if (!full_value.interval || full_value.interval < 1) {
             full_value.interval = 1
         }
+        console.log(full_value)
         let timerange = [null, null]
         if (full_value.timerange[0]) {
-            timerange[0] = Math.floor(full_value.timerange[0] / 1000)
+            timerange[0] = full_value.timerange[0].valueOf()
         }
         if (full_value.timerange[1]) {
-            timerange[1] = Math.floor(full_value.timerange[1] / 1000)
+            timerange[1] = full_value.timerange[1].valueOf()
         }
 
         setSelect({
@@ -52,8 +50,6 @@ const Call = (props) => {
             timerange
         })
     }
-
-
 
     return (
         <div>

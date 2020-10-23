@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Fragment } from 'react'
-import { Divider, Row, Card, Col, Form, DatePicker, Spin, Select, InputNumber } from 'antd'
+import { Divider, Table, Row, Card, Col, Form, DatePicker, Spin, Select, InputNumber } from 'antd'
 import { get_server_list } from './../../api/server'
-import { get_monitor_server } from './../../api/monitor'
+import { get_monitor_server, get_rpc_info } from './../../api/monitor'
 import ReactEcharts from 'echarts-for-react'
 import moment from 'moment'
 import { useInterval, useEventListener } from '../../comm/util'
@@ -108,7 +108,7 @@ const MonitorServerChart = (props) => {
     useEffect(() => {
         async function run() {
             setData(v => { return { ...v, loading: true } })
-            const data = await get_monitor_server(props.server, props.timerange)
+            const data = await get_monitor_server(props.servers, props.timerange)
             setData({
                 cpu: data.map(v => { return [v[0], v[1] / 100] }),
                 mem: [data.map(v => { return [v[0], v[2] * 4 * 1024] }), data.map(v => { return [v[0], v[3] * 4 * 1024] })],
@@ -118,7 +118,7 @@ const MonitorServerChart = (props) => {
             })
         }
         run()
-    }, [props.server, props.timerange, needUpdate])
+    }, [props.servers, props.timerange, needUpdate])
 
     const interval = props.active ? props.interval * 1000 : null
     useInterval(() => {
@@ -290,9 +290,74 @@ const MonitorServerChart = (props) => {
     )
 }
 
+const MonitorServerRpcCallInfo = (props) => {
+    const [data, setData] = useState([])
+    const [loading, setLoading] = useState(false)
+    useEffect(() => {
+        async function run() {
+            setLoading(true)
+            try {
+                const ret = await get_rpc_info(props.servers, props.timerange)
+                setData(ret)
+            }
+            finally {
+                setLoading(false)
+            }
+        }
+        run()
+    }, [props.servers, props.timerange])
+
+    const columns = [
+        {
+            title: 'Rpc',
+            dataIndex: 0,
+            key: 0,
+        },
+        {
+            title: 'Call times',
+            dataIndex: 1,
+            key: 1,
+        },
+        {
+            title: 'Error times',
+            dataIndex: 2,
+            key: 2,
+        },
+        {
+            title: 'Error percent',
+            dataIndex: 2,
+            key: 2,
+            render: (v, r) => (<span>{r[1] > 0 ? r[2] / r[1] : 0}</span>)
+        },
+        {
+            title: 'Cost P50',
+            dataIndex: 3,
+            key: 3,
+        },
+        {
+            title: 'Cost P90',
+            dataIndex: 4,
+            key: 4,
+        },
+        {
+            title: 'Cost P95',
+            dataIndex: 5,
+            key: 5,
+        },
+        {
+            title: 'Cost P99',
+            dataIndex: 6,
+            key: 6,
+        },
+    ]
+    return (<div>
+        <Table columns={columns} loading={loading} dataSource={data}></Table>
+    </div>)
+}
+
 const MonitorServer = (props) => {
     const server = queryString.parse(props.location.search).server
-    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(7, 'd'), moment()], servers: server ? [server] : [] })
+    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(1, 'd'), moment()], servers: server ? [server] : [] })
     const [serverList, setServerList] = useState({ loading: false, list: [] })
     const [selectServer, setSelectServer] = useState(null)
     const [form] = Form.useForm()
@@ -307,10 +372,10 @@ const MonitorServer = (props) => {
         }
         let timerange = [null, null]
         if (full_value.timerange[0]) {
-            timerange[0] = Math.floor(full_value.timerange[0] / 1000)
+            timerange[0] = full_value.timerange[0].valueOf()
         }
         if (full_value.timerange[1]) {
-            timerange[1] = Math.floor(full_value.timerange[1] / 1000)
+            timerange[1] = full_value.timerange[1].valueOf()
         }
 
         setSelectServer({
@@ -366,7 +431,11 @@ const MonitorServer = (props) => {
             </Form>
             {
                 selectServer && (
-                    <MonitorServerChart active={props.active} server={selectServer.servers} interval={selectServer.interval} timerange={selectServer.timerange} />
+                    <Fragment>
+                        <MonitorServerChart active={props.active} servers={selectServer.servers} interval={selectServer.interval} timerange={selectServer.timerange} />
+                        <Divider />
+                        <MonitorServerRpcCallInfo servers={selectServer.servers} timerange={selectServer.timerange}></MonitorServerRpcCallInfo>
+                    </Fragment>
                 )
             }
         </div>

@@ -33,6 +33,7 @@ const AppLog = (props) => {
     const [logList, setLogList] = useState([])
     const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
+    const [initVal] = useState({ time: [moment().subtract(1, 'd'), moment()] })
 
     useEffect(() => {
         async function run() {
@@ -168,7 +169,7 @@ const AppLog = (props) => {
 
     return (
         <div>
-            <Form onFinish={onFinish} form={form}>
+            <Form initialValues={initVal} onFinish={onFinish} form={form}>
                 <Row gutter={[12, 12]}>
                     <Col >
                         <Form.Item label='VID' name='vid'>

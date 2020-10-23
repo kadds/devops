@@ -6,8 +6,13 @@ clickLogColumnName = "click_log"
 logColumnName = "app_log"
 serverMonitorColumnName = "server_monitor"
 serverRpcStatisticsColumnName = "server_rpc"
-serverTimeStatisticsColumnName = "server_time"
 vmMonitorColumnName = "vm_monitor"
+
+clickLogTTL = 2635200 # 30days + 12hours
+logTTL = 2635200 # 30days + 12hours
+serverMonitorTTL = 1339200 # 15 days + 12hour
+serverRpcStatisticsTTL = 2635200 # 30days + 12hours
+vmMonitorTTL = 1339200 # 15days + 12hours 
 
 [logger]
 bind = "127.0.0.1"

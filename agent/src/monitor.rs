@@ -424,11 +424,7 @@ async fn vm_tick() {
             return;
         }
     };
-    let ts = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("unknown system time")
-        .as_secs() as u32;
-
+    let ts = chrono::offset::Utc::now();
     let vm = name_config.vm_name.clone();
 
     let res = mongo
@@ -594,10 +590,7 @@ async fn server_inspect(name: &str) {
         return;
     }
 
-    let ts = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("unknown system time")
-        .as_secs() as u32;
+    let ts = chrono::offset::Utc::now();
 
     // println!("pid server {} is {}", name, pid);
 
@@ -625,7 +618,7 @@ async fn server_inspect(name: &str) {
                 "rc": restart_count.to_u32().unwrap_or(u32::MAX),
                 "st": start_at_ts,
                 "ts": ts,
-                "se": name,
+                "sn": name,
             },
             None,
         )

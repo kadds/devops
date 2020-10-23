@@ -43,9 +43,9 @@ router.post('/search', async (req, rsp, next) => {
     if (time_start || time_end) {
         find_obj.ts = {}
         if (time_start)
-            find_obj.ts.$gte = time_start
+            find_obj.ts.$gte = new Date(time_start)
         if (time_end)
-            find_obj.ts.$lte = time_end
+            find_obj.ts.$lte = new Date(time_end)
     }
     if (text) {
         find_obj.$text = { $search: text }
@@ -53,9 +53,8 @@ router.post('/search', async (req, rsp, next) => {
     console.log(find_obj)
 
     const cli = await get_mongodb_log()
-    await cli.createIndex({ lo: "text", ts: 1 })
     const list = (await cli.find(find_obj).skip(page * size).limit(size).toArray()).map(v => {
-        return [v._id, v.vi, v.ts, tid2text(v.ti), v.sn, v.le, v.lo]
+        return [v._id, v.vi, new Date(v.ts).valueOf(), tid2text(v.ti), v.sn, v.le, v.lo]
     })
     const count = await cli.find(find_obj).count()
     rsp.json({ err: 0, list, total: count })
@@ -74,15 +73,14 @@ router.post('/click/search', async (req, rsp, next) => {
     if (time_start || time_end) {
         find_obj.ts = {}
         if (time_start)
-            find_obj.ts.$gte = time_start
+            find_obj.ts.$gte = new Date(time_start)
         if (time_end)
-            find_obj.ts.$lte = time_end
+            find_obj.ts.$lte = new Date(time_end)
     }
     console.log(find_obj)
     const cli = await get_mongodb_click_log()
-    await cli.createIndex({ vi: 1, ts: 1 })
     const list = (await cli.find(find_obj).skip(page * size).limit(size).toArray()).map(v => {
-        return [v._id, v.vi, v.ts, tid2text(v.ti), v.sn, v.co, v.me, v.ur, v.ho, v.rc, v.rl]
+        return [v._id, v.vi, new Date(v.ts).valueOf(), tid2text(v.ti), v.sn, v.co, v.me, v.ur, v.ho, v.rc, v.rl]
     })
     const count = await cli.find(find_obj).count()
     rsp.json({ err: 0, list, total: count })

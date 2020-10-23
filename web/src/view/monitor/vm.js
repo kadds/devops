@@ -515,7 +515,7 @@ const MonitorVMChart = (props) => {
             let block_bytes = [[], []]
 
             for (const dt of ret_data) {
-                let time = dt[0] * 1000
+                let time = dt[0]
                 cpu.push([time, dt[1] / 100])
                 mem.push([time, dt[2] * 4 * 1024])
 
@@ -586,7 +586,7 @@ const MonitorVMChart = (props) => {
 
 const MonitorVM = (props) => {
     const vm = queryString.parse(props.location.search).vm
-    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(7, 'd'), moment()], vm: vm })
+    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(1, 'd'), moment()], vm: vm })
     const [vmList, setVmList] = useState({ loading: false, list: [] })
     const [selectVm, setSelectVm] = useState(null)
     const [form] = Form.useForm()
@@ -603,10 +603,10 @@ const MonitorVM = (props) => {
         }
         let timerange = [null, null]
         if (full_value.timerange[0]) {
-            timerange[0] = Math.floor(full_value.timerange[0] / 1000)
+            timerange[0] = full_value.timerange[0].valueOf()
         }
         if (full_value.timerange[1]) {
-            timerange[1] = Math.floor(full_value.timerange[1] / 1000)
+            timerange[1] = full_value.timerange[1].valueOf()
         }
         let sam = vmRef.current.list.find(v => v.name === full_value.vm)
         setSelectVm({

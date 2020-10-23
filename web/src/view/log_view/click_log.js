@@ -11,6 +11,7 @@ const ClickLog = (props) => {
     const [logList, setLogList] = useState([])
     const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
+    const [initVal] = useState({ time: [moment().subtract(1, 'd'), moment()] })
 
     const [form] = Form.useForm()
     const ref = useRef()
@@ -109,7 +110,7 @@ const ClickLog = (props) => {
     ]
     return (
         <div>
-            <Form onFinish={onFinish} form={form}>
+            <Form initialValues={initVal} onFinish={onFinish} form={form}>
                 <Row gutter={[12, 12]}>
                     <Col >
                         <Form.Item label='VID' name='vid'>

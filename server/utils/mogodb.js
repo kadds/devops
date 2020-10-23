@@ -62,32 +62,78 @@ async function get_mongodb() {
 async function get_mongodb_vm_monitor() {
     const config = Config.get()
     const collection = config.mongodb.vmMonitorColumnName
-    return (await get_mongodb()).collection(collection)
-}
+    const col = (await get_mongodb()).collection(collection)
+    const create_index = async () => {
+        await Promise.allSettled([
+            col.createIndex({ ts: 1 }, { expireAfterSeconds: config.mongodb.vmMonitorTTL, background: true }),
+            col.createIndex({ vm: 1 }, { background: true })
+        ])
+    }
+    create_index()
 
+    return col
+}
 
 async function get_mongodb_server_monitor() {
     const config = Config.get()
     const collection = config.mongodb.serverMonitorColumnName
-    return (await get_mongodb()).collection(collection)
+    const col = (await get_mongodb()).collection(collection)
+    const create_index = async () => {
+        await Promise.allSettled([
+            col.createIndex({ ts: 1 }, { expireAfterSeconds: config.mongodb.serverMonitorTTL, background: true }),
+            col.createIndex({ sn: 1 }, { background: true })
+        ])
+    }
+    create_index()
+
+    return col
 }
 
 async function get_mongodb_log() {
     const config = Config.get()
     const collection = config.mongodb.logColumnName
-    return (await get_mongodb()).collection(collection)
+    const col = (await get_mongodb()).collection(collection)
+    const create_index = async () => {
+        await Promise.allSettled([
+            col.createIndex({ ts: 1 }, { expireAfterSeconds: config.mongodb.logTTL, background: true }),
+            col.createIndex({ vi: 1 }, { background: true }),
+            col.createIndex({ lo: "text" }, { background: true })
+        ])
+    }
+    create_index()
+
+    return col
 }
 
 async function get_mongodb_click_log() {
     const config = Config.get()
     const collection = config.mongodb.clickLogColumnName
-    return (await get_mongodb()).collection(collection)
+    const col = (await get_mongodb()).collection(collection)
+    const create_index = async () => {
+        await Promise.allSettled([
+            col.createIndex({ ts: 1 }, { expireAfterSeconds: config.mongodb.clickLogTTL, background: true }),
+            col.createIndex({ vi: 1 }, { background: true }),
+        ])
+    }
+    create_index()
+
+    return col
 }
 
 async function get_mongodb_server_rpc() {
     const config = Config.get()
     const collection = config.mongodb.serverRpcStatisticsColumnName
-    return (await get_mongodb()).collection(collection)
+    const col = (await get_mongodb()).collection(collection)
+    const create_index = async () => {
+        await Promise.allSettled([
+            col.createIndex({ ts: 1 }, { expireAfterSeconds: config.mongodb.serverRpcStatisticsTTL, background: true }),
+            col.createIndex({ co: 1 }, { background: true }),
+            col.createIndex({ ti: 1 }, { background: true }),
+        ])
+    }
+    create_index()
+
+    return col
 }
 
 module.exports = { get_mongodb, get_mongodb_vm_monitor, get_mongodb_server_monitor, get_mongodb_log, get_mongodb_click_log, get_mongodb_server_rpc }

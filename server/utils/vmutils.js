@@ -61,7 +61,7 @@ async function copy_to_vm(local_dir, vm) {
 }
 
 async function restart_agent(vm) {
-    let ssh = await connect_shell(vvm)
+    let ssh = await connect_shell(vm)
     try {
         await ssh.execCommand('./agent signal -a stop', { cwd: vm.base_dir + '/agent' })
         // wait 1s
@@ -73,7 +73,7 @@ async function restart_agent(vm) {
         console.error(err)
     }
     await ssh.exec('./agent run -d', [], {
-        cwd: dir + '/agent'
+        cwd: vm.base_dir + '/agent'
     })
     console.log('restart agent done')
 }
