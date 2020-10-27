@@ -11,8 +11,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
     return {
-        close_login_modal: () => {
-            dispatch(close_login())
+        close_login_modal: (d) => {
+            dispatch(close_login(d))
         }
     }
 }

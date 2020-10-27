@@ -2,6 +2,7 @@ import React, { useState, useEffect, Fragment } from 'react'
 import { Route, Switch, NavLink } from 'react-router-dom'
 import { Layout, BackTop, Menu, Avatar, Row, Col, Dropdown } from 'antd'
 import { info, logout } from './api/user'
+import { useHistory } from 'react-router'
 import {
     UserOutlined,
     MenuUnfoldOutlined,
@@ -62,7 +63,7 @@ const contents = [
     { path: '/deploy/detail', component: Detail, title: 'Deploying detail' },
     { path: '/monitor', component: MonitorIndex, title: 'Monitor' },
     { path: '/log', component: LogIndex, title: 'Log Query' },
-    { path: '/setting', component: Setting, title: 'Configuration' },
+    { path: '/setting', component: Setting, title: 'Setting' },
     { component: P404 }
 ]
 
@@ -90,8 +91,12 @@ function Main(props) {
         run()
     }, [])
 
+    const history = useHistory()
     const do_logout = async function () {
         await logout()
+        setTimeout(() => {
+            history.go(0)
+        }, 200);
     }
 
     const userMenu = (

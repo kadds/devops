@@ -1,7 +1,7 @@
 import axios from 'axios'
 import React from 'react'
 import { message, Typography } from 'antd'
-import store from '../state/store'
+import { store } from '../state/store'
 import { start_login } from '../state/action'
 
 

@@ -4,10 +4,10 @@ async function login(username, password) {
     const data = await post('/user/login', { username, password })
     if (data.err === 0) {
         set_token(data.token)
-        return true
+        return data.data
     }
     else {
-        return false
+        return null
     }
 }
 
@@ -25,5 +25,20 @@ async function user_list() {
     return data.list
 }
 
+async function add_user(user) {
+    await post('/user/add', { user })
+}
 
-export { login, logout, info, user_list }
+async function rm_user(user) {
+    await post('/user/rm', { user })
+}
+
+async function update_user(user) {
+    await post('/user/password', { user })
+}
+
+async function update_mark(mark) {
+    await post('/user/mark', { mark })
+}
+
+export { login, logout, info, user_list, add_user, rm_user, update_user, update_mark }

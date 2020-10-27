@@ -1,4 +1,4 @@
-import { START_LOGIN, CLOSE_LOGIN, UPDATE_URI } from './actions'
+import { START_LOGIN, CLOSE_LOGIN } from './actions'
 
 function start_login() {
     return {
@@ -6,20 +6,13 @@ function start_login() {
     }
 }
 
-function close_login() {
+function close_login(user) {
     return {
         type: CLOSE_LOGIN,
+        user
     }
 }
 
-function update_uri(url, title) {
-    return {
-        type: UPDATE_URI,
-        url: url,
-        title: title,
-    }
-}
-
-export { start_login, close_login, update_uri }
+export { start_login, close_login }
 
 
