@@ -7,10 +7,18 @@ import moment from 'moment'
 
 const Call = (props) => {
     const tid = queryString.parse(props.location.search).tid
+    const time = parseInt(queryString.parse(props.location.search).time)
+    let time_range
+    if (time) {
+        time_range = [moment(time - 100), moment(time).add(1, 'm')]
+    }
+    else {
+        time_range = [moment().subtract(1, 'd'), moment()]
+    }
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(false)
-    const [initVal] = useState({ tid, timerange: [moment().subtract(1, 'd'), moment()] })
-    const [select, setSelect] = useState(tid ? { tid, timerange: [moment().subtract(1, 'd').valueOf(), moment().valueOf()] } : null)
+    const [initVal] = useState({ tid, timerange: time_range })
+    const [select, setSelect] = useState(tid ? { tid, timerange: [time_range[0].valueOf(), time_range[1].valueOf()] } : null)
     const [form] = Form.useForm()
 
     useEffect(() => {

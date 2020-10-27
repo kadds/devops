@@ -58,9 +58,9 @@ const ClickLog = (props) => {
             title: 'Track id',
             dataIndex: 3,
             key: 3,
-            render: tid => (<Tooltip title={
+            render: (tid, r) => (<Tooltip title={
                 <Button type='link' icon={<RadarChartOutlined />}
-                    onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid }) }}></Button>
+                    onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid + '&time=' + r[2] }) }}></Button>
             }><Typography.Text copyable>{tid}</Typography.Text></Tooltip>)
         },
         {

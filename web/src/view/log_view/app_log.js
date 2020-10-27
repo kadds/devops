@@ -121,13 +121,13 @@ const AppLog = (props) => {
             title: 'Track id',
             dataIndex: 3,
             key: 3,
-            render: tid => (<span>
+            render: (tid, r) => (<span>
                 <Tooltip title={
                     <span>
                         <Typography.Text className='text' copyable>{tid}</Typography.Text>
 
                         <Button type='link' icon={<RadarChartOutlined />}
-                            onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid }) }}></Button>
+                            onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid + '&time=' + r[2] }) }}></Button>
                     </span>
                 }>
                     {tid}
