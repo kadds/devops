@@ -21,6 +21,6 @@ const pipeline_params = [
     { name: 'result_dir', label: 'Result directory', description: 'Relative path. Showing build results', type: 'string', default: 'build/' }
 ]
 
-const deps = ['nodejs', 'yarn']
+const deps = []
 
 module.exports = { entry, name: 'build-comm', description: 'build by shell command', tag: [], type: 'build', params, pipeline_params, deps }

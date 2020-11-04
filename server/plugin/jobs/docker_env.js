@@ -63,8 +63,8 @@ async function entry(request, param, opt) {
         }
 
         if (is_new) {
-            await logger.write('- pulling docker image\n')
-            await exec(ssh, 'docker pull ' + param.dockerimg, null, logger)
+            // await logger.write('- pulling docker image\n')
+            // await exec(ssh, 'docker pull ' + param.dockerimg, null, logger)
             await logger.write('- connecting docker environment\n')
             await exec(ssh, 'docker run -d --name ' + docker_name + ' ' + param.dockerimg + ' /bin/tail -f', null, logger)
             await logger.write('- installing deps\n')
