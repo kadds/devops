@@ -9,18 +9,19 @@ async function entry(request, param, opt) {
         const ssh = opt.ssh
         let need_clone = true
         try {
-            const status = await exec(ssh, 'git status', null, logger)
+            const status = await exec(ssh, 'cd proj && git status', null, logger)
             need_clone = false
         }
         catch (e) {
             console.log(e)
         }
         if (need_clone) {
-            await exec(ssh, 'git clone --depth=1 --single-branch --branch ' + param.branch + ' ' + param.git_url + ' ./', null, logger)
+            await exec(ssh, 'git clone --depth=1 --single-branch --branch ' + param.branch + ' ' + param.git_url + ' ./proj', null, logger)
         }
         else {
-            await exec(ssh, 'git pull', null, logger)
+            await exec(ssh, 'cd proj && git pull', null, logger)
         }
+        ssh.base_dir += '/proj'
     }
 }
 
