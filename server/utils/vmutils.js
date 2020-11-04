@@ -35,6 +35,9 @@ async function copy_to_vm(local_dir, vm) {
 
     if (!await ssh.putDirectory(local_dir, vm.base_dir + '/agent', {
         recursive: false, concurrency: 1,
+        transferOptions: {
+            chunkSize: 1024,
+        },
         validate: file => {
             if (file.endsWith('agent.toml')) {
                 if (res.code !== null && res.code !== 0) {
