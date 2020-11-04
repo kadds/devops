@@ -12,6 +12,7 @@
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "chalk": "^4.1.0",
+    "connect-history-api-fallback": "^1.6.0",
     "express": "5.0.0-alpha.8",
     "mongodb": "^3.6.2",
     "node-ssh": "^11.1.0",

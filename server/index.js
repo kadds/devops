@@ -19,23 +19,26 @@ const { listen_log } = require('./worker/pipeline')
 const WebSocket = require('ws')
 const url = require('url')
 const { valid_ws_id } = require('./ws')
+const fs = require('fs')
+const port = 8077
+const path = require('path')
+const history = require('connect-history-api-fallback')
 
+let static_web_pages = [path.join(__dirname + '/dist'), path.join(__dirname + '/../web/build')]
 
 function start() {
     const app = express()
-    app.on('error', (val) => {
-        console.log(val)
-    })
-
-    app.use(express.json())
-    app.use('/', (req, rsp, next) => {
+    let router = new express.Router()
+    app.use('/api', router)
+    router.use(express.json())
+    router.use((req, rsp, next) => {
         rsp.header("Content-Type", "application/json;charset=utf-8")
         rsp.header("Access-Control-Allow-Origin", "*")
         rsp.header("Access-Control-Allow-Method", "*")
         rsp.header("Access-Control-Allow-Headers", "*")
         next()
     })
-    app.use('/', (req, rsp, next) => {
+    router.use((req, rsp, next) => {
         if (req.method === "OPTIONS") {
             return next()
         }
@@ -62,24 +65,37 @@ function start() {
         }
     })
 
-    app.use((err, req, rsp, next) => {
+    router.use((err, req, rsp, next) => {
         console.log(err)
         rsp.json({ err: 500, msg: 'server error. Please retry' })
     })
 
-    app.use('/module', mode)
-    app.use('/pipeline', pipeline)
-    app.use('/vm', vm)
-    app.use('/server', server)
-    app.use('/user', user)
-    app.use('/upload', upload)
-    app.use('/log', log)
-    app.use('/monitor', monitor)
-    app.use('/deploy', deploy)
-    app.use('/comm', comm)
+    router.use('/module', mode)
+    router.use('/pipeline', pipeline)
+    router.use('/vm', vm)
+    router.use('/server', server)
+    router.use('/user', user)
+    router.use('/upload', upload)
+    router.use('/log', log)
+    router.use('/monitor', monitor)
+    router.use('/deploy', deploy)
+    router.use('/comm', comm)
 
-    app.listen(8077)
-    console.log("start listen")
+    app.on('error', (val) => {
+        console.log(val)
+    })
+    app.use('/', history({
+        index: '/index.html',
+    }
+    ))
+    for (let page of static_web_pages) {
+        if (fs.existsSync(path.join(page + '/index.html'))) {
+            app.use('/', express.static(page))
+            break;
+        }
+    }
+    app.listen(port)
+    console.log("start listen at " + port)
 }
 
 function start_ws() {

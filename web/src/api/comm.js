@@ -5,8 +5,8 @@ import { store } from '../state/store'
 import { start_login } from '../state/action'
 
 
-const base_url = 'http://localhost:8077'
-const base_ws_url = 'ws://localhost:8078'
+const base_url = window.comm_base_url || 'http://localhost:8077/api'
+const base_ws_url = window.comm_base_ws_url || 'ws://localhost:8078'
 
 let instance = axios.create({
     baseURL: base_url,
