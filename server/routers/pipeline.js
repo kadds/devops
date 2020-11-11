@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { conn, m_pipeline, m_mode, m_deploy, m_deploy_stream } = require('../data')
+const { conn, m_pipeline, m_mode, m_deploy, m_deploy_stream, m_server } = require('../data')
 const { get_job_list, job_param_valid } = require('../plugin/index')
 const { post_pipeline_op } = require('../worker/index')
 const { new_ws_id } = require('../ws')
@@ -77,7 +77,6 @@ router.post('/', async (req, rsp, next) => {
 
 router.post('/del', async (req, rsp, next) => {
     // stop current pipeeline job
-
     await post_pipeline_op('stop', req.body.id)
     const pipeline = await m_pipeline.findByPk(req.body.id)
     if (pipeline.content.deploy_id) {

@@ -42,7 +42,13 @@ router.get('', async (req, rsp, next) => {
     ms_server.status = server.status
     ms_server.flag = server.flag
     ms_server.version = server.content.version || null
-    ms_server.deploy_id = ms_server.version ? (await m_pipeline.findByPk(ms_server.version)).content.deploy_id : null
+    let pipeline = ms_server.version ? await m_pipeline.findByPk(ms_server.version) : null
+    if (pipeline === null) {
+        ms_server.deploy_id = null
+    }
+    else {
+        ms_server.deploy_id = pipeline.content.deploy_id
+    }
     if (server.content.res)
         ms_server.start_time = server.content.res.last_start_time
     rsp.json({ err: 0, data: ms_server })
