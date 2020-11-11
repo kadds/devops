@@ -9,6 +9,7 @@ const log = require('./routers/log')
 const comm = require('./routers/comm')
 const monitor = require('./routers/monitor')
 const deploy = require('./routers/deploy')
+const variable = require('./routers/variable')
 const { valid_token } = require('./token')
 const { init } = require('./data')
 const process = require('process')
@@ -80,6 +81,7 @@ function start() {
     router.use('/monitor', monitor)
     router.use('/deploy', deploy)
     router.use('/comm', comm)
+    router.use('/variable', variable)
 
     app.on('error', (val) => {
         console.log(val)

@@ -22,6 +22,7 @@ import {
     DashboardFilled,
     DashboardOutlined,
     SettingOutlined,
+    SecurityScanOutlined,
 } from '@ant-design/icons'
 import PipeLineList from './view/pipeline/list'
 import PipeLineDetail from './view/pipeline/detail'
@@ -35,6 +36,7 @@ import Detail from './view/deploy/detail'
 import P404 from './view/P404'
 import DashboardIndex from './view/dashboard/index'
 import Setting from './view/setting/index'
+import VariableIndex from './view/variables/index'
 
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import { withRouter } from 'react-router-dom'
@@ -49,7 +51,8 @@ const menus = [
     { name: 'Cloud Server', icon: (<CloudServerOutlined style={style} />), icon2: (<CloudServerOutlined style={style} />), path: '/server' },
     { name: 'Deployment', icon: (<DeploymentUnitOutlined style={style} />), icon2: (<DeploymentUnitOutlined style={style} />), path: '/deploy/list' },
     { name: 'Monitor', icon: (<LineChartOutlined style={style} />), icon2: (<LineChartOutlined style={style} />), path: '/monitor' },
-    { name: 'Log', icon: (<FilterOutlined style={style} />), icon2: (<FilterFilled style={style} />), path: '/log' }
+    { name: 'Log', icon: (<FilterOutlined style={style} />), icon2: (<FilterFilled style={style} />), path: '/log' },
+    { name: 'Variable', icon: (<SecurityScanOutlined style={style} />), icon2: (<SecurityScanOutlined style={style}/>), path: '/var'}
 ]
 
 const contents = [
@@ -63,6 +66,7 @@ const contents = [
     { path: '/deploy/detail', component: Detail, title: 'Deploying detail' },
     { path: '/monitor', component: MonitorIndex, title: 'Monitor' },
     { path: '/log', component: LogIndex, title: 'Log Query' },
+    { path: '/var', component: VariableIndex, title: 'Variable'},
     { path: '/setting', component: Setting, title: 'Setting' },
     { component: P404 }
 ]

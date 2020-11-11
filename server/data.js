@@ -289,6 +289,27 @@ const m_deploy_stream = sequelize.define('deploy_stream', {
     indexes: [{ fields: ['deploy_id', 'target_time', 'status'] }]
 })
 
+const m_variable = sequelize.define('variable_tb', {
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+    },
+    value: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    user: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    flag: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+})
+
 const conn = sequelize
 
 async function init() {
@@ -300,9 +321,10 @@ async function init() {
     await m_deploy.sync()
     await m_docker_cache.sync()
     await m_deploy_stream.sync()
+    await m_variable.sync()
     if (await m_user.findByPk('admin') === null) {
         await m_user.create({ username: 'admin', password: '123', content: {} })
     }
 }
 
-module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, m_docker_cache, m_deploy_stream, init }
+module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, m_docker_cache, m_deploy_stream, m_variable, init }

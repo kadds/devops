@@ -319,7 +319,7 @@ const PipeLineList = props => {
     return (
         <div className='page'>
             <Row><Col>
-                <Button onClick={addClick} type='primary'>Add</Button></Col> </Row>
+                <Button onClick={addClick} type='primary'>New ...</Button></Col> </Row>
             <Table loading={loading} rowKey='id' onChange={handleTableChange} dataSource={data} pagination={pagination} columns={columns}>
             </Table>
             <Modal
