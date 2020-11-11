@@ -160,8 +160,8 @@ async function start(name, version) {
 async function is_server_start(name) {
     let server = await m_server.findByPk(name)
     const ssh = await connect(server.vm_name)
-    const config = config_get()
-    const container_name = `${config.prefix}${server.mode_name}${config.postfix}`
+    const ret = name_get(config_get(), server.mode_name, server.name)
+    const container_name = ret.container_name
 
     const res = await exec(ssh, 'docker ps --format "{{.Image}}" --filter name=' + container_name, null)
     if (res !== '') {
@@ -180,9 +180,8 @@ async function is_server_start(name) {
 async function server_docker_info(name) {
     let server = await m_server.findByPk(name)
     const ssh = await connect(server.vm_name)
-    const config = config_get()
-    const container_name = `${config.prefix}${server.mode_name}${config.postfix}`
-
+    const ret = name_get(config_get(), server.mode_name, server.name)
+    const container_name = ret.container_name
     const res = await exec(ssh, 'docker inspect --format "{{.RestartCount}} {{.State.StartedAt}}" ' + container_name, null)
     if (res !== '') {
         let rs = res.split(' ')
