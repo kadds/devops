@@ -548,7 +548,7 @@ async fn server_inspect(name: &str) {
     let output = match Command::new("docker")
         .arg("inspect")
         .arg("--format")
-        .arg("{{.State.Pid}} {{.RestartCount}} {{.State.StartedAt}}")
+        .arg("{{.State.Pid}} {{.RestartCount}} {{.Created}}")
         .arg(docker_container_name)
         .output()
         .await
@@ -568,7 +568,7 @@ async fn server_inspect(name: &str) {
     };
     let mut stdlist = stdout.split_ascii_whitespace();
     let pid = stdlist.next().unwrap_or("");
-    let restart_count = stdlist.next().map_or(0, |v| v.parse().unwrap_or(0));
+    let restart_count: u64 = stdlist.next().map_or(0, |v| v.parse().unwrap_or(0));
     let start_at = stdlist.next().unwrap_or("");
     let start_at_ts = chrono::DateTime::parse_from_rfc3339(start_at).map_or_else(
         |_| {
@@ -586,19 +586,21 @@ async fn server_inspect(name: &str) {
 
     if pid == "0" {
         // server is restarting or stopped
-        eprintln!("server is not running {}", name);
-        return;
+        eprintln!("server is not running or restarting {}", name);
     }
 
     let ts = chrono::offset::Utc::now();
 
     // println!("pid server {} is {}", name, pid);
 
-    let (usage, mm, tcp) = tokio::join!(
-        read_cpu_pid(name, pid),
-        read_memory_pid(pid),
-        read_tcp_count(pid)
-    );
+    let (usage, mm, tcp) = match pid {
+        "0" => (None, None, None),
+        _ => tokio::join!(
+            read_cpu_pid(name, pid),
+            read_memory_pid(pid),
+            read_tcp_count(pid)
+        )
+    };
     let mongo = match db::mongo_server_monitor().await {
         Some(v) => v,
         None => {

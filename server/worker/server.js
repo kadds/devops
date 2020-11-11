@@ -141,7 +141,7 @@ async function start(name, version) {
     try {
         const vm = await m_vm.findByPk(server.vm_name)
         const ip = vm.ip
-        const env = `--env HOST_IP=${ip} --env MODUEL_NAME=${server.mode_name} --env SERVER_NAME=${server.name} --env ENV_FLAG=${server.flag} --env VM_NAME=${server.vm_name}`
+        const env = `--env HOST_IP=${ip} --env MODULE_NAME=${server.mode_name} --env SERVER_NAME=${server.name} --env ENV_FLAG=${server.flag} --env VM_NAME=${server.vm_name}`
         await exec(ssh,
             `docker run --restart=on-failure --network host ${env} -d --name ${container_name} ${image_name}:${version}`, null)
     }
@@ -175,6 +175,20 @@ async function is_server_start(name) {
     }
 
     return old_version !== null
+}
+
+async function server_docker_info(name) {
+    let server = await m_server.findByPk(name)
+    const ssh = await connect(server.vm_name)
+    const config = config_get()
+    const container_name = `${config.prefix}${server.mode_name}${config.postfix}`
+
+    const res = await exec(ssh, 'docker inspect --format "{{.RestartCount}} {{.State.StartedAt}}" ' + container_name, null)
+    if (res !== '') {
+        let rs = res.split(' ')
+        return {restart_count: parseInt(rs[0]), last_started: new Date(rs[1]).valueOf()}
+    }
+    return {restart_count: 0, last_started: 0}
 }
 
 async function restart(name, version) {
@@ -217,4 +231,4 @@ async function destroy(name) {
     await m_server.destroy({ where: { name } })
 }
 
-module.exports = { start, stop, init, destroy, restart }
+module.exports = { start, stop, init, destroy, restart, server_docker_info }

@@ -1,6 +1,7 @@
 const { Router } = require('express')
 const { conn, m_server, m_mode, m_vm, m_pipeline } = require('../data')
 const { post_task_server_op } = require('./../worker/index')
+const {server_docker_info} = require('./../worker/server')
 const { SVR_STATUS_INIT, SVR_STATUS_STOP, SVR_FLAG_TEST, SVR_FLAG_GRAY } = require('../flags')
 
 let router = new Router()
@@ -51,6 +52,17 @@ router.get('', async (req, rsp, next) => {
     }
     if (server.content.res)
         ms_server.start_time = server.content.res.last_start_time
+    
+    // get restart_count from docker env 
+    try {
+        let {restart_count, last_started} = await server_docker_info(server.name)
+        ms_server.restart_count = restart_count
+        ms_server.last_started = last_started
+    }
+    catch (e){
+        ms_server.restart_count = null
+        ms_server.last_started = null
+    }
     rsp.json({ err: 0, data: ms_server })
 })
 

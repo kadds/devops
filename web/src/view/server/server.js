@@ -423,6 +423,12 @@ const Server = (props) => {
                                             Go
                                         </Button>
                                     </Col>
+                                    <Col span={8}>
+                                        <Typography.Title level={4}>
+                                            Restarted Count:
+                                        </Typography.Title>
+                                        {server.restart_count ? (<span style={{color: '#f0305a'}}>{server.restart_count}</span>) : server.restart_count}
+                                    </Col>
                                 </Row>
                             </Card>
                         </Col>
