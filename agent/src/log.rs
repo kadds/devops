@@ -21,7 +21,7 @@ async fn send_mongodb(logger: Collection, doc: bson::Document) {
     }
 }
 
-async fn do_app_log(log: String) {
+async fn do_app_log(log: &str) {
     let logger = match db::mongo_log().await {
         Some(v) => v,
         None => {
@@ -51,7 +51,7 @@ async fn do_app_log(log: String) {
     send_mongodb(logger, doc).await;
 }
 
-async fn do_click_log(log: String) {
+async fn do_click_log(log: &str) {
     let logger = match db::mongo_click_log().await {
         Some(v) => v,
         None => {
@@ -93,7 +93,7 @@ async fn do_click_log(log: String) {
     send_mongodb(logger, doc).await;
 }
 
-async fn do_server_rpc_log(log: String) {
+async fn do_server_rpc_log(log: &str) {
     let logger = match db::mongo_server_rpc().await {
         Some(v) => v,
         None => {
@@ -130,23 +130,31 @@ async fn do_server_rpc_log(log: String) {
     }
 }
 
-async fn do_log(log: String, max_size: u32) {
-    if log.starts_with('0') {
-        // remove last \n
+async fn do_log(log: Vec<u8>, max_size: u32) {
+    if log.len() > 0 {
+        let head = log[0];
+        // remove last \x28
         let mut log = log;
-        if log.ends_with('\n') {
+        if log[log.len() - 1] == b'\x28' {
             log.truncate(log.len() - 1);
         }
-        // size overflow
-        log.truncate(usize::min(max_size as usize, log.len()));
-        do_app_log(log).await;
-    } else if log.starts_with('1') {
-        do_click_log(log).await;
-    } else if log.starts_with('2') {
-        do_server_rpc_log(log).await;
-    } else {
-        eprintln!("save to mongodb fail (unknown type)");
-    }
+        if head == b'0' {
+            // size overflow
+            log.truncate(usize::min(max_size as usize, log.len()));
+            let log = unsafe{ std::str::from_utf8_unchecked(&log)};
+            do_app_log(log).await;
+            return;
+        } else if head == b'1' {
+            let log = unsafe{ std::str::from_utf8_unchecked(&log)};
+            do_click_log(log).await;
+            return;
+        } else if head == b'2' {
+            let log = unsafe{ std::str::from_utf8_unchecked(&log)};
+            do_server_rpc_log(log).await;
+            return;
+        }
+    } 
+    eprintln!("save to mongodb fail (unknown type)");
 }
 
 async fn process_client(socket: TcpStream, max_size: u32) {
@@ -160,18 +168,18 @@ async fn process_client(socket: TcpStream, max_size: u32) {
     );
 
     let mut stream = tokio::io::BufReader::new(socket);
-    let mut log = String::new();
+    let mut log = Vec::new();
 
     // read lines and parse it
     loop {
-        if let Ok(size) = stream.read_line(&mut log).await {
+        if let Ok(size) = stream.read_until(b'\x28', &mut log).await {
             if size == 0 {
                 break;
             }
             // save log to mongodb async
             tokio::spawn(do_log(log, max_size));
 
-            log = String::new();
+            log = Vec::new();
         }
     }
     println!(
