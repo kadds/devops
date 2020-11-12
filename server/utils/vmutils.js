@@ -177,8 +177,10 @@ async function exec(ssh, cmd, stdin, logger = null, in_vm = false) {
         }
     }
     const res = await ssh.execCommand(cmd, { stdin: stdin, cwd: ssh.docker_name ? null : ssh.base_dir, onStdout: v =>
-        logger.write(v.toString())
-    , onStderr: v => logger.write(v.toString()) })
+        {
+            logger && logger.write(v.toString())
+        }
+    , onStderr: v => { logger && logger.write(v.toString())} })
     return do_result(res, logger)
 }
 
@@ -202,8 +204,10 @@ async function exec_script(ssh, script, logger, in_vm = false) {
     }
     script = new_script + script
     const res = await ssh.execCommand(cmd, {cwd: ssh.docker_name ? null: ssh.base_dir, stdin: script, onStdout: v =>
-        logger.write(v.toString())
-    , onStderr: v => logger.write(v.toString()) })
+        {
+            logger && logger.write(v.toString())
+        }
+    , onStderr: v => { logger && logger.write(v.toString())} })
 
     return do_result(res, logger)
 }
