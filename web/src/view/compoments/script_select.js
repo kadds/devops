@@ -28,8 +28,6 @@ const ScriptSelect = (props) => {
         props.onCancel()
     }
 
-
-
     const listClick = useCallback(async (e) => {
         setContentLoading(true)
         try {
@@ -119,8 +117,7 @@ const ScriptSelect = (props) => {
                 </Col>
             </Row>
             <Row>
-
-                <Alert type="warning" message="Note: Modifying an existing script affects all systems that use that script."></Alert>
+                <Alert type="warning" message="Note: Modifying an existing script affects all systems that use that script. The environment variable is set before running it."></Alert>
             </Row>
         </Modal >
     )

@@ -1,5 +1,5 @@
 const NodeSSH = require('node-ssh').NodeSSH
-const { m_server, m_vm } = require('../data')
+const { m_server, m_vm, m_variable } = require('../data')
 
 async function connect_shell(vm) {
     let ssh = new NodeSSH()
@@ -143,25 +143,9 @@ function do_result(res, logger) {
         if (data[data.length - 1] === '\n') {
             data.length = data.length - 1
         }
-        throw new Error(data)
+        throw new Error('!!! execute fail.')
     }
     else {
-        if (res.stdout[res.stdout.length - 1] === '\n') {
-            if (logger) {
-                logger.write(res.stdout)
-            }
-            else {
-                console.log(res.stdout)
-            }
-        }
-        else {
-            if (logger) {
-                logger.write(res.stdout + '\n')
-            }
-            else {
-                console.log(res.stdout)
-            }
-        }
         return res.stdout
     }
 }
@@ -192,7 +176,35 @@ async function exec(ssh, cmd, stdin, logger = null, in_vm = false) {
             cmd = 'docker exec -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd
         }
     }
-    const res = await ssh.execCommand(cmd, { stdin: stdin, cwd: ssh.docker_name ? null : ssh.base_dir })
+    const res = await ssh.execCommand(cmd, { stdin: stdin, cwd: ssh.docker_name ? null : ssh.base_dir, onStdout: v =>
+        logger.write(v.toString())
+    , onStderr: v => logger.write(v.toString()) })
+    return do_result(res, logger)
+}
+
+async function exec_script(ssh, script, logger, in_vm = false) {
+    let env_list = await m_variable.findAll()
+    if (logger) {
+        await logger.write('$-> ')
+        await logger.write(script)
+        await logger.write('\n')
+    }
+    else {
+        console.log('$-> ' + script)
+    }
+    let cmd = 'sh'
+    if  (ssh.docker_name && !in_vm) {
+        cmd = 'docker exec -i -w ' + ssh.base_dir + ' ' + ssh.docker_name + ' ' + cmd    
+    }
+    let new_script = ''
+    for(const env of env_list) {
+        new_script += 'export ' + env.name + '=' + env.value + '\n'
+    }
+    script = new_script + script
+    const res = await ssh.execCommand(cmd, {cwd: ssh.docker_name ? null: ssh.base_dir, stdin: script, onStdout: v =>
+        logger.write(v.toString())
+    , onStderr: v => logger.write(v.toString()) })
+
     return do_result(res, logger)
 }
 
@@ -223,6 +235,6 @@ async function build_docker_image(ssh, dir, docker_file, tag, version, logger) {
 }
 
 module.exports = {
-    copy_to_vm, restart_agent, clear_vm, connect_shell,
+    copy_to_vm, restart_agent, clear_vm, connect_shell, exec_script,
     update_vm_servers, exec, copy, build_docker_image, get_vm_config, update_vm_config
 }

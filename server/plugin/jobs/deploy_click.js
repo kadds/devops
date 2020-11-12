@@ -1,6 +1,6 @@
 const { m_deploy, m_pipeline } = require('../../data')
 const tmp = require('tmp-promise')
-const { exec, copy, build_docker_image } = require('../../utils/vmutils')
+const { exec, exec_script, copy, build_docker_image } = require('../../utils/vmutils')
 const FLAGS = require('../../flags')
 const { get_script_content } = require('../../utils/script')
 const Config = require('../../config')
@@ -33,7 +33,7 @@ async function entry(request, param, opt) {
         deploy.content.image_name = prefix + deploy.mode_name + postfix + ':' + opt.id
         if (param.pre_build_cmd) {
             await logger.write('- do pre build command\n')
-            await exec(ssh, 'sh', param.pre_build_cmd, logger)
+            await exec_script(ssh, await get_script_content(param.pre_build_cmd), logger)
         }
 
         const { path, cleanup } = await tmp.dir({ prefix: 'devops', unsafeCleanup: true })
