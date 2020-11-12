@@ -135,7 +135,7 @@ async fn do_log(log: Vec<u8>, max_size: u32) {
         let head = log[0];
         // remove last \x28
         let mut log = log;
-        if log[log.len() - 1] == b'\x28' {
+        if log[log.len() - 1] == b'\x04' {
             log.truncate(log.len() - 1);
         }
         if head == b'0' {
@@ -172,7 +172,7 @@ async fn process_client(socket: TcpStream, max_size: u32) {
 
     // read lines and parse it
     loop {
-        if let Ok(size) = stream.read_until(b'\x28', &mut log).await {
+        if let Ok(size) = stream.read_until(b'\x04', &mut log).await {
             if size == 0 {
                 break;
             }
