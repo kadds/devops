@@ -99,8 +99,15 @@ pre.line:hover {
     background: #555;
 }
 
-pre.line.spec {
+pre.line.head {
+    background: #000;
+    font-weight: bold;
+    cursor: pointer;
+}
 
+pre.line.head:hover {
+    border: 1px solid transparent;
+    background: #000;
 }
 
 .code_edit{
