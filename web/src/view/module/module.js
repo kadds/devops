@@ -4,7 +4,7 @@ import { QuestionCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-desig
 import { add_module, get_module_list, update_module, delete_module, get_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import Server from '../server/server'
-import JobSelect from '../compoments/job_select'
+import JobSelect from '../components/job_select'
 import moment from 'moment'
 import { withRouter } from 'react-router'
 import queryString from 'query-string'

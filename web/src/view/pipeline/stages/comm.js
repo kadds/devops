@@ -4,6 +4,7 @@ import { base_ws_url } from '../../../api/comm'
 import { Tag, Row, Col, Spin, Result, Button } from 'antd'
 import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { useEventListener } from '../../../comm/util'
+import CodeLine from '../../components/codeline'
 
 const TagRender = (props) => {
     if (props.loading === 0) {
@@ -31,12 +32,10 @@ const TagRender = (props) => {
 }
 
 const PipeLineStageComm = (props) => {
-    const [data, setData] = useState('')
     const [loading, setLoading] = useState(0)
-    const ref = useRef()
-    const [height, setHeight] = useState((window.innerHeight - 80) + 'px')
-    ref.current = data
+    const [height, setHeight] = useState((window.innerHeight - 50) + 'px')
     const { pipeline, onClose } = props
+    const codeRef = useRef()
 
     useEffect(() => {
         let ws = null
@@ -55,13 +54,7 @@ const PipeLineStageComm = (props) => {
             }
 
             ws.onmessage = function (val) {
-                setData(ref.current + val.data)
-                const e = document.getElementById('output_log')
-                if (e && e.scrollTop + e.clientHeight <= e.scrollHeight + 20) {
-                    setTimeout(() => {
-                        e.scrollTo({ left: 0, top: e.scrollHeight, behavior: 'smooth' })
-                    }, 100)
-                }
+                codeRef.current.pushData(val.data)
             }
         }
         run()
@@ -72,11 +65,11 @@ const PipeLineStageComm = (props) => {
     }, [pipeline, onClose])
 
     useEventListener('resize', () => {
-        setHeight((window.innerHeight - 80) + 'px')
+        setHeight((window.innerHeight - 50) + 'px')
     })
 
     const scroll = () => {
-        document.getElementById('rightPanel').scrollTo({ left: 0, top: window.innerHeight - 80, behavior: 'smooth' })
+        document.getElementById('rightPanel').scrollTo({ left: 0, top: window.innerHeight - 50, behavior: 'smooth' })
     }
 
     const stageStr = (stage) => {
@@ -113,7 +106,7 @@ const PipeLineStageComm = (props) => {
                     </Result>
                 )
             }
-            <Row gutter={12} style={{ marginBottom: 20 }}>
+            <Row gutter={12} align='middle' style={{ marginBottom: 5 }}>
                 <Col>
                     <Button onClick={scroll} type='link'>Log loading status: </Button>
                 </Col>
@@ -124,7 +117,7 @@ const PipeLineStageComm = (props) => {
                     <Spin spinning={loading !== 2}></Spin>
                 </Col>
             </Row>
-            <pre style={{ height: height }} id='output_log' className="output">{data}</pre>
+            <CodeLine ref={codeRef} style={{height: height}}/>
         </div>
     )
 }

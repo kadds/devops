@@ -6,7 +6,7 @@ import { get_module_list, get_module } from '../../api/module'
 import { get_all_vm } from '../../api/vm'
 import { get_server_list } from '../../api/server'
 import { QuestionCircleOutlined, SyncOutlined, CloseCircleOutlined, CheckCircleOutlined, LinkOutlined, FundViewOutlined, DeleteOutlined } from '@ant-design/icons'
-import ScriptSelect from './../compoments/script_select'
+import ScriptSelect from './../components/script_select'
 import moment from 'moment'
 
 const RenderStage = (props) => {

@@ -76,7 +76,7 @@ router.post('/', async (req, rsp, next) => {
 })
 
 router.post('/del', async (req, rsp, next) => {
-    // stop current pipeeline job
+    // stop current pipeline job
     await post_pipeline_op('stop', req.body.id)
     const pipeline = await m_pipeline.findByPk(req.body.id)
     if (pipeline.content.deploy_id) {

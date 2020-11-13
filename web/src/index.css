@@ -65,9 +65,8 @@ code {
     text-shadow: 1px 1px 3px rgb(236, 91, 91);
 }
 
-pre.output {
-    min-height: 50px;
-    padding: 6px 12px;
+.output {
+    padding: 6px 5px;
     color: #eee;
     background: #222;
     height: 100%;
@@ -78,6 +77,30 @@ pre.output {
     font-size: 13px;
     font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', Courier, monospace;
     line-height: 1.5em;
+}
+
+.lines {
+    width: auto;
+    height: auto;
+}
+
+pre.line {
+    margin: 0;
+    padding: 0 6px;
+    overflow: hidden;
+    width: fit-content;
+    min-width: 100%;
+    position: relative;
+    border: 1px solid transparent;
+}
+
+pre.line:hover {
+    border: 1px solid #aaa;
+    background: #555;
+}
+
+pre.line.spec {
+
 }
 
 .code_edit{

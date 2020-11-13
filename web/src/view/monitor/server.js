@@ -7,7 +7,7 @@ import moment from 'moment'
 import { useInterval, useEventListener } from '../../comm/util'
 import echarts from 'echarts'
 import ThemeJson from '../../theme.json'
-import ProgressHint from '../compoments/progress_hint'
+import ProgressHint from '../components/progress_hint'
 import queryString from 'query-string'
 import { withRouter } from 'react-router'
 
