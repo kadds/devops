@@ -54,7 +54,8 @@ const PipeLineStageComm = (props) => {
             }
 
             ws.onmessage = function (val) {
-                codeRef.current.pushData(val.data)
+                if (codeRef && codeRef.current)
+                    codeRef.current.pushData(val.data.split('\n').map(v =>  {return {code: v, desc: '' }}))
             }
         }
         run()
@@ -90,6 +91,11 @@ const PipeLineStageComm = (props) => {
         }
     }
 
+    const tags = [
+        {regex: /^==================$/g, style: { background: '#aaa', color: '#000' }},
+        {regex: /error/gi, style: {color: '#ff5588'}}
+    ]
+
     return (
         <div>
             {
@@ -117,7 +123,7 @@ const PipeLineStageComm = (props) => {
                     <Spin spinning={loading !== 2}></Spin>
                 </Col>
             </Row>
-            <CodeLine ref={codeRef} style={{height: height}}/>
+            <CodeLine tags={tags} ref={codeRef} style={{height: height}}/>
         </div>
     )
 }

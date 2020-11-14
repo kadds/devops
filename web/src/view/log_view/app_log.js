@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Row, Col, Tooltip, Input, InputNumber, Form, Table, Select, Divider, DatePicker, Button, Typography, Tag } from 'antd'
+import { Row, Col, Tooltip, Input, InputNumber, Form, Table, Select, Divider, DatePicker, Button, Typography, Tag, Tabs } from 'antd'
 import { SearchOutlined, QuestionCircleOutlined, RadarChartOutlined } from '@ant-design/icons'
 import { get_module_list } from '../../api/module'
 import { get_server_list } from '../../api/server'
 import { query_log } from '../../api/log'
 import moment from 'moment'
 import { withRouter } from 'react-router'
+import CodeLine from '../components/codeline'
 
 const TagRender = (props) => {
     if (props.level === 'error') {
@@ -14,7 +15,7 @@ const TagRender = (props) => {
     else if (props.level === 'info') {
         return (<Tag color='processing'>{props.level}</Tag>)
     }
-    else if (props.level === 'warning') {
+    else if (props.level === 'warn') {
         return (<Tag color='warning'>{props.level}</Tag>)
     }
     else if (props.level) {
@@ -34,6 +35,31 @@ const AppLog = (props) => {
     const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
     const [initVal] = useState({ time: [moment().subtract(1, 'd'), moment()] })
+    let codeRef = useRef()
+
+    const onTabsChange = (v) => {
+        if (v === '1') {
+            setTimeout(() => {
+                if (codeRef && codeRef.current) {
+                    let data = []
+                    if (logList.length > 10000) {
+                        data.push({code: 'too large log items'})
+                    }
+                    else {
+                        for(const log of logList) {
+                            data.push({code: '[' + log[5] + '] ' + log[6], 
+                                desc: ( <span> {'vid: ' + log[1] + ' at ' + moment(log[2]).format('lll') }
+                                <Typography.Text className='text' copyable>{log[3]}</Typography.Text>
+                                <Button type='link' icon={<RadarChartOutlined />}
+                                    onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + log[3] + '&time=' + log[2] }) }}></Button>
+                            </span>)})
+                        }
+                    }
+                    codeRef.current.pushData(data)
+                }
+            })
+        }
+    }
 
     useEffect(() => {
         async function run() {
@@ -78,6 +104,16 @@ const AppLog = (props) => {
         if (query)
             run()
     }, [query, needUpdate])
+
+    const tags = [
+        {regex: /^\[error\]/g, style: {background: '#f55', color: '#000'} },
+        {regex: /^\[warn\]/g, style: { background: '#bb0', color: '#000'} },
+        {regex: /^\[info\]/g, style: { background: '#0a5', color: '#000'} },
+        {regex: /^\[debug\]/g, style: { background: '#ccc', color: '#000'} },
+        {regex: /panic/g, style: { background: '#c55', color: '#fff'} },
+        {regex: /unknown/g, style: { fontWeight: 'bold'} },
+        {regex: /\[\S*\d+\:\d+\]/g, style: { background: '#999', color: '#000'} },
+    ]
 
     const onFinish = async (val) => {
         let query = {}
@@ -125,7 +161,6 @@ const AppLog = (props) => {
                 <Tooltip title={
                     <span>
                         <Typography.Text className='text' copyable>{tid}</Typography.Text>
-
                         <Button type='link' icon={<RadarChartOutlined />}
                             onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid + '&time=' + r[2] }) }}></Button>
                     </span>
@@ -204,7 +239,7 @@ const AppLog = (props) => {
                         <Form.Item label='Log level' name='level'>
                             <Select mode='tags' style={{ minWidth: 200 }}>
                                 {
-                                    ['error', 'warning', 'info', 'debug'].map(v => (
+                                    ['error', 'warn', 'info', 'debug'].map(v => (
                                         <Select.Option key={v} value={v}>{v}</Select.Option>
                                     ))
                                 }
@@ -223,15 +258,22 @@ const AppLog = (props) => {
                 <Button type='primary' icon={<SearchOutlined />} loading={loading} htmlType='submit'>Query</Button>
             </Form>
             <Divider />
-            <Table fixedHeader expandable={{
-                expandedRowRender: record => <Typography.Text copyable>{record[6]}</Typography.Text>,
-                rowExpandable: () => { return true; },
-            }}
-                pagination={pagination}
-                onChange={handleTableChange}
-                style={{ width: '100%' }}
-                rowKey={0} dataSource={logList} loading={loading} columns={columns}>
-            </Table>
+            <Tabs onChange={onTabsChange} defaultActiveKey='0'>
+                <Tabs.TabPane tab='Log Items' key='0'>
+                    <Table fixedHeader expandable={{
+                        expandedRowRender: record => <pre>{record[6]}</pre>,
+                        rowExpandable: () => { return true; },
+                    }}
+                        pagination={pagination}
+                        onChange={handleTableChange}
+                        style={{ width: '100%' }}
+                        rowKey={0} dataSource={logList} loading={loading} columns={columns}>
+                    </Table>
+                </Tabs.TabPane>
+                <Tabs.TabPane tab='Console' key='1'>
+                    <CodeLine tags={tags} ref={codeRef}/>
+                </Tabs.TabPane>
+            </Tabs>
         </div >
     )
 }

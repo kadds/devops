@@ -23,7 +23,9 @@ const PipeLineDetail = (props) => {
 
     const onClose = useCallback(() => {
         if (needUpdate === 0 && pipeline.data.stage <= 4 && pipeline.data.stage >= 1) {
-            setNeedUpdate(needUpdate + 1)
+            setTimeout(() => {
+                setNeedUpdate(needUpdate + 1)
+            }, 3000)
         }
     }, [needUpdate, pipeline])
 
