@@ -22,7 +22,7 @@ const VariableIndex = (props) => {
         if (queryString.parse(props.location.search).new) {
             setTimeout(() => onNewVariable())
         }
-    }, props.location.search)
+    }, [props.location.search])
 
     useEffect(() => {
         async function run() {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import ReactEcharts from 'echarts-for-react'
-import { Card, Row, Col, Descriptions, Button, Avatar } from 'antd'
+import { Card, Row, Col, Button, Avatar } from 'antd'
 import { UserOutlined } from '@ant-design/icons'
 import { get_pipeline_stat } from '../../api/pipeline'
 import { info } from '../../api/user'

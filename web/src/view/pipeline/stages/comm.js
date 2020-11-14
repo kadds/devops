@@ -43,10 +43,15 @@ const PipeLineStageComm = (props) => {
             setLoading(0)
             const id = (await get_pipeline_log_id(pipeline.id)).id
             ws = new WebSocket(base_ws_url + '/log?id=' + id)
+            let rest_value = null
             ws.onopen = function () {
                 setLoading(1)
             }
             ws.onclose = function () {
+                if (rest_value) {
+                    codeRef.current.pushData([{code: rest_value, desc: '' }])
+                    rest_value = null
+                }
                 setLoading(2)
                 if (onClose) {
                     onClose()
@@ -54,8 +59,21 @@ const PipeLineStageComm = (props) => {
             }
 
             ws.onmessage = function (val) {
-                if (codeRef && codeRef.current)
-                    codeRef.current.pushData(val.data.split('\n').map(v =>  {return {code: v, desc: '' }}))
+                if (codeRef && codeRef.current) {
+                    let data = val.data.split('\n')
+                    if (data.length === 0) return
+                    if (rest_value !== null) {
+                        data[0] = rest_value + data[0]
+                    }
+                    if (data[data.length - 1] !== '') {
+                        rest_value = data[data.length - 1]
+                        data.pop()
+                    }
+                    else {
+                        rest_value = null
+                    }
+                    codeRef.current.pushData(data.map(v =>  {return {code: v, desc: '' }}))
+                }
             }
         }
         run()
@@ -93,7 +111,9 @@ const PipeLineStageComm = (props) => {
 
     const tags = [
         {regex: /^==================$/g, style: { background: '#aaa', color: '#000' }},
-        {regex: /error/gi, style: {color: '#ff5588'}}
+        {regex: /(error)|(failed)|(fail)/gi, style: {color: '#ff5588'}},
+        {regex: /^\$->[\s\S]*$/g, style: { color: '#aaf', textDecoration: 'underline', fontWeight: 'bold'}},
+        {regex: /^-\s[\s\S]*$/g, style: {color: '#ffc'}},
     ]
 
     return (

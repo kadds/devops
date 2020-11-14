@@ -194,16 +194,17 @@ function do_ws_send(send, msg) {
     })
 }
 
+const length = 4096
 async function listen_log(id, send, close) {
     let v = pipes.get(id)
     if (v === undefined || v === null) {
         // read log file
         const path = log_path(id)
         const file = await fs.open(path, 'r')
-        let buf = Buffer.allocUnsafe(4096)
+        let buf = Buffer.allocUnsafe(length)
         try {
             while (1) {
-                const { bytesRead } = await file.read(buf, 0, 4096)
+                const { bytesRead } = await file.read(buf, 0, length)
                 if (bytesRead === 0) {
                     break;
                 }
@@ -239,10 +240,10 @@ async function listen_log(id, send, close) {
         }
         const path = log_path(id)
         const file = await fs.open(path, 'r')
-        let buf = Buffer.allocUnsafe(4096)
+        let buf = Buffer.allocUnsafe(length)
         try {
             while (1) {
-                const { bytesRead } = await file.read(buf, 0, 4096)
+                const { bytesRead } = await file.read(buf, 0, length)
                 if (bytesRead === 0) {
                     // rest
                     break;

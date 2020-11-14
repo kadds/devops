@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { get_server_list, add_server, get_server, destroy_server, stop_server, start_server, restart_server } from '../../api/server'
 import { get_all_vm } from '../../api/vm'
 import { get_module_list } from '../../api/module'
@@ -117,7 +117,7 @@ const Server = (props) => {
 
 
     const [form] = Form.useForm()
-    const onNewClick = async () => {
+    const onNewClick = useCallback(async () => {
         setState({ visible: true, loading: false, type: 0 })
         setModuleList({ loading: true, data: [] })
         setVmList({ loading: true, data: [] })
@@ -128,13 +128,13 @@ const Server = (props) => {
             mode_name: props.mode_name,
             flag_env: 'none'
         })
-    }
+    }, [form, props.mode_name])
 
     useEffect(() => {
         if (queryString.parse(props.location.search).new) {
             setTimeout(() => onNewClick())
         }
-    }, props.location.search)
+    }, [props.location.search, onNewClick])
 
     const onModalOk = async () => {
         setState({ ...state, loading: true })

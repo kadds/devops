@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Row, Col, Tooltip, Input, InputNumber, Form, Table, Select, Divider, DatePicker, Button, Typography, Tag, Tabs } from 'antd'
 import { SearchOutlined, QuestionCircleOutlined, RadarChartOutlined } from '@ant-design/icons'
 import { get_module_list } from '../../api/module'
@@ -7,6 +7,7 @@ import { query_log } from '../../api/log'
 import moment from 'moment'
 import { withRouter } from 'react-router'
 import CodeLine from '../components/codeline'
+import { useEventListener } from '../../comm/util'
 
 const TagRender = (props) => {
     if (props.level === 'error') {
@@ -35,31 +36,61 @@ const AppLog = (props) => {
     const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
     const [initVal] = useState({ time: [moment().subtract(1, 'd'), moment()] })
+    const [height, setHeight]= useState(window.innerHeight - 60 + 'px')
+    const [consoleData, setConsoleData] = useState({last_page: 0, loading: false})
     let codeRef = useRef()
+    const ref = useRef()
+    ref.current = pagination
+    const cmRef = useRef()
+    cmRef.current = consoleData
+    const [activeTab, setActiveTab] = useState('1')
 
     const onTabsChange = (v) => {
         if (v === '1') {
             setTimeout(() => {
-                if (codeRef && codeRef.current) {
-                    let data = []
-                    if (logList.length > 10000) {
-                        data.push({code: 'too large log items'})
-                    }
-                    else {
-                        for(const log of logList) {
-                            data.push({code: '[' + log[5] + '] ' + log[6], 
-                                desc: ( <span> {'vid: ' + log[1] + ' at ' + moment(log[2]).format('lll') }
-                                <Typography.Text className='text' copyable>{log[3]}</Typography.Text>
-                                <Button type='link' icon={<RadarChartOutlined />}
-                                    onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + log[3] + '&time=' + log[2] }) }}></Button>
-                            </span>)})
-                        }
-                    }
-                    codeRef.current.pushData(data)
-                }
+                document.getElementById('rightPanel').scrollTo({ left: 0, top: window.innerHeight - 60, behavior: 'smooth' })
             })
         }
+        setActiveTab(v)
     }
+
+    const onLoadMore = useCallback(async () => {
+        if (cmRef.current.loading) return
+        setConsoleData(v => {return {...v, loading: true}})
+        const page = cmRef.current.last_page
+        if (codeRef && codeRef.current) {
+            codeRef.current.pushData([{code: 'Loading...', style: {display: 'block', textAlign: 'center', fontWeight: 'bold', width: '100%'}}])
+            const pagination = ref.current
+            let is_empty = false
+            try {
+                const [list] = await query_log({ ...query, page: page + 1, size: pagination.pageSize })
+                codeRef.current.popData(1)
+                if (list.length === 0) {
+                    is_empty = true
+                }
+                let data = []
+                for(const log of list) {
+                    data.push({code: '[' + log[5] + '] ' + log[6], 
+                        desc: ( <span>
+                        <p> {'Vid: ' + log[1] + ' at ' + log[4]}</p>
+                        <p>{moment(log[2]).format('lll')}</p>
+                        <p>
+                        <Typography.Text className='text' copyable>{log[3]}</Typography.Text>
+                        <Button type='link' icon={<RadarChartOutlined />}
+                            onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + log[3] + '&time=' + log[2] }) }}></Button>
+                        </p>
+                        
+                    </span>)})
+                }
+                codeRef.current.pushData(data)
+            }
+            catch {
+                setConsoleData({last_page: page, loading: false})
+                return
+            }
+            setConsoleData({last_page: is_empty ? page : (page + 1), loading: false})
+        }
+    }, [query, props.history])
 
     useEffect(() => {
         async function run() {
@@ -75,6 +106,10 @@ const AppLog = (props) => {
         run()
     }, [])
 
+    useEventListener('resize', () => {
+        setHeight((window.innerHeight - 60) + 'px')
+    })
+
     const onSelectModule = async (module_name) => {
         setServerList(await get_server_list(module_name))
         form.setFieldsValue({ server: '' })
@@ -84,9 +119,6 @@ const AppLog = (props) => {
         setPagination({ ...pagination })
         setNeedUpdate(needUpdate + 1)
     }
-
-    const ref = useRef()
-    ref.current = pagination
 
     useEffect(() => {
         async function run() {
@@ -101,9 +133,21 @@ const AppLog = (props) => {
                 setLoading(false)
             }
         }
-        if (query)
-            run()
-    }, [query, needUpdate])
+        if (query) {
+            if (activeTab === '0') 
+                run()
+            else  {
+                if (codeRef && codeRef.current) {
+                    codeRef.current.popData()
+                    setConsoleData({last_page: 0, loading: false})
+                    console.log(1)
+                }
+                setTimeout(() => {
+                    onLoadMore()
+                })
+            }
+        }
+    }, [query, needUpdate, onLoadMore, activeTab])
 
     const tags = [
         {regex: /^\[error\]/g, style: {background: '#f55', color: '#000'} },
@@ -112,7 +156,7 @@ const AppLog = (props) => {
         {regex: /^\[debug\]/g, style: { background: '#ccc', color: '#000'} },
         {regex: /panic/g, style: { background: '#c55', color: '#fff'} },
         {regex: /unknown/g, style: { fontWeight: 'bold'} },
-        {regex: /\[\S*\d+\:\d+\]/g, style: { background: '#999', color: '#000'} },
+        {regex: /\[\S*\d+:\d+\]/g, style: { background: '#999', color: '#000'} },
     ]
 
     const onFinish = async (val) => {
@@ -258,8 +302,11 @@ const AppLog = (props) => {
                 <Button type='primary' icon={<SearchOutlined />} loading={loading} htmlType='submit'>Query</Button>
             </Form>
             <Divider />
-            <Tabs onChange={onTabsChange} defaultActiveKey='0'>
-                <Tabs.TabPane tab='Log Items' key='0'>
+            <Tabs onChange={onTabsChange} defaultActiveKey='1'>
+                <Tabs.TabPane forceRender tab='Console' key='1'>
+                    <CodeLine style={{height}} tags={tags} onLoadMore={onLoadMore} ref={codeRef}/>
+                </Tabs.TabPane>
+                <Tabs.TabPane forceRender tab='Log Items' key='0'>
                     <Table fixedHeader expandable={{
                         expandedRowRender: record => <pre>{record[6]}</pre>,
                         rowExpandable: () => { return true; },
@@ -269,9 +316,6 @@ const AppLog = (props) => {
                         style={{ width: '100%' }}
                         rowKey={0} dataSource={logList} loading={loading} columns={columns}>
                     </Table>
-                </Tabs.TabPane>
-                <Tabs.TabPane tab='Console' key='1'>
-                    <CodeLine tags={tags} ref={codeRef}/>
                 </Tabs.TabPane>
             </Tabs>
         </div >

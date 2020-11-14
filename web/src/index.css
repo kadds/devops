@@ -97,6 +97,11 @@ pre.line {
     line-height: 1.4em;
 }
 
+pre.line::selection, pre.line > .tag::selection {
+    background: #53b470;
+    color: inherit;
+}
+
 pre.line:hover {
     border: 1px solid #aaa;
     background: #3a3a3a;
@@ -224,6 +229,11 @@ pre.line > .tag {
 
 .ant-tooltip-inner .ant-typography.text{
     color: inherit;
+}
+
+.ant-tooltip-inner p{
+    margin: 0;
+    padding: 0;
 }
 
 .icon_btn {
