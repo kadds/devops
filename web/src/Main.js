@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from 'react'
+import React, { useState, useEffect, Fragment, Suspense } from 'react'
 import { Route, Switch, NavLink } from 'react-router-dom'
 import { Layout, BackTop, Menu, Avatar, Row, Col, Dropdown } from 'antd'
 import { info, logout } from './api/user'
@@ -24,22 +24,23 @@ import {
     SettingOutlined,
     SecurityScanOutlined,
 } from '@ant-design/icons'
-import PipeLineList from './view/pipeline/list'
-import PipeLineDetail from './view/pipeline/detail'
-import VM from './view/vm/vm'
-import Module from './view/module/module'
-import ServerIndex from './view/server/index'
-import MonitorIndex from './view/monitor/index'
-import LogIndex from './view/log_view/index'
-import Deploy from './view/deploy/deploy'
-import Detail from './view/deploy/detail'
-import P404 from './view/P404'
-import DashboardIndex from './view/dashboard/index'
-import Setting from './view/setting/index'
-import VariableIndex from './view/variables/index'
 
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import { withRouter } from 'react-router-dom'
+
+const DashboardIndex = React.lazy(() => import('./view/dashboard/index'))
+const PipeLineList = React.lazy(() => import('./view/pipeline/list'))
+const PipeLineDetail = React.lazy(() => import('./view/pipeline/detail'))
+const VM  = React.lazy(() => import('./view/vm/vm'))
+const Module = React.lazy(() => import('./view/module/module'))
+const ServerIndex = React.lazy(() => import('./view/server/index'))
+const MonitorIndex = React.lazy(() => import('./view/monitor/index'))
+const LogIndex = React.lazy(() => import('./view/log_view/index'))
+const Deploy = React.lazy(() => import('./view/deploy/deploy'))
+const Detail = React.lazy(() => import('./view/deploy/detail'))
+const P404 = React.lazy(() => import('./view/P404'))
+const Setting = React.lazy(() => import('./view/setting/index'))
+const VariableIndex = React.lazy(() => import('./view/variables/index'))
 
 const { Header, Sider, Content } = Layout;
 const style = { fontSize: 17, verticalAlign: 'middle' }
@@ -211,19 +212,18 @@ function Main(props) {
                         <CSSTransition
                             timeout={400}
                             classNames='page'
-                            mountOnEnter
-                            unmountOnExit
-                            appear
                             key={props.location.pathname}>
-                            <Switch location={props.location}>
-                                {
-                                    contents.map((v, index) => {
-                                        return (
-                                            <Route key={index} path={v.path} component={v.component}></Route>
-                                        )
-                                    })
-                                }
-                            </Switch>
+                            <Suspense fallback={<div className='page'>Loading...</div>}>
+                                <Switch location={props.location}>
+                                    {
+                                        contents.map((v, index) => {
+                                            return (
+                                                <Route key={index} path={v.path} component={v.component}></Route>
+                                            )
+                                        })
+                                    }
+                                </Switch>
+                            </Suspense>
                         </CSSTransition>
                     </TransitionGroup>
                 </Content>
