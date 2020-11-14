@@ -130,6 +130,12 @@ const Server = (props) => {
         })
     }
 
+    useEffect(() => {
+        if (queryString.parse(props.location.search).new) {
+            setTimeout(() => onNewClick())
+        }
+    }, props.location.search)
+
     const onModalOk = async () => {
         setState({ ...state, loading: true })
         let val

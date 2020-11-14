@@ -132,7 +132,7 @@ pre.line.head:hover {
 .content-page-par {
     margin: 8px 12px 8px 12px;
     padding: 18px 18px 0 18px;
-    min-height: initial;
+    min-height: fit-content;
 }
 
 .content-page {

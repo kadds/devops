@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Tag, Form, Modal, Button, Table, Input, Row, Col, Checkbox } from 'antd'
 import {DeleteOutlined} from '@ant-design/icons'
 import {get_variables, new_variable, rm_variable} from '../../api/variable'
+import queryString from 'query-string'
 
 const VariableIndex = (props) => {
     const [form] = Form.useForm()
@@ -17,6 +18,11 @@ const VariableIndex = (props) => {
     const onNewVariable = () => {
         setModal({show: true, loading: false})
     }
+    useEffect(() => {
+        if (queryString.parse(props.location.search).new) {
+            setTimeout(() => onNewVariable())
+        }
+    }, props.location.search)
 
     useEffect(() => {
         async function run() {

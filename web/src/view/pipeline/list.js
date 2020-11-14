@@ -1,8 +1,9 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react'
 import { Table, Typography, Tag, Button, Popconfirm, Modal, Row, Col, Form, Select, Input, Tooltip } from 'antd'
 import { get_pipelines, delete_pipeline, create_pipeline } from './../../api/pipeline'
-import { withRouter } from 'react-router-dom';
+import { withRouter } from 'react-router-dom'
 import { get_module_list, get_module } from '../../api/module'
+import queryString from 'query-string'
 import { get_all_vm } from '../../api/vm'
 import { get_server_list } from '../../api/server'
 import { QuestionCircleOutlined, SyncOutlined, CloseCircleOutlined, CheckCircleOutlined, LinkOutlined, FundViewOutlined, DeleteOutlined } from '@ant-design/icons'
@@ -145,6 +146,12 @@ const PipeLineList = props => {
         const list = await get_module_list()
         setModuleList({ loading: false, list })
     }
+    useEffect(() => {
+        if (queryString.parse(props.location.search).new) {
+            setTimeout(() => addClick())
+        }
+    }, props.location.search)
+
 
     const onModalOk = async () => {
         setState({ ...state, loading: true })
