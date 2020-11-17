@@ -71,6 +71,7 @@ const PipeLineStageComm = (props) => {
                     }
                     else {
                         rest_value = null
+                        data.pop()
                     }
                     codeRef.current.pushData(data.map(v =>  {return {code: v, desc: '' }}))
                 }

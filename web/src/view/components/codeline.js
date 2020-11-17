@@ -70,14 +70,13 @@ const CodeLine = (props, ref) => {
             new_lines = processNewLines(data)
         }
 
-        setLines(new_lines)
-
         const e = document.getElementById('output_log')
-        if (e && (e.scrollTop + e.clientHeight >= e.scrollHeight - 20)) {
+        if (e && (e.scrollTop + e.clientHeight >= e.scrollHeight - 10)) {
             setTimeout(() => {
-                e.scrollTo({ left: e.scrollLeft, top: e.scrollHeight, behavior: 'smooth' })
-            }, 100)
+                e.scrollTo({ left: e.scrollLeft, top: e.scrollHeight + 10000, behavior: 'smooth' })
+            }, 200)
         }
+        setLines(new_lines)
     }
 
     const onWheel = e => {

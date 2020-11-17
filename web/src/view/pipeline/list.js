@@ -169,9 +169,10 @@ const PipeLineList = props => {
                 val[f[0]] = ''
             }
         }
-        await create_pipeline(val)
+        const {id} = await create_pipeline(val)
         setState({ loading: false, visible: false })
         setNeedUpdate(needUpdate + 1)
+        goClick(id)
     }
 
     const onModalCancel = async () => {

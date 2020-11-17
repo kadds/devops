@@ -72,7 +72,7 @@ router.post('/', async (req, rsp, next) => {
 
     const res = await m_pipeline.create(pipeline)
     post_pipeline_op('run', res.id)
-    rsp.json({ err: 0 })
+    rsp.json({ err: 0, id: res.id })
 })
 
 router.post('/del', async (req, rsp, next) => {
