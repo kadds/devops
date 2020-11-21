@@ -37,7 +37,7 @@ const AppLog = (props) => {
     const [needUpdate, setNeedUpdate] = useState(0)
     const [initVal] = useState({ time: [moment().subtract(1, 'd'), moment()] })
     const [height, setHeight]= useState(window.innerHeight - 60 + 'px')
-    const [consoleData, setConsoleData] = useState({last_page: 0, loading: false})
+    const [consoleData, setConsoleData] = useState({last_page: -1, loading: false})
     let codeRef = useRef()
     const ref = useRef()
     ref.current = pagination
@@ -139,8 +139,7 @@ const AppLog = (props) => {
             else  {
                 if (codeRef && codeRef.current) {
                     codeRef.current.popData()
-                    setConsoleData({last_page: 0, loading: false})
-                    console.log(1)
+                    setConsoleData({last_page: -1, loading: false})
                 }
                 setTimeout(() => {
                     onLoadMore()
