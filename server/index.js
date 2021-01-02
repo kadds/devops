@@ -24,6 +24,7 @@ const fs = require('fs')
 const port = 8077
 const path = require('path')
 const history = require('connect-history-api-fallback')
+const { enqueue } = require('./black')
 
 let static_web_pages = [path.join(__dirname + '/dist'), path.join(__dirname + '/../web/build')]
 
@@ -50,13 +51,25 @@ function start() {
             const log = `> ${chalk.bold(req.method)} ${req.originalUrl} ${chalk.green(delta + 'ms')}`
             console.log(log)
         })
+        if (req.ip == '') {
+            rsp.json({ err: 1022, msg: 'check fail' })
+            return
+        }
         if (req.path === '/user/login') {
+            if (!enqueue(req.ip)) {
+                rsp.json({ err: 1024, msg: 'server inner fail' })
+                return
+            }
             next()
         }
         else {
             let token = req.get('token')
             const tokendata = valid_token(token)
             if (tokendata === null) {
+                if (!enqueue(req.ip)) {
+                    rsp.json({ err: 1024, msg: 'server inner fail' })
+                    return
+                }
                 rsp.json({ err: 401, msg: 'login please' })
             }
             else {
