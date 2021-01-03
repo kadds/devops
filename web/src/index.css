@@ -311,3 +311,16 @@ pre.line > .tag {
     animation-timing-function: linear;
     animation-iteration-count: infinite;
 }
+
+span.ret_ok {
+    color: #53b470;
+}
+
+span.ret_normal {
+    color: #111;
+}
+
+span.ret_err {
+    color:rgb(236, 91, 91);
+    font-weight: bold;
+}

@@ -357,7 +357,10 @@ const MonitorServerRpcCallInfo = (props) => {
 
 const MonitorServer = (props) => {
     const server = queryString.parse(props.location.search).server
-    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(1, 'd'), moment()], servers: server ? [server] : [] })
+    const today = moment().set({ 'hour': 23, 'minute': 59, 'second': 59, 'millisecond': 999 })
+    const yesterday = moment().set({ 'hour': 0, 'minute': 0, 'second': 0, 'millisecond': 0 })
+
+    const [initVal] = useState({ interval: 60, timerange: [yesterday, today], servers: server ? [server] : [] })
     const [serverList, setServerList] = useState({ loading: false, list: [] })
     const [selectServer, setSelectServer] = useState(null)
     const [form] = Form.useForm()

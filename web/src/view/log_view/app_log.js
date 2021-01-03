@@ -31,11 +31,14 @@ const AppLog = (props) => {
     const [serverList, setServerList] = useState([])
     const [moduleList, setModuleList] = useState([])
     const [query, setQuery] = useState(null)
-    const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}` })
+    const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}`, showQuickJumper: true })
     const [logList, setLogList] = useState([])
     const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
-    const [initVal] = useState({ time: [moment().subtract(1, 'd'), moment()] })
+    const today = moment().set({ 'hour': 23, 'minute': 59, 'second': 59, 'millisecond': 999 })
+    const start_day = moment().set({ 'hour': 0, 'minute': 0, 'second': 0, 'millisecond': 0 })
+
+    const [initVal] = useState({ time: [start_day, today] })
     const [height, setHeight]= useState(window.innerHeight - 60 + 'px')
     const [consoleData, setConsoleData] = useState({last_page: -1, loading: false})
     let codeRef = useRef()
@@ -194,12 +197,14 @@ const AppLog = (props) => {
             title: 'Vid',
             dataIndex: 1,
             key: 1,
+            width: 120,
             render: vid => (<Typography.Text>{vid}</Typography.Text>)
         },
         {
             title: 'Track id',
             dataIndex: 3,
             key: 3,
+            width: 180,
             render: (tid, r) => (<span>
                 <Tooltip title={
                     <span>
@@ -216,12 +221,14 @@ const AppLog = (props) => {
             title: 'Level',
             dataIndex: 5,
             key: 5,
+            width: 100,
             render: level => (<TagRender level={level}></TagRender>)
         },
         {
             title: 'Time',
             dataIndex: 2,
             key: 2,
+            width: 180,
             render: timestamp => (<span>
                 <Tooltip title={
                     <span>
@@ -235,6 +242,7 @@ const AppLog = (props) => {
             title: 'Server',
             dataIndex: 4,
             key: 4,
+            width: 120,
         },
         {
             title: 'Detail',

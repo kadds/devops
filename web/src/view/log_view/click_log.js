@@ -7,11 +7,14 @@ import { withRouter } from 'react-router'
 
 const ClickLog = (props) => {
     const [query, setQuery] = useState(null)
-    const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}` })
+    const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 20, showTotal: (v) => `Total ${v}`, showQuickJumper: true })
     const [logList, setLogList] = useState([])
     const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
-    const [initVal] = useState({ time: [moment().subtract(1, 'd'), moment()] })
+    const today = moment().set({ 'hour': 23, 'minute': 59, 'second': 59, 'millisecond': 999 })
+    const start_day = moment().set({ 'hour': 0, 'minute': 0, 'second': 0, 'millisecond': 0 })
+
+    const [initVal] = useState({ time: [start_day, today] })
 
     const [form] = Form.useForm()
     const ref = useRef()
@@ -58,6 +61,7 @@ const ClickLog = (props) => {
             title: 'Track id',
             dataIndex: 3,
             key: 3,
+            width: 180,
             render: (tid, r) => (<Tooltip title={
                 <Button type='link' icon={<RadarChartOutlined />}
                     onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + tid + '&time=' + r[2] }) }}></Button>
@@ -69,7 +73,7 @@ const ClickLog = (props) => {
             key: 7,
             ellipsis: true,
             render: (url, r) => (<span>
-                <Tooltip title={
+                <Tooltip placement="topLeft" title={
                     <Typography.Text className='text' copyable>{url}</Typography.Text>
                 }>{r[6]} {url}</Tooltip></span>)
         },
@@ -77,21 +81,25 @@ const ClickLog = (props) => {
             title: 'Host',
             dataIndex: 8,
             key: 8,
+            width: 220,
         },
         {
-            title: 'Instance server',
+            title: 'server',
             dataIndex: 4,
             key: 4,
+            width: 120,
         },
         {
             title: 'Cost',
             dataIndex: 5,
             key: 5,
+            width: 100,
         },
         {
             title: 'Request Time',
             dataIndex: 2,
             key: 2,
+            width: 180,
             render: timestamp => (<span>
                 <Tooltip title={
                     <span>
@@ -102,10 +110,22 @@ const ClickLog = (props) => {
                 }>{moment(timestamp).format('DD, HH:mm:ss.SSS')}</Tooltip></span>)
         },
         {
-            title: 'Return code/length',
+            title: 'code/len',
             dataIndex: 9,
             key: 9,
-            render: (v, r) => (<span>{r[9]}/{r[10]}</span>)
+            width: 90,
+            render: (v, r) => {
+                const type = Math.floor(r[9] / 100)
+                if (type === 2 || type === 1) {
+                    return (<span><span className='ret_ok'>{r[9]}</span>/<span>{r[10]}</span></span>)
+                }
+                else if (type === 3) {
+                    return (<span><span className='ret_normal'>{r[9]}</span>/<span>{r[10]}</span></span>)
+                }
+                else {
+                    return (<span><span className='ret_err'>{r[9]}</span>/<span>{r[10]}</span></span>)
+                }
+            }
         }
     ]
     return (

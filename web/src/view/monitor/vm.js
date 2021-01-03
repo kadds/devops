@@ -586,7 +586,10 @@ const MonitorVMChart = (props) => {
 
 const MonitorVM = (props) => {
     const vm = queryString.parse(props.location.search).vm
-    const [initVal] = useState({ interval: 60, timerange: [moment().subtract(1, 'd'), moment()], vm: vm })
+    const today = moment().set({ 'hour': 23, 'minute': 59, 'second': 59, 'millisecond': 999 })
+    const yesterday = moment().set({ 'hour': 0, 'minute': 0, 'second': 0, 'millisecond': 0 })
+
+    const [initVal] = useState({ interval: 60, timerange: [yesterday, today], vm: vm })
     const [vmList, setVmList] = useState({ loading: false, list: [] })
     const [selectVm, setSelectVm] = useState(null)
     const [form] = Form.useForm()
