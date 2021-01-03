@@ -38,10 +38,15 @@ process.on("SIGINT", function () {
 
 setTimeout(() => save_black_list(), 1000 * 60 * 60)
 
-read_black_list()
+function do_read() {
+    read_black_list().then(e => { }).catch(e => { })
+}
+
+do_read()
 
 
 function add_black_list(address) {
+    console.log("black address " + address)
     black_list_map.set(address, null)
 }
 

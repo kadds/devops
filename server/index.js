@@ -66,10 +66,6 @@ function start() {
             let token = req.get('token')
             const tokendata = valid_token(token)
             if (tokendata === null) {
-                if (!enqueue(req.ip)) {
-                    rsp.json({ err: 1024, msg: 'server inner fail' })
-                    return
-                }
                 rsp.json({ err: 401, msg: 'login please' })
             }
             else {
