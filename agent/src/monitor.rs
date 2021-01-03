@@ -1,16 +1,17 @@
+use crate::context::Context;
+
 use super::config;
 use super::db;
-use super::signal;
 
 use mongodb::bson::doc;
 use num::ToPrimitive;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH, Duration};
 use tokio::io::AsyncBufReadExt;
 use tokio::process::Command;
-use tokio::sync::{broadcast, RwLock};
-use tokio::{fs::File, io::BufReader, time, time::Duration};
+use tokio::sync::RwLock;
+use tokio::{fs::File, io::BufReader, time};
 
 #[derive(Default, Debug, Clone)]
 struct CpuInfo {
@@ -417,46 +418,34 @@ async fn vm_tick() {
     let net = net.unwrap_or_default();
     let block = block.unwrap_or_default();
 
-    let mongo = match db::mongo_vm_monitor().await {
-        Some(v) => v,
-        None => {
-            eprintln!("open mongodb connection fail");
-            return;
-        }
-    };
+    let mongo = db::mongo_vm_monitor().await;
     let ts = chrono::offset::Utc::now();
     let vm = name_config.vm_name.clone();
 
-    let res = mongo
-        .insert_one(
-            doc! {
-            "d": [
-               (cpu.unwrap_or(0.) * 100.).to_u32().unwrap_or(u32::MAX),
-               // 4 KiB
-                used.unwrap_or(0),
-                // Bps
-                net.read_bytes.to_u32().unwrap_or(u32::MAX),
-                net.write_bytes.to_u32().unwrap_or(u32::MAX),
+    let doc = doc! {
+        "d": [
+            (cpu.unwrap_or(0.) * 100.).to_u32().unwrap_or(u32::MAX),
+        // 4 KiB
+            used.unwrap_or(0),
+            // Bps
+            net.read_bytes.to_u32().unwrap_or(u32::MAX),
+            net.write_bytes.to_u32().unwrap_or(u32::MAX),
 
-                net.read_package.to_u32().unwrap_or(u32::MAX),
-                net.write_package.to_u32().unwrap_or(u32::MAX),
+            net.read_package.to_u32().unwrap_or(u32::MAX),
+            net.write_package.to_u32().unwrap_or(u32::MAX),
 
-                // Bps
-                block.read_bytes.to_u32().unwrap_or(u32::MAX),
-                block.write_bytes.to_u32().unwrap_or(u32::MAX),
+            // Bps
+            block.read_bytes.to_u32().unwrap_or(u32::MAX),
+            block.write_bytes.to_u32().unwrap_or(u32::MAX),
 
-                block.read_package.to_u32().unwrap_or(u32::MAX),
-                block.write_package.to_u32().unwrap_or(u32::MAX),
-            ],
-            "ts": ts,
-            "vm": vm},
-            None,
-        )
-        .await;
+            block.read_package.to_u32().unwrap_or(u32::MAX),
+            block.write_package.to_u32().unwrap_or(u32::MAX),
+        ],
+        "ts": ts,
+        "vm": vm
+    };
 
-    if let Err(err) = res {
-        eprintln!("{}", err);
-    }
+    let _ = mongo.send(doc).await;
 
     // println!(
     //     "mem {:?}, cpu {:?}, net {:?}, block {:?}",
@@ -601,34 +590,19 @@ async fn server_inspect(name: &str) {
             read_tcp_count(pid)
         )
     };
-    let mongo = match db::mongo_server_monitor().await {
-        Some(v) => v,
-        None => {
-            eprintln!("open mongodb connection fail");
-            return;
-        }
+    let mongo = db::mongo_server_monitor().await;
+    let doc = doc! {
+        "cp": (usage.unwrap_or(0.) * 100.).to_u32().unwrap_or(u32::MAX),
+            // 4 KiB
+        "vm": mm.unwrap_or((0, 0)).0,
+        "mm": mm.unwrap_or((0, 0)).1,
+        "tc": tcp.unwrap_or(0),
+        "rc": restart_count.to_u32().unwrap_or(u32::MAX),
+        "st": start_at_ts,
+        "ts": ts,
+        "sn": name,
     };
-
-    let res = mongo
-        .insert_one(
-            doc! {
-                "cp": (usage.unwrap_or(0.) * 100.).to_u32().unwrap_or(u32::MAX),
-                    // 4 KiB
-                "vm": mm.unwrap_or((0, 0)).0,
-                "mm": mm.unwrap_or((0, 0)).1,
-                "tc": tcp.unwrap_or(0),
-                "rc": restart_count.to_u32().unwrap_or(u32::MAX),
-                "st": start_at_ts,
-                "ts": ts,
-                "sn": name,
-            },
-            None,
-        )
-        .await;
-
-    if let Err(err) = res {
-        eprintln!("{}", err);
-    }
+    let _ = mongo.send(doc).await;
 
     // println!("usage {:?} mm {:?} tcp {:?}", usage, mm, tcp);
 }
@@ -646,9 +620,9 @@ async fn server_tick() {
     }
 }
 
-async fn server_notify_tick(servers_path: String, tx: broadcast::Receiver<signal::Types>) {
-    let mut tx = tx;
-    loop {
+async fn server_notify_tick(servers_path: String, mut context: Context) {
+    while !context.is_stop() {
+        let tx = context.fetch_signal();
         // load new map
         println!("load servers");
         if let Ok(file) = File::open(&servers_path).await {
@@ -685,41 +659,38 @@ async fn server_notify_tick(servers_path: String, tx: broadcast::Receiver<signal
             );
         }
         loop {
-            if let Ok(v) = tx.recv().await {
-                if v == signal::Types::InnerStopNet {
-                    return;
-                } else if v == signal::Types::ReloadServers {
-                    break;
-                }
+            if let Ok(_) = tx.recv().await {
+                break;
             }
         }
     }
 }
 
-pub async fn init(servers_path: String, tx: broadcast::Sender<signal::Types>) {
-    tokio::spawn(server_notify_tick(servers_path.clone(), tx.subscribe()));
-
-    let interval_time = config::get().monitor.interval;
-
-    let mut interval = time::interval(Duration::from_secs(interval_time));
-    let mut rx = tx.subscribe();
-    // wait 1 second then servers_name is loaded
-    time::delay_for(Duration::from_millis(1000)).await;
+pub async fn init(servers_path: String, mut context: Context) {
+    tokio::spawn(server_notify_tick(servers_path.clone(), context.clone()));
 
     loop {
-        tokio::select!(
-            _ = interval.tick() => {
-                // run once every tick
-                tokio::join!(vm_tick(), server_tick());
-            },
-            Ok(v) = rx.recv() => {
-                if v == signal::Types::InnerStopNet {
+        let rx = context.fetch_signal();
+        let interval_time = config::get().monitor.interval;
+
+        let mut interval = time::interval(Duration::from_secs(interval_time));
+        // wait 1 second then servers_name is loaded
+        time::delay_for(Duration::from_millis(1000)).await;
+
+        loop {
+            tokio::select!(
+                _ = interval.tick() => {
+                    // run once every tick
+                    tokio::join!(vm_tick(), server_tick());
+                },
+                Ok(_) = rx.recv() => {
                     break;
                 }
-            }
-        );
-    }
-    if let Err(e) = tx.send(signal::Types::InnerStopOk) {
-        eprintln!("{:?}", e);
+            );
+        }
+        if context.is_stop() {
+            break;
+        }
+        tokio::time::delay_for(Duration::from_secs(1)).await;
     }
 }

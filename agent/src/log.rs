@@ -1,33 +1,19 @@
 use super::config;
 use super::db;
-use super::signal;
+use crate::context::Context;
 
 use chrono::{NaiveDateTime, DateTime, Utc};
 use mongodb::bson::doc;
-use mongodb::*;
 use num::ToPrimitive;
 use std::time::SystemTime;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::prelude::*;
-use tokio::sync::broadcast;
+use std::time::Duration;
 
-async fn send_mongodb(logger: Collection, doc: bson::Document) {
-    let ret = logger.insert_one(doc, None).await;
-    if ret.is_err() {
-        eprintln!("save to mongodb fail {}", ret.unwrap_err());
-    // retry after 5 seconds 3 times
-    } else {
-        return;
-    }
-}
 
 async fn do_app_log(log: &str) {
-    let logger = match db::mongo_log().await {
-        Some(v) => v,
-        None => {
-            return;
-        }
-    };
+    let logger = db::mongo_app_log().await;
+
     // type(0) vid timestamp(13) tid serverName level detail
     let mut list = log.splitn(7, |c: char| c.is_ascii_whitespace()).skip(1);
     let vid: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
@@ -47,17 +33,11 @@ async fn do_app_log(log: &str) {
         "le": level,
         "lo": detail
     };
-
-    send_mongodb(logger, doc).await;
+    let _ = logger.send(doc).await;
 }
 
 async fn do_click_log(log: &str) {
-    let logger = match db::mongo_click_log().await {
-        Some(v) => v,
-        None => {
-            return;
-        }
-    };
+    let logger = db::mongo_click_log().await;
     // type(1) vid timestamp(13) tid nid serverName cost(ms) method url host returnCode returnLength
     let mut list = log.split_ascii_whitespace().skip(1);
     let vid: u64 = list.next().map_or(0, |v| v.parse().unwrap_or(0));
@@ -90,16 +70,11 @@ async fn do_click_log(log: &str) {
         "rc": return_code,
         "rl": return_length
     };
-    send_mongodb(logger, doc).await;
+    let _ = logger.send(doc).await;
 }
 
 async fn do_server_rpc_log(log: &str) {
-    let logger = match db::mongo_server_rpc().await {
-        Some(v) => v,
-        None => {
-            return;
-        }
-    };
+    let logger = db::mongo_server_rpc().await;
     // type(2) serverName rpcInterfaceName tid nid pnid timestamp(13) cost(ms) errorCode
     let mut list = log.split_ascii_whitespace().skip(1);
     let server_name = list.next().unwrap_or("");
@@ -124,10 +99,7 @@ async fn do_server_rpc_log(log: &str) {
         "rc": error_code,
     };
 
-    let ret = logger.insert_one(doc, None).await;
-    if ret.is_err() {
-        eprintln!("save to mongodb fail (rpc_log) {}", ret.unwrap_err());
-    }
+    let _ = logger.send(doc).await;
 }
 
 async fn do_log(log: Vec<u8>, max_size: u32) {
@@ -191,25 +163,26 @@ async fn process_client(socket: TcpStream, max_size: u32) {
     );
 }
 
-pub async fn init(tx: broadcast::Sender<signal::Types>) {
-    let config = config::get();
-    let addr = format!("{}:{}", config.logger.bind, config.logger.port);
-    let max = config.logger.max_size;
-
-    let mut listener = TcpListener::bind(addr).await.expect("bind address fail");
-    let mut rx = tx.subscribe();
+pub async fn init(mut context: Context) {
     loop {
-        tokio::select!(Ok((socket, _)) = listener.accept() => {
-            tokio::spawn(process_client(socket, max));
-        },
-        Ok(v) = rx.recv() => {
-            if v == signal::Types::InnerStopNet {
+        let rx = context.fetch_signal();
+        let config = config::get();
+        let addr = format!("{}:{}", config.logger.bind, config.logger.port);
+        let max = config.logger.max_size;
+
+        let mut listener = TcpListener::bind(addr).await.expect("bind address fail");
+        loop {
+            tokio::select!(Ok((socket, _)) = listener.accept() => {
+                tokio::spawn(process_client(socket, max));
+            },
+            Ok(_) = rx.recv() => {
                 break;
             }
+            );
         }
-        );
-    }
-    if let Err(e) = tx.send(signal::Types::InnerStopOk) {
-        eprintln!("{:?}", e);
+        if context.is_stop() {
+            break;
+        }
+        tokio::time::delay_for(Duration::from_secs(1)).await;
     }
 }

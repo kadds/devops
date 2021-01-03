@@ -7,9 +7,11 @@ extern crate num;
 
 mod config;
 mod db;
+mod context;
+use context::Context;
+use context::SignalType;
 mod log;
 mod monitor;
-mod signal;
 use clap::{App, Arg, SubCommand};
 use daemonize::Daemonize;
 use std::fs::File;
@@ -18,9 +20,8 @@ use tokio::prelude::*;
 use tokio::runtime;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::stream::StreamExt;
-use tokio::sync::broadcast;
 
-async fn cmd_client(socket: UnixStream, tx: broadcast::Sender<signal::Types>) {
+async fn cmd_client(socket: UnixStream, mut context: Context) {
     let mut socket = socket;
     let (read_socket, mut write_socket) = socket.split();
     let mut stream = tokio::io::BufReader::new(read_socket);
@@ -35,19 +36,15 @@ async fn cmd_client(socket: UnixStream, tx: broadcast::Sender<signal::Types>) {
             cmd.truncate(cmd.len() - 1);
         }
 
-        println!("command {}", cmd);
+        println!("new command coming '{}'", cmd);
         // execute command
         if cmd == "stop" {
-            if let Err(e) = tx.send(signal::Types::Stop) {
-                eprintln!("{:?}", e);
-            }
+            context.stop();
             if let Err(e) = write_socket.write_all(b"stopped").await {
                 eprintln!("send fail {}", e);
             }
         } else if cmd == "reload" {
-            if let Err(e) = tx.send(signal::Types::ReloadServers) {
-                eprintln!("{:?}", e);
-            }
+            context.reload();
             if let Err(e) = write_socket.write_all(b"reloaded").await {
                 eprintln!("send fail {}", e);
             }
@@ -66,16 +63,16 @@ async fn cmd_client(socket: UnixStream, tx: broadcast::Sender<signal::Types>) {
     }
 }
 
-async fn cmd_main(tx: broadcast::Sender<signal::Types>) {
+async fn cmd_main(mut context: Context) {
     let mut listener = UnixListener::bind("./agent.sock").unwrap();
-    let mut rx = tx.subscribe();
     loop {
+        let rx = context.fetch_signal();
         tokio::select! {
             Some(stream) = listener.next() => {
-                tokio::spawn(cmd_client(stream.unwrap(), tx.clone()));
+                tokio::spawn(cmd_client(stream.unwrap(), context.clone()));
             },
             Ok(v) = rx.recv() => {
-                if v == signal::Types::InnerStopNet {
+                if v == SignalType::Stop {
                     break;
                 }
             }
@@ -84,9 +81,6 @@ async fn cmd_main(tx: broadcast::Sender<signal::Types>) {
     // unlink agent.sock file
     if let Err(e) = tokio::fs::remove_file("./agent.sock").await {
         eprintln!("{}", e);
-    }
-    if let Err(e) = tx.send(signal::Types::InnerStopOk) {
-        eprintln!("{:?}", e);
     }
 }
 
@@ -101,48 +95,49 @@ async fn check_instant_exist() -> bool {
 }
 
 async fn do_async_main(path: &str, server_path: &str) {
-    let (tx, mut rx) = broadcast::channel(16);
     config::load(path).await;
     if check_instant_exist().await {
         return;
     }
 
-    tokio::spawn(cmd_main(tx.clone()));
+    let mut context = Context::new();
+
+    tokio::spawn(cmd_main(context.clone()));
     // logger
-    tokio::spawn(log::init(tx.clone()));
+    tokio::spawn(log::init(context.clone()));
 
     // monitor
-    tokio::spawn(monitor::init(server_path.to_string(), tx.clone()));
+    tokio::spawn(monitor::init(server_path.to_string(), context.clone()));
 
-    let mut sig_type;
-    let mut i: u32 = 0;
+    // wait one signal
+    let mut sigint = signal(SignalKind::interrupt()).unwrap();
+    let mut sigquit = signal(SignalKind::quit()).unwrap();
+    let mut sigter = signal(SignalKind::terminate()).unwrap();
     loop {
-        sig_type = signal::Types::Nothing;
-        // wait one signal
-        let mut sigint = signal(SignalKind::interrupt()).unwrap();
-        let mut sigquit = signal(SignalKind::quit()).unwrap();
-        let mut sigter = signal(SignalKind::terminate()).unwrap();
-
+        let rx = context.fetch_signal();
         tokio::select! {
             _ = sigint.recv() => {},
             _=sigquit.recv() => {},
             _= sigter.recv() => {},
-            Ok(v) = rx.recv() => {
-                sig_type = v;
-            },
+            Ok (v) = rx.recv() => {
+                if v == SignalType::Reload {
+                    config::load(path).await;
+                    continue;
+                }
+                else {
+                    break;
+                }
+            }
         };
-        if sig_type == signal::Types::Nothing || sig_type == signal::Types::Stop {
-            println!("recv signal");
-            if let Err(e) = tx.send(signal::Types::InnerStopNet) {
-                eprintln!("{:?}", e);
-            }
-        } else if sig_type == signal::Types::InnerStopOk {
-            i += 1;
-            if i >= 3 {
-                break;
-            }
-        }
+        println!("signal recv");
+        context.stop();
     }
+    if !context.is_stop() {
+        context.stop();
+    }
+    println!("wait final signal for stop");
+    context.wait_for_final_stop().await;
+    println!("agent stopped");
 }
 
 async fn do_send_signal(signal: &str) {
