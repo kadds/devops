@@ -23,19 +23,24 @@ async fn connect_mongodb(column_name: &str) -> Option<Collection> {
         }
     }
 
-    let uri = &config::get().mongodb.uri;
-    let client = match Client::with_uri_str(&uri).await {
-        Ok(c) => c,
-        Err(err) => {
-            eprintln!("{}", err);
-            return None;
-        }
-    };
     unsafe {
-        *MONGO_CLIENT.write().await = Some(client.clone());
+        let mut writer = MONGO_CLIENT.write().await;
+        if let Some(client) = writer.as_ref() {
+            let db = client.database(&config::get().mongodb.dbname);
+            return Some(db.collection(column_name));
+        }
+        let uri = &config::get().mongodb.uri;
+        let client = match Client::with_uri_str(&uri).await {
+            Ok(c) => c,
+            Err(err) => {
+                eprintln!("{}", err);
+                return None;
+            }
+        };
+        *writer = Some(client.clone());
+        let db = client.database(&config::get().mongodb.dbname);
+        return Some(db.collection(column_name));
     }
-    let db = client.database(&config::get().mongodb.dbname);
-    return Some(db.collection(column_name));
 }
 
 async fn do_mongo_send(data: Vec<Document>, collection: Collection) {
