@@ -3,6 +3,7 @@ import {Tooltip} from 'antd'
 
 const CodeLine = (props, ref) => {
     const [lines, setLines] = useState([])
+    const [autoScroll, setAutoScroll] = useState(false)
 
     useImperativeHandle(ref, () => ({
         pushData: pushData,
@@ -71,7 +72,7 @@ const CodeLine = (props, ref) => {
         }
 
         const e = document.getElementById('output_log')
-        if (e && (e.scrollTop + e.clientHeight >= e.scrollHeight - 10)) {
+        if (e && autoScroll) {
             setTimeout(() => {
                 e.scrollTo({ left: e.scrollLeft, top: e.scrollHeight + 10000, behavior: 'smooth' })
             }, 200)
@@ -84,10 +85,13 @@ const CodeLine = (props, ref) => {
         const ele = document.getElementById('output_log')
         if (deltaY > 0) {
             if (ele.scrollTop + ele.clientHeight >= ele.scrollHeight) {
+                setAutoScroll(true)
                 console.log('load_more')
                 props.onLoadMore && props.onLoadMore()
+                return
             }
         }
+        setAutoScroll(false)
     }
 
     return (
