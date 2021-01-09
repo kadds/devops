@@ -46,7 +46,6 @@ const AppLog = (props) => {
     ref.current = pagination
     const cmRef = useRef()
     cmRef.current = consoleData
-    const [activeTab, setActiveTab] = useState('1')
 
     const onTabsChange = (v) => {
         if (v === '1') {
@@ -54,8 +53,43 @@ const AppLog = (props) => {
                 document.getElementById('rightPanel').scrollTo({ left: 0, top: window.innerHeight - 60, behavior: 'smooth' })
             })
         }
-        setActiveTab(v)
     }
+
+    const GenQuery = (val) => {
+        let query = {}
+        if (val.vid !== undefined && val.vid !== null)
+            query.vid = val.vid
+
+        if (val.tid)
+            query.tid = val.tid
+
+        if (val.time) {
+            if (val.time[0])
+                query.time_start = new Date(val.time[0]).valueOf()
+            if (val.time[1])
+                query.time_end = new Date(val.time[1]).valueOf()
+        }
+
+        if (val.server) {
+            query.server = val.server
+        }
+        if (val.level && val.level.length !== 0) {
+            query.level = val.level
+        }
+        if (val.module) {
+            query.module = val.module
+        }
+        if (val.detail) {
+            query.detail = val.detail
+        }
+        return query
+    }
+
+    const onFinish = async (val) => {
+        setQuery(GenQuery(val))
+    }
+
+    const [form] = Form.useForm()
 
     const onLoadMore = useCallback(async () => {
         if (cmRef.current.loading) return
@@ -66,6 +100,7 @@ const AppLog = (props) => {
             const pagination = ref.current
             let is_empty = false
             try {
+                const query = GenQuery(form.getFieldsValue())
                 const [list] = await query_log({ ...query, page: page + 1, size: pagination.pageSize })
                 codeRef.current.popData(1)
                 if (list.length === 0) {
@@ -73,16 +108,16 @@ const AppLog = (props) => {
                 }
                 let data = []
                 for(const log of list) {
-                    data.push({code: '[' + log[5] + '] ' + log[6], 
+                    data.push({
+                        code: `[${log[5]}] (${moment(log[2]).format('HH:mm:ss.SSS')}) ${log[6]}`, 
                         desc: ( <span>
                         <p> {'Vid: ' + log[1] + ' at ' + log[4]}</p>
                         <p>{moment(log[2]).format('lll')}</p>
-                        <p>
-                        <Typography.Text className='text' copyable>{log[3]}</Typography.Text>
-                        <Button type='link' icon={<RadarChartOutlined />}
-                            onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + log[3] + '&time=' + log[2] }) }}></Button>
-                        </p>
-                        
+                            <div>
+                            <Typography.Text className='text' copyable>{log[3]}</Typography.Text>
+                            <Button type='link' icon={<RadarChartOutlined />}
+                                onClick={() => { props.history.push({ pathname: '/monitor', search: '?tid=' + log[3] + '&time=' + log[2] }) }}></Button>
+                            </div>
                     </span>)})
                 }
                 codeRef.current.pushData(data)
@@ -93,7 +128,7 @@ const AppLog = (props) => {
             }
             setConsoleData({last_page: is_empty ? page : (page + 1), loading: false})
         }
-    }, [query, props.history])
+    }, [props.history, form])
 
     useEffect(() => {
         async function run() {
@@ -101,7 +136,6 @@ const AppLog = (props) => {
         }
         run()
     }, [])
-    const [form] = Form.useForm()
     useEffect(() => {
         async function run() {
             setServerList(await get_server_list())
@@ -137,60 +171,24 @@ const AppLog = (props) => {
             }
         }
         if (query) {
-            if (activeTab === '0') 
-                run()
-            else  {
-                if (codeRef && codeRef.current) {
-                    codeRef.current.popData()
-                    setConsoleData({last_page: -1, loading: false})
-                }
-                setTimeout(() => {
-                    onLoadMore()
-                })
+            run()
+            if (codeRef && codeRef.current) {
+                codeRef.current.popData()
+                setConsoleData({last_page: -1, loading: false})
             }
         }
-    }, [query, needUpdate, onLoadMore, activeTab])
+    }, [query, needUpdate, onLoadMore])
 
     const tags = [
-        {regex: /^\[error\]/g, style: {background: '#f55', color: '#000'} },
-        {regex: /^\[warn\]/g, style: { background: '#bb0', color: '#000'} },
-        {regex: /^\[info\]/g, style: { background: '#0a5', color: '#000'} },
-        {regex: /^\[debug\]/g, style: { background: '#ccc', color: '#000'} },
-        {regex: /panic/g, style: { background: '#c55', color: '#fff'} },
-        {regex: /unknown/g, style: { fontWeight: 'bold'} },
-        {regex: /\[\S*\d+:\d+\]/g, style: { background: '#999', color: '#000'} },
+        { regex: /^\[error\]/g, style: { background: '#f55', color: '#000' } },
+        { regex: /^\[warn\]/g, style: { background: '#bb0', color: '#000' } },
+        { regex: /^\[info\]/g, style: { background: '#0a5', color: '#000' } },
+        { regex: /^\[debug\]/g, style: { background: '#ccc', color: '#000' } },
+        { regex: /panic/g, style: { background: '#c55', color: '#fff' } },
+        { regex: /unknown/g, style: { fontWeight: 'bold' } },
+        { regex: /\(\d{2}:\d{2}:\d{2}\.\d{3}\)/g, style: { color: '#aaa' } },
+        { regex: /\[\S*\d+:\d+\]/g, style: { background: '#999', color: '#000' } },
     ]
-
-    const onFinish = async (val) => {
-        let query = {}
-        if (val.vid !== undefined && val.vid !== null)
-            query.vid = val.vid
-
-        if (val.tid)
-            query.tid = val.tid
-
-        if (val.time) {
-            if (val.time[0])
-                query.time_start = new Date(val.time[0]).valueOf()
-            if (val.time[1])
-                query.time_end = new Date(val.time[1]).valueOf()
-        }
-
-        if (val.server) {
-            query.server = val.server
-        }
-        if (val.level && val.level.length !== 0) {
-            query.level = val.level
-        }
-        if (val.module) {
-            query.module = val.module
-        }
-        if (val.detail) {
-            query.detail = val.detail
-        }
-        setQuery(query)
-    }
-
 
     const columns = [
         {
@@ -236,7 +234,7 @@ const AppLog = (props) => {
                         <br />
                         {moment(timestamp).format('lll')}
                     </span>
-                }>{moment(timestamp).format('DD, HH:mm:ss.SSS')}</Tooltip></span>)
+                }>{moment(timestamp).format('HH:mm:ss.SSS')}</Tooltip></span>)
         },
         {
             title: 'Server',

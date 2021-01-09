@@ -107,7 +107,7 @@ const ClickLog = (props) => {
                         <br />
                         {moment(timestamp).format('lll')}
                     </span>
-                }>{moment(timestamp).format('DD, HH:mm:ss.SSS')}</Tooltip></span>)
+                }>{moment(timestamp).format('HH:mm:ss.SSS')}</Tooltip></span>)
         },
         {
             title: 'code/len',

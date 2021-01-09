@@ -27,6 +27,8 @@ import {
 
 import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import { withRouter } from 'react-router-dom'
+import moment from 'moment'
+import 'moment/min/locales'
 
 const DashboardIndex = React.lazy(() => import('./view/dashboard/index'))
 const PipeLineList = React.lazy(() => import('./view/pipeline/list'))
@@ -71,6 +73,8 @@ const contents = [
     { path: '/setting', component: Setting, title: 'Setting' },
     { component: P404 }
 ]
+const locale = window.navigator.userLanguage || window.navigator.language
+moment.locale(locale)
 
 function Main(props) {
     const context = contents.find(v => { return v.path === props.history.location.pathname })
