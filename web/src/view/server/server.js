@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useImperativeHandle } from 'react'
 import { get_server_list, add_server, get_server, destroy_server, stop_server, start_server, restart_server } from '../../api/server'
 import { get_all_vm } from '../../api/vm'
 import { get_module_list } from '../../api/module'
 import { useInterval } from '../../comm/util'
-
 import { Button, Spin, Row, Select, Popconfirm, Typography, Card, Input, Form, Modal, Col, Space, Tag, Badge } from 'antd'
 import { FireOutlined, PoweroffOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { withRouter } from 'react-router'
-import queryString from 'query-string'
 import moment from 'moment'
 
 const getServerRunningTime = (delta) => {
@@ -27,30 +25,22 @@ const getServerRunningTime = (delta) => {
     }
 }
 
-
-const Server = (props) => {
-    const server_name = props.location.pathname === '/server' ? queryString.parse(props.location.search).name : null
-    const [listDetail, setListDetail] = useState({ loading: false, data: [], select: server_name })
+const Server = (props, ref) => {
+    const [moduleName, setModuleName] = useState(null)
+    const [listDetail, setListDetail] = useState({ loading: false, data: [], select: null })
     const [state, setState] = useState({ visible: false, loading: false, type: 0 })
     const [moduleList, setModuleList] = useState({ loading: false, data: [] })
     const [vmList, setVmList] = useState({ loading: false, data: [] })
     const [server, setServer] = useState(null)
     const [needUpdate, setNeedUpdate] = useState(0)
 
-    const goVM = (vm) => {
-        props.history.push({ pathname: '/vm', search: '?name=' + encodeURIComponent(vm) })
-    }
+    const gref = useRef()
 
-    const goModule = (module) => {
-        props.history.push({ pathname: '/module', search: '?name=' + encodeURIComponent(module) })
-    }
-
-    const goMonitor = (name) => {
-        props.history.push({ pathname: '/monitor', search: '?server=' + encodeURIComponent(name) })
-    }
-
-    const onServerChange = async (server_name) => {
-        setListDetail({ ...listDetail, select: server_name })
+    const doServerSelect = async (server_name) => {
+        if (!server_name) {
+            setServer(null)
+            return
+        }
         try {
             let server = await get_server(server_name)
             server.current_time = (new Date()).valueOf()
@@ -61,22 +51,25 @@ const Server = (props) => {
         }
     }
 
-    const ref = useRef()
-    ref.current = { listDetail, onServerChange }
+    const onServerChange = (server_name) => {
+        setListDetail({ ...gref.current.listDetail, select: server_name })
+    }
+
+    gref.current = { listDetail, doServerSelect, onServerChange }
     useEffect(() => {
         async function run() {
-            const select = ref.current.listDetail.select
+            let select = gref.current.listDetail.select
             let has_find = false
-            setListDetail({ loading: true, data: [] })
-            let data = await get_server_list(props.mode_name)
-            if (props.mode_name) {
+            setListDetail({ loading: true, data: [], select })
+            let data = await get_server_list(moduleName)
+            if (moduleName) {
                 data.sort((a, b) => { return a.ctime > b.ctime })
                 if (select)
                     if (data.find((v) => { return v.name === select })) {
                         has_find = true
                     }
                 if (has_find) {
-                    ref.current.onServerChange(select)
+                    gref.current.onServerChange(select)
                     setListDetail({ loading: false, data, select })
                 }
                 else {
@@ -99,7 +92,7 @@ const Server = (props) => {
                 if (select) {
                     if (has_find) {
                         setListDetail({ loading: false, group, select })
-                        ref.current.onServerChange(select)
+                        gref.current.onServerChange(select)
                     }
                     else {
                         setListDetail({ loading: false, group, select: null })
@@ -113,7 +106,14 @@ const Server = (props) => {
             }
         }
         run()
-    }, [props.mode_name, needUpdate])
+    }, [moduleName, needUpdate])
+
+    useEffect(() => {
+        async function run() {
+            await gref.current.doServerSelect(listDetail.select)
+        }
+        run()
+    }, [listDetail.select])
 
 
     const [form] = Form.useForm()
@@ -125,16 +125,18 @@ const Server = (props) => {
         setModuleList({ loading: false, data: moduledata })
         setVmList({ loading: false, data: vmdata })
         form.setFieldsValue({
-            mode_name: props.mode_name,
+            mode_name: moduleName,
             flag_env: 'none'
         })
-    }, [form, props.mode_name])
+    }, [form, moduleName])
 
-    useEffect(() => {
-        if (queryString.parse(props.location.search).new) {
-            setTimeout(() => onNewClick())
-        }
-    }, [props.location.search, onNewClick])
+    useImperativeHandle(ref, () => ({
+        new_dialog: onNewClick,
+        select: (module, server) => {
+            onServerChange(server)
+            setModuleName(module)
+        },
+    }))
 
     const onModalOk = async () => {
         setState({ ...state, loading: true })
@@ -349,6 +351,98 @@ const Server = (props) => {
         }
     })
 
+    const ServerDashboardInner = ({ server, history }) => {
+        const goVM = (vm) => {
+            history.push({ pathname: '/vm', search: '?name=' + encodeURIComponent(vm) })
+        }
+
+        const goModule = (module) => {
+            history.push({ pathname: '/module', search: '?name=' + encodeURIComponent(module) })
+        }
+
+        const goMonitor = (name) => {
+            history.push({ pathname: '/monitor', search: '?server=' + encodeURIComponent(name) })
+        }
+        return (
+            <Row gutter={8} style={{ marginTop: 30 }}>
+                <Col span={16}>
+                    <Card title={'Information of ' + server.name}>
+                        <Row gutter={[32, 32]}>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Status:
+                                </Typography.Title>
+                                <StatusRender></StatusRender>
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Flag:
+                                </Typography.Title>
+                                <FlagRender></FlagRender>
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Time:
+                                </Typography.Title>
+                                {moment(server.ctime).format('lll')}
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    VM:
+                                </Typography.Title>
+                                <Button type='link' onClick={() => goVM(server.vm_name)}>
+                                    {server.vm_name}
+                                </Button>
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Module:
+                                </Typography.Title>
+                                <Button type='link' onClick={() => goModule(server.mode_name)}>
+                                    {server.mode_name}
+                                </Button>
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Running Time:
+                                </Typography.Title>
+                                <RunningTime server={server}></RunningTime>
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Version:
+                                </Typography.Title>
+                                <ServerVersion deploy_id={server.deploy_id} version={server.version} />
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Monitor:
+                                </Typography.Title>
+                                <Button type='link' onClick={() => goMonitor(server.name)}>
+                                    Go
+                                </Button>
+                            </Col>
+                            <Col span={8}>
+                                <Typography.Title level={4}>
+                                    Restart Count:
+                                </Typography.Title>
+                                {server.restart_count ? (<span style={{color: '#f0305a', fontWeight: 'bold'}}>{server.restart_count}</span>) : server.restart_count}
+                            </Col>
+                        </Row>
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <Card title='Operation'>
+                        <OperationButtons server={server}>
+
+                        </OperationButtons>
+                    </Card>
+                </Col>
+            </Row>
+        )
+    }
+    const ServerDashboard = withRouter(ServerDashboardInner)
+
     return (
         <div>
             <Row>
@@ -371,81 +465,7 @@ const Server = (props) => {
             </Row>
             {
                 server && (
-                    <Row gutter={8} style={{ marginTop: 30 }}>
-                        <Col span={16}>
-                            <Card title={'Information of ' + server.name}>
-                                <Row gutter={[32, 32]}>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Status:
-                                        </Typography.Title>
-                                        <StatusRender></StatusRender>
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Flag:
-                                        </Typography.Title>
-                                        <FlagRender></FlagRender>
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Time:
-                                        </Typography.Title>
-                                        {moment(server.ctime).format('lll')}
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            VM:
-                                        </Typography.Title>
-                                        <Button type='link' onClick={() => goVM(server.vm_name)}>
-                                            {server.vm_name}
-                                        </Button>
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Module:
-                                        </Typography.Title>
-                                        <Button type='link' onClick={() => goModule(server.mode_name)}>
-                                            {server.mode_name}
-                                        </Button>
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Running Time:
-                                        </Typography.Title>
-                                        <RunningTime server={server}></RunningTime>
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Version:
-                                        </Typography.Title>
-                                        <ServerVersion deploy_id={server.deploy_id} version={server.version} />
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Monitor:
-                                        </Typography.Title>
-                                        <Button type='link' onClick={() => goMonitor(server.name)}>
-                                            Go
-                                        </Button>
-                                    </Col>
-                                    <Col span={8}>
-                                        <Typography.Title level={4}>
-                                            Restart Count:
-                                        </Typography.Title>
-                                        {server.restart_count ? (<span style={{color: '#f0305a', fontWeight: 'bold'}}>{server.restart_count}</span>) : server.restart_count}
-                                    </Col>
-                                </Row>
-                            </Card>
-                        </Col>
-                        <Col span={8}>
-                            <Card title='Operation'>
-                                <OperationButtons server={server}>
-
-                                </OperationButtons>
-                            </Card>
-                        </Col>
-                    </Row>
+                    <ServerDashboard server={server} />
                 )
             }
             <Modal
@@ -494,4 +514,4 @@ const Server = (props) => {
     )
 }
 
-export default withRouter(Server)
+export default React.forwardRef(Server)

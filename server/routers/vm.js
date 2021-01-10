@@ -3,6 +3,7 @@ const { conn, m_vm, m_server } = require('../data')
 const { copy_to_vm, update_vm_servers, clear_vm, get_vm_config, update_vm_config, connect_shell } = require('../utils/vmutils')
 const { VM_FLAG_READY } = require('../flags')
 const { post_clean_task } = require('../worker/index')
+const { random_salt } = require('../utils/str')
 
 let router = new Router()
 
@@ -54,23 +55,18 @@ router.post('/create', async (req, rsp, next) => {
         rsp.json({ err: 101, msg: 'invalid vm name' })
         return
     }
-    const vm = req.body.vm
-    let ok = false
+    const vm = { salt: random_salt(), ...req.body.vm }
     try {
         await connect_shell(vm)
-        ok = true
     }
     catch (e) {
-        console.log(e)
-    }
-    if (!ok) {
         rsp.json({ err: 0, status: 1 })
         return
     }
-    req.body.vm.flag = 0
+    vm.flag = 0
 
     await m_vm.create(vm)
-    do_sync(vm) // sync
+    do_sync(await m_vm.findByPk(vm.name)) // sync
     rsp.json({ err: 0, status: 0 })
 })
 

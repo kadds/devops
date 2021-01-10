@@ -1,8 +1,6 @@
 const { Router } = require('express')
-const sequelize = require('sequelize')
 const { m_deploy, m_deploy_stream, m_pipeline, m_server } = require('../data')
 const FLAGS = require('../flags')
-const data = require('../data')
 const { post_deploy_task_op } = require('../worker/index')
 
 let router = new Router()

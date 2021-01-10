@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Tag, Form, Modal, Button, Table, Input, Row, Col, Checkbox } from 'antd'
 import {DeleteOutlined} from '@ant-design/icons'
-import {get_variables, new_variable, rm_variable} from '../../api/variable'
+import { get_variables, new_variable, rm_variable, search_variables } from '../../api/variable'
 import queryString from 'query-string'
 
 const VariableIndex = (props) => {
@@ -31,6 +31,12 @@ const VariableIndex = (props) => {
         }
         run()
     }, [needUpdate])
+
+    const onSearch = async (v) => {
+        const data = await search_variables(v)
+        setData(data)
+    }
+
 
     const columns = [
         {
@@ -87,9 +93,12 @@ const VariableIndex = (props) => {
 
     return (
         <div className='page'>
-            <Row>
+            <Row gutter={[16, 16]}>
                 <Col>
                     <Button onClick={onNewVariable} type='primary'>Add</Button>
+                </Col>
+                <Col>
+                    <Input.Search onSearch={onSearch} allowClear enterButton></Input.Search>
                 </Col>
             </Row>
             <Table dataSource={data} rowKey='name' columns={columns}>

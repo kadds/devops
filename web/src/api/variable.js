@@ -13,4 +13,9 @@ async  function rm_variable(name) {
     await post('/variable/del', {name})
 }
 
-export {get_variables, new_variable, rm_variable}
+async function search_variables(key) {
+    const data = await get('/variable/search?key=' + encodeURIComponent(key))
+    return data.list
+}
+
+export { get_variables, new_variable, rm_variable, search_variables }

@@ -1,4 +1,17 @@
 const { Sequelize, DataTypes } = require('sequelize')
+const crypto = require('crypto')
+
+const iv = '2624750004598718'
+function cipher(str, key, iv) {
+    const cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
+    return cipher.update(str, 'utf8', 'hex') + cipher.final('hex');
+}
+
+function decipher(str, key, iv) {
+    key = Buffer.from(key)
+    const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
+    return decipher.update(str, 'hex', 'utf8') + decipher.final('utf8');
+}
 
 let storage = 'data.db'
 const sequelize = new Sequelize({
@@ -20,21 +33,16 @@ const m_vm = sequelize.define('vm', {
         unique: true,
         primaryKey: true,
     },
-    ip: {
+    salt: {
         type: DataTypes.STRING,
         allowNull: false,
+        get() {
+            return this.getDataValue('salt')
+        }
     },
     port: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    },
-    password: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    private_key: {
-        type: DataTypes.STRING,
-        allowNull: true,
     },
     user: {
         type: DataTypes.STRING,
@@ -47,7 +55,65 @@ const m_vm = sequelize.define('vm', {
     flag: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    }
+    },
+    ip: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        set(value) {
+            this.setDataValue('ip', cipher(value, this.salt, iv))
+        },
+        get() {
+            const ip = this.getDataValue('ip')
+            if (ip !== undefined && ip !== null) {
+                return decipher(ip, this.getDataValue('salt'), iv)
+            }
+            else {
+                return ip
+            }
+        }
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        set(value) {
+            if (value !== null) {
+                this.setDataValue('password', cipher(value, this.salt, iv))
+            }
+            else {
+                this.setDataValue('password', null)
+            }
+        },
+        get() {
+            const pwd = this.getDataValue('password')
+            if (pwd) {
+                return decipher(pwd, this.getDataValue('salt'), iv)
+            }
+            else {
+                return pwd
+            }
+        }
+    },
+    private_key: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        set(value) {
+            if (value !== null) {
+                this.setDataValue('private_key', cipher(value, this.salt, iv))
+            }
+            else {
+                this.setDataValue('private_key', null)
+            }
+        },
+        get() {
+            const pk = this.getDataValue('private_key')
+            if (pk !== undefined && pk !== null) {
+                return decipher(this.getDataValue('private_key'), this.getDataValue('salt'), iv)
+            }
+            else {
+                return pk
+            }
+        }
+    },
 }, {
     sequelize,
     timestamps: true,
@@ -55,11 +121,25 @@ const m_vm = sequelize.define('vm', {
     updatedAt: 'mtime',
 })
 
+const update = vm => {
+    if (vm.changed('ip')) {
+        vm.ip = cipher(vm.ip, vm.salt, iv)
+    }
+    if (vm.changed('password')) {
+        vm.password = cipher(vm.password, vm.salt, iv)
+    }
+    if (vm.changed('private_key')) {
+        vm.private_key = cipher(vm.private_key, vm.salt, iv)
+    }
+}
+
+// m_vm.beforeUpdate(update)
+// m_vm.beforeCreate(update)
+
 // module
 const m_mode = sequelize.define('mode', {
     name: {
-        type:
-            DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
         unique: true,
         primaryKey: true,
@@ -73,7 +153,8 @@ const m_mode = sequelize.define('mode', {
         allowNull: false
     },
     content: {
-        // json
+        // json 
+        // {"display_name": "", "desc": ""}
         type: DataTypes.JSON,
         allowNull: false
     }
@@ -87,8 +168,7 @@ const m_mode = sequelize.define('mode', {
 // module instance
 const m_server = sequelize.define('server', {
     name: {
-        type:
-            DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
         unique: true,
         primaryKey: true,
@@ -231,15 +311,15 @@ const m_docker_cache = sequelize.define('docker_cache', {
         type: DataTypes.JSON,
         allowNull: false,
     },
-    pipeline_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
     version: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
     },
+    content: {
+        type: DataTypes.JSON,
+        allowNull: false,
+    }
 }, {
     sequelize,
     timestamps: true,
@@ -308,6 +388,12 @@ const m_variable = sequelize.define('variable_tb', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+    indexes: [{ fields: ['name', 'user'] }]
 })
 
 const conn = sequelize

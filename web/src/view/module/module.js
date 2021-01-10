@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { Button, Popconfirm, Row, Select, Table, Input, Form, Modal, message, Col } from 'antd'
-import { QuestionCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import React, { useState, useEffect, useRef } from 'react'
+import { Button, Popconfirm, Row, Select, Input, Form, Modal, message, Col, Card, Typography, Progress, Dropdown, Menu } from 'antd'
+import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, EllipsisOutlined, CloudServerOutlined, ForkOutlined, CodeSandboxOutlined } from '@ant-design/icons'
 import { add_module, get_module_list, update_module, delete_module, get_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import Server from '../server/server'
@@ -18,14 +18,15 @@ const Module = (props) => {
     const initJobList = { env: [], source: [], build: [], deploy: [] }
     const [joblist, setJoblist] = useState(initJobList)
     const [detail, setDetail] = useState({ show: false, name: null })
-    const [editLoading, setEditLoading] = useState(false)
+    const ref = useRef()
 
     const addModule = async () => {
         setJoblist(initJobList)
         form.setFieldsValue({
             name: '',
             dev_user: '',
-            res_port: ''
+            display_name: '',
+            desc: '', 
         })
         setState({ ...state, visible: true, type: 0, loading: false })
         setUserlistData(await user_list())
@@ -66,83 +67,35 @@ const Module = (props) => {
     }
 
     const editClick = async (e) => {
-        setEditLoading(true)
-        try {
-            const mode = await get_module(e.name)
-            form.setFieldsValue({
-                name: mode.name,
-                dev_user: mode.dev_user,
-            })
-            setState({ ...state, visible: true, type: 1, loading: false })
-            setJoblist(mode.jobs)
-            setUserlistData(await user_list())
-        }
-        catch (e) {
-        }
-        finally {
-            setEditLoading(false)
-        }
+        const mode = await get_module(e.name)
+        form.setFieldsValue({
+            name: mode.name,
+            dev_user: mode.dev_user,
+            desc: mode.desc,
+            display_name: mode.display_name,
+        })
+        setState({ ...state, visible: true, type: 1, loading: false })
+        setJoblist(mode.jobs)
+        setUserlistData(await user_list())
     }
 
     const onChange = (e) => {
         setJoblist(e)
     }
 
-    const detailClick = (name) => {
+    const detailServerClick = (name, server_name) => {
+        ref.current.select(name, server_name)
         setDetail({ show: true, name })
     }
 
-    const [isDel, setIsDel] = useState(false)
     const deleteClick = async (e) => {
-        setIsDel(true)
         try {
             await delete_module(e.name)
         }
         catch (e) {
         }
-        setIsDel(false)
         setState({ ...state, need_update: state.need_update + 1 })
     }
-
-    const columns = [
-        {
-            title: 'Name',
-            dataIndex: 'name',
-            key: 'name',
-            render: text => <Button type="link" onClick={() => detailClick(text)}>{text}</Button>
-        },
-        {
-            title: 'User',
-            dataIndex: 'dev_user',
-            key: 'dev_user',
-            render: text => <span>{text}</span>
-        },
-        {
-            title: 'Server count',
-            dataIndex: 'num',
-            key: 'num',
-        },
-        {
-            title: 'Create time',
-            dataIndex: 'ctime',
-            key: 'ctime',
-            render: text => <span>{moment(text).format('lll')}</span>
-        },
-        {
-            title: 'Op',
-            dataIndex: 'name',
-            key: 'name',
-            render: (i, r) => (<Row gutter={[8, 8]}>
-                <Col>
-                    <Button type='link' loading={editLoading} disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button>
-                </Col>
-                <Col>
-                    <Popconfirm title="Are you sure?" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                        <Button type='link' danger icon={<DeleteOutlined />} loading={isDel}>Delete</Button>
-                    </Popconfirm>
-                </Col> </Row>)
-        }
-    ]
 
     useEffect(() => {
         async function run() {
@@ -154,26 +107,116 @@ const Module = (props) => {
 
     const module_name = queryString.parse(props.location.search).name
 
+    const cardClick = (v) => {
+
+    }
+
+    const onFork = (module) => {
+
+    }
+
+    const ButtonLinkPipeline = (props) => {
+        if (props.module.pipeline_id) {
+            return (
+                <Button type='link'>#{props.module.pipeline_id} {moment(props.module.pipeline_time).fromNow()}</Button>
+            )
+        }
+        else {
+            return (
+                <span>Never running</span>
+            )
+        }
+    }
+
+    const ServerMenu = (props) => {
+        if (props.module.servers.length > 0) {
+            return (<Menu {...props}>
+                {
+                    props.module.servers.map(server => (
+                        <Menu.Item key={server} onClick={() => detailServerClick(props.module.name, server)}>
+                            {server}
+                        </Menu.Item>
+                    ))
+                }
+                <Menu.Divider>
+                </Menu.Divider>
+                <Menu.Item icon={<CloudServerOutlined />} onClick={() => detailServerClick(props.module.name, null)}>
+                    All Servers
+                </Menu.Item>
+            </Menu>)
+        }
+        else {
+            return (
+                <Menu {...props}>
+                    <Menu.Item icon={<DeleteOutlined />}>
+                        <Popconfirm title="Are you sure?" onConfirm={() => deleteClick(props.module)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                            Delete this module
+                        </Popconfirm>
+                    </Menu.Item>
+                    <Menu.Divider>
+                    </Menu.Divider>
+                    <Menu.Item icon={<CloudServerOutlined />} onClick={() => detailServerClick(props.module.name, null)}>
+                        All Servers
+                    </Menu.Item>
+                </Menu>
+            )
+        }
+    }
+
     return (
         <div className='page'>
-            <Row gutter={20}>
-                <Col flex={'1 1 50%'}>
-                    <div style={{ textAlign: 'left' }}>
-                        <Button type='primary' onClick={addModule}>Add</Button>
-                    </div>
-                    <Table rowClassName={(record, index) => {
-                        if (record.name === module_name) {
-                            return 'table_item_blink'
-                        }
-                        return 'table_item_noraml'
-                    }} pagination={false} rowKey={'name'} dataSource={data} columns={columns}></Table>
+            <Row>
+                <Col>
+                    <Button type='primary' onClick={addModule}>Add</Button>
                 </Col>
-                {
-                    detail.show && (<Col flex={'1 1 50%'}>
-                        <Server mode_name={detail.name}> </Server>
-                    </Col>)
-                }
             </Row>
+            <div style={{ textAlign: 'left' }}>
+                {
+                    data.map(v => (
+                        <div className='card' key={v.name} style={{ margin: '20px 20px 0 0', display: 'inline-block' }}>
+                            <Card className={{ 'item_blink': module_name === v.name, 'card_normal': true }} size='small' key={v.name} onClick={() => { cardClick(v) }}
+                                style={{ maxWidth: 300, width: 300 }}
+                                title={v.display_name}
+                                actions={[<EditOutlined key="editing" onClick={() => editClick(v)} />,
+                                <div><Dropdown trigger={['click']} overlay={<ServerMenu module={v} />}>
+                                    <span style={{ display: 'inline-block' }} className='full_fill'><CloudServerOutlined /> {v.num}</span>
+                                </Dropdown></div>,
+                                <div><Dropdown trigger={['click']} overlay={(<Menu>
+                                    <Menu.Item icon={<ForkOutlined />} onClick={() => onFork(v)}>
+                                        Fork
+                                    </Menu.Item>
+                                    <Menu.Item icon={<CodeSandboxOutlined />} >
+                                        Web trigger
+                                    </Menu.Item>
+                                </Menu>)}><EllipsisOutlined className='full_fill' /></Dropdown></div>,
+                                ]}
+                            >
+                                <div>
+                                    <Typography.Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ width: '100%', marginBottom: 0 }}>
+                                        {v.desc}
+                                    </Typography.Paragraph>
+                                    <div style={{ textAlign: 'center', marginTop: 10 }}>
+                                        <ButtonLinkPipeline module={v} />
+                                        <Progress />
+                                    </div>
+                                </div>
+                            </Card >
+                        </div>
+                    ))
+                }
+            </div>
+            <Modal
+                visible={detail.show}
+                title='All Servers'
+                footer={null}
+                width='80%'
+                centered
+                forceRender
+                onCancel={() => setDetail({ show: false, name: null })}
+            >
+
+                <Server ref={ref} />
+            </Modal>
             <Modal
                 visible={state.visible}
                 title='Create/Edit Module'
@@ -188,6 +231,12 @@ const Module = (props) => {
                 <Form form={form}>
                     <Form.Item label='Name' name='name' rules={[{ required: true, message: 'Please input name' }]}>
                         <Input disabled={state.type !== 0} />
+                    </Form.Item>
+                    <Form.Item label='Display name' name='display_name' rules={[{ required: true, message: 'Please input display name' }]}>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label='Description' name='desc' rules={[{ required: true, message: 'Please input description' }]}>
+                        <Input />
                     </Form.Item>
                     <Form.Item label='User' name='dev_user' rules={[{ required: true, message: 'Please select dev user' }]}>
                         <Select>

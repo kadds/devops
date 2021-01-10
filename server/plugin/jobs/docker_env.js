@@ -59,7 +59,7 @@ async function entry(request, param, opt) {
             if (is_new)
                 docker_names.names.push(docker_name)
 
-            await m_docker_cache.create({ docker_names: docker_names, mode_name: pipeline.mode_name, vm_name: param.vm_name, version: 0, pipeline_id: pipeline.id })
+            await m_docker_cache.create({ docker_names: docker_names, mode_name: pipeline.mode_name, vm_name: param.vm_name, version: 0 })
         }
 
         if (is_new) {
@@ -145,7 +145,6 @@ async function entry(request, param, opt) {
         // select cached docker 
         if (cache && cache.docker_names && cache.docker_names.names && cache.docker_names.names.length > 0) {
             await m_docker_cache.destroy({ where: { mode_name: pipeline.mode_name, vm_name: param.vm_name } })
-
             const fn = async () => {
                 for (let i = cache.docker_names.names.length - 1; i >= 0; i--) {
                     docker_name = cache.docker_names.names[i]

@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "antd": "^4.6.6",
-    "axios": "^0.20.0",
+    "axios": "^0.21.0",
     "echarts": "^4.9.0",
     "echarts-for-react": "^2.0.16",
     "moment": "^2.29.1",

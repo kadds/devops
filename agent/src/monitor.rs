@@ -644,11 +644,7 @@ async fn server_notify_tick(servers_path: String, mut context: Context) {
                 }
                 line = String::new();
             }
-            // println!(
-            //     "read vm name is {} servers count {}",
-            //     name_config.vm_name,
-            //     name_config.servers_name.len()
-            // );
+            println!("vm name is {}, num of servers {}", name_config.vm_name, name_config.servers_name.len());
             unsafe {
                 LASTNAMECONFIG = Some(Arc::new(name_config));
             }

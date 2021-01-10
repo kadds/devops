@@ -32,6 +32,7 @@ async function copy_to_vm(local_dir, vm) {
     console.log('try to copy agent files')
     // if need upload agent.toml
     let res = await ssh.execCommand('cat ./agent.toml', { cwd: vm.base_dir + '/agent' })
+    await ssh.execCommand('rm -rf ./agent', { cwd: vm.base_dir + '/' })
 
     if (!await ssh.putDirectory(local_dir, vm.base_dir + '/agent', {
         recursive: false, concurrency: 1,
@@ -54,6 +55,9 @@ async function copy_to_vm(local_dir, vm) {
     })) {
         console.error('ssh put directory fail')
         throw new Error('ssh put directory fail')
+    }
+    if ((res.code === null || res.code === 0) && res.stdout !== null && res.stdout !== "") {
+        await ssh.execCommand('cat > ./agent.toml', { stdin: res.stdout, cwd: vm.base_dir + '/agent' })
     }
     console.log('try start agent')
     await ssh.execCommand('chmod +x ' + vm.base_dir + '/agent/agent')
@@ -81,6 +85,21 @@ async function restart_agent(vm) {
     console.log('restart agent done')
 }
 
+async function reload_agent(vm) {
+    let ssh = await connect_shell(vm)
+    try {
+        await ssh.execCommand('./agent signal -a reload', { cwd: vm.base_dir + '/agent' })
+        // wait 1s
+        await new Promise((res) => {
+            setTimeout(() => res(), 1000)
+        })
+    }
+    catch (err) {
+        console.error(err)
+    }
+    console.log('reload agent done')
+}
+
 async function clear_vm(vm) {
     let ssh = await connect_shell(vm)
     try {
@@ -102,7 +121,7 @@ async function update_vm_config(vm, config) {
     let ssh = await connect_shell(vm)
     if (config) {
         await ssh.execCommand('cat > ./agent.toml', { stdin: config, cwd: vm.base_dir + '/agent' })
-        await restart_agent(vm)
+        await reload_agent(vm)
     }
     else {
         await ssh.execCommand('rm -f ./agent.toml', { cwd: vm.base_dir + '/agent' })
@@ -240,5 +259,6 @@ async function build_docker_image(ssh, dir, docker_file, tag, version, logger) {
 
 module.exports = {
     copy_to_vm, restart_agent, clear_vm, connect_shell, exec_script,
-    update_vm_servers, exec, copy, build_docker_image, get_vm_config, update_vm_config
+    update_vm_servers, exec, copy, build_docker_image, get_vm_config, update_vm_config,
+    reload_agent,
 }

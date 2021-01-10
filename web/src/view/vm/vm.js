@@ -192,7 +192,7 @@ const VM = (props) => {
             </div>
             <Table rowClassName={(record, index) => {
                 if (record.name === vm_name) {
-                    return 'table_item_blink'
+                    return 'item_blink'
                 }
                 return 'table_item_noraml'
             }} pagination={false} rowKey={'name'} dataSource={data} columns={columns}></Table>
@@ -234,7 +234,7 @@ const VM = (props) => {
             <Modal
                 visible={configState.visible}
                 title='Edit Config'
-                okText='Save And Restart'
+                okText='Save And Reload'
                 cancelText='Cancel'
                 onOk={onConfigModalOk}
                 onCancel={onConfigModalCancel}

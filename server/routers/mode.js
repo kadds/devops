@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { conn, m_mode, m_server, m_pipeline } = require('../data')
+const { m_mode, m_server, m_pipeline } = require('../data')
 const { get_job_pipeline_params } = require('../plugin/index')
 const { post_clean_task } = require('../worker/index')
 
@@ -9,20 +9,33 @@ router.get('/list', async (req, rsp, next) => {
     const list = await m_mode.findAll()
     let data = []
     let cnt_req = []
+    let pipe_req = []
     let idx = 0
     for (const item of list) {
         let it = {}
         it.name = item.name
+        it.display_name = item.content.display_name
+        it.desc = item.content.desc
         it.dev_user = item.dev_user
         it.ctime = item.ctime.valueOf()
         const name = it.name
-        cnt_req.push(m_server.count({ where: { mode_name: name } }))
+        cnt_req.push(m_server.findAll({ where: { mode_name: name } }))
+        pipe_req.push(m_pipeline.findOne({ where: { mode_name: name }, order: [['ctime', 'DESC']], limit: 1 })) 
         idx++
         data.push(it)
     }
     const num_cnt = await Promise.all(cnt_req)
+    const pipe_data = await Promise.all(pipe_req)
     for (let i = 0; i < num_cnt.length; i++) {
-        data[i].num = num_cnt[i]
+        data[i].num = num_cnt[i].length
+        data[i].servers = num_cnt[i].map(v => { return v.name })
+        if (pipe_data[i]) {
+            data[i].pipeline_id = pipe_data[i].id
+            data[i].pipeline_ctime = pipe_data[i].ctime.valueOf()
+        }
+        else {
+            data[i].pipeline_id = null
+        }
     }
     rsp.json({ err: 0, list: data })
 })
@@ -50,6 +63,8 @@ router.get('', async (req, rsp, next) => {
     }
     let dt = {}
     dt.name = data.name
+    dt.display_name = data.content.display_name
+    dt.desc = data.content.desc
     dt.dev_user = data.dev_user
     dt.ctime = data.ctime.valueOf()
     dt.jobs = data.content.jobs
@@ -92,7 +107,9 @@ router.post('/', async (req, rsp, next) => {
     data.dev_user = module.dev_user
     data.flag = 0
     data.content = {}
-    data.content.jobs = module.jobs
+    data.content.jobs = module.jobs || ''
+    data.content.display_name = module.display_name || ''
+    data.content.desc = module.desc
 
     await m_mode.create(data)
     rsp.json({ err: 0 })
@@ -101,10 +118,23 @@ router.post('/', async (req, rsp, next) => {
 router.post('/update', async (req, rsp, next) => {
     let module = req.body.module
     let data = {}
-    data.name = module.name
     data.flag = module.flag
     data.dev_user = module.dev_user
     data.flag = 0
+    const d = (await m_mode.findByPk(module.name))
+    if (d && d.content) {
+        data.content = d.content
+    }
+    else {
+        rsp.json({ err: 404, msg: 'not found module' + module.name })
+        return
+    }
+    if (module.desc) {
+        data.content.desc = module.desc
+    }
+    if (module.display_name) {
+        data.content.display_name = module.display_name
+    }
 
     await m_mode.update(data, { where: { name: module.name } })
     rsp.json({ err: 0 })

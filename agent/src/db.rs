@@ -3,16 +3,19 @@ use mongodb::{Client, Collection};
 use mongodb::bson::Document;
 use tokio::sync::{mpsc, mpsc::error, RwLock};
 use tokio::time::timeout;
-use std::time::Duration;
-use std::sync::Arc;
+use std::{time::Duration};
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 
 lazy_static!{
     static ref MONGO_CLIENT: RwLock<Option<Client>> = RwLock::default();
 }
 
+const BATCH_BUFFER_SIZE: usize = 200;
+
 pub struct DBTarget {
     pub column_name: String,
     pub sender: mpsc::Sender<Document>,
+    pub stop: AtomicBool,
 }
 
 async fn connect_mongodb(column_name: &str) -> Option<Collection> {
@@ -39,6 +42,7 @@ async fn connect_mongodb(column_name: &str) -> Option<Collection> {
         };
         *writer = Some(client.clone());
         let db = client.database(&config::get().mongodb.dbname);
+        println!("connect mongodb {}", column_name);
         return Some(db.collection(column_name));
     }
 }
@@ -46,8 +50,9 @@ async fn connect_mongodb(column_name: &str) -> Option<Collection> {
 async fn do_mongo_send(data: Vec<Document>, collection: Collection) {
     for _ in 0..3 {
         if let Err(e) = collection.insert_many(data.clone(), None).await {
-            eprint!("{}", e);
+            eprintln!("mongo {}", e);
         }
+        break
     }
 }
 
@@ -56,22 +61,29 @@ impl DBTarget {
         DBTarget {
             sender: rx,
             column_name,
+            stop: AtomicBool::default(),
         }
     }
+
     pub async fn send(&self, doc: Document) ->  Result<(), error::SendTimeoutError<Document>> {
-        self.sender.clone().send_timeout(doc, Duration::from_millis(100)).await
+        if let Err(e) = self.sender.clone().send_timeout(doc, Duration::from_millis(100)).await {
+            eprintln!("timeout 100ms");
+            return Err(e);
+        }
+        Ok(())
     }
 
     pub async fn run(self: Arc<Self>, mut tx: mpsc::Receiver<Document>) {
         let mut data = Vec::new();
         let duration=  Duration::from_secs(1);
-        loop {
+        println!("running batch queue {}", self.column_name);
+        while !self.stop.load(Ordering::Relaxed) {
             let mut need_send = false;
             match timeout(duration,tx.recv()).await {
                 Ok(v) =>  {
                     if let Some(v) = v {
                         data.push(v);
-                        if data.len() > 100 {
+                        if data.len() > BATCH_BUFFER_SIZE {
                             need_send = true;
                         }
                     }
@@ -81,11 +93,11 @@ impl DBTarget {
                 }
             } 
 
-            if need_send {
+            if need_send && data.len() > 0 {
                 match connect_mongodb(&self.column_name).await {
                     Some(col) => { tokio::spawn(do_mongo_send(data, col)); },
                     None => {
-                        eprint!("connect mongodb fail, logs {}", data.len())
+                        eprintln!("connect mongodb fail, logs {}", data.len())
                     }
                 }
                 data = Vec::new();
@@ -103,20 +115,28 @@ lazy_static!{
 }
 
 async fn mongo_comm(name: &str, logger: &RwLock<Option<Arc<DBTarget>>>) -> Arc<DBTarget> {
-    if let Some(db) = logger.read().await.as_ref() {
-        db.clone()
-    }
-    else {
-        let mut writer = logger.write().await;
-        if let Some(db) = writer.as_ref() {
+    if let Some(db) = logger.read().await.as_ref(){
+        if db.column_name == name {
             return db.clone();
         }
-        let (rx, tx) = mpsc::channel(100);
-        let db = Arc::new(DBTarget::new(name.to_owned(), rx));
-        *writer = Some(db.clone());
-        tokio::spawn(db.clone().run(tx));
-        db
     }
+
+    let mut writer = logger.write().await;
+    if let Some(db) = writer.as_ref() {
+        if db.column_name == name {
+            return db.clone();
+        }
+        else {
+            db.stop.store(true, Ordering::SeqCst);
+        }
+    }
+
+    let (rx, tx) = mpsc::channel(BATCH_BUFFER_SIZE);
+    let db = Arc::new(DBTarget::new(name.to_owned(), rx));
+    *writer = Some(db.clone());
+    tokio::spawn(db.clone().run(tx));
+    println!("new mongo comm queue {}", name);
+    db
 }
 
 pub async fn mongo_vm_monitor() -> Arc<DBTarget> {
