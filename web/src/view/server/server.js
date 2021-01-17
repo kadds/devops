@@ -231,7 +231,7 @@ const Server = (props, ref) => {
             return (
                 <Row gutter={[8, 8]}>
                     <Col>
-                        <Button onClick={() => startClick(props.server.name)} icon={<PoweroffOutlined />} type='primary'>Start</Button>
+                        <Button disabled={props.server.version === null} onClick={() => startClick(props.server.name)} icon={<PoweroffOutlined />} type='primary'>Start</Button>
                     </Col>
                     <Col>
                         <Popconfirm title="Are you sure?" onConfirm={() => destroyClick(props.server.name)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
@@ -245,7 +245,7 @@ const Server = (props, ref) => {
             return (
                 <Row gutter={[8, 8]}>
                     <Col>
-                        <Button onClick={() => restartClick(props.server.name)}>Restart</Button>
+                        <Button disabled={props.server.version === null} onClick={() => restartClick(props.server.name)}>Restart</Button>
                     </Col>
                     <Col>
                         <Button danger onClick={() => stopClick(props.server.name)} icon={<PoweroffOutlined />}>Stop</Button>

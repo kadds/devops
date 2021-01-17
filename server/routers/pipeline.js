@@ -76,9 +76,9 @@ router.post('/', async (req, rsp, next) => {
 })
 
 router.post('/del', async (req, rsp, next) => {
-    // stop current pipeline job
-    await post_pipeline_op('stop', req.body.id)
+    // stop and remove current pipeline job
     const pipeline = await m_pipeline.findByPk(req.body.id)
+    await post_pipeline_op('clean', req.body.id)
     if (pipeline.content.deploy_id) {
         if (await m_deploy_stream.count({
             where: {
@@ -100,8 +100,6 @@ router.post('/del', async (req, rsp, next) => {
         await m_deploy.destroy({ where: { id: pipeline.content.deploy_id } })
     }
 
-    // remove from database last
-    await m_pipeline.destroy({ where: { id: req.body.id } })
     rsp.json({ err: 0 })
 })
 
@@ -117,6 +115,16 @@ router.get('', async (req, rsp, next) => {
     data.stage = pipeline.stage
     data.deploy_id = pipeline.content.deploy_id
     rsp.json({ err: 0, data: data })
+})
+
+router.post('/stop', async (req, rsp, next) => {
+    const pipeline = await m_pipeline.findByPk(req.body.id)
+    if (!pipeline) {
+        rsp.json({ err: 404, msg: 'pipeline not found' })
+        return
+    }
+    await post_pipeline_op('stop', req.body.id)
+    rsp.json({ err: 0 })
 })
 
 router.post('/log', async (req, rsp, next) => {

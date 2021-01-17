@@ -8,10 +8,10 @@ async function entry(request, param, opt) {
         const logger = opt.logger
         const ssh = opt.ssh
         let need_clone = true
-	let old_dir = ssh.base_dir
+	    let old_dir = ssh.base_dir
         try {
             ssh.base_dir += '/proj/'
-            const status = await exec(ssh, 'git status', null, logger)
+            await exec(ssh, 'git status', null, logger)
             need_clone = false
         }
         catch (e) {
@@ -20,10 +20,10 @@ async function entry(request, param, opt) {
         if (need_clone) {
             ssh.base_dir = old_dir
             await exec(ssh, 'git clone --depth=1 --single-branch --branch ' + param.branch + ' ' + param.git_url + ' ./proj', null, logger)
-	    ssh.base_dir += '/proj/'
+	        ssh.base_dir += '/proj/'
         }
         else {
-            await exec(ssh, 'git pull', null, logger)
+            await exec(ssh, 'git pull --ff-only', null, logger)
         }
     }
 }

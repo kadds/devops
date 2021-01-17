@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { get_pipeline_log_id } from './../../../api/pipeline'
+import { get_pipeline_log_id, stop_pipeline } from './../../../api/pipeline'
 import { base_ws_url } from '../../../api/comm'
-import { Tag, Row, Col, Spin, Result, Button } from 'antd'
-import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { Tag, Row, Col, Spin, Result, Button, Popconfirm } from 'antd'
+import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { useEventListener } from '../../../comm/util'
 import CodeLine from '../../components/codeline'
 
@@ -92,6 +92,10 @@ const PipeLineStageComm = (props) => {
         document.getElementById('rightPanel').scrollTo({ left: 0, top: window.innerHeight - 50, behavior: 'smooth' })
     }
 
+    const stopClick = async () => {
+        await stop_pipeline(pipeline.id)
+    }
+
     const stageStr = (stage) => {
         if (stage === -1) {
             return 'Prepare environment failed'
@@ -143,6 +147,14 @@ const PipeLineStageComm = (props) => {
                 <Col>
                     <Spin spinning={loading !== 2}></Spin>
                 </Col>
+                {
+                    (pipeline.stage <= 4 && pipeline.stage >= 0) &&
+                    (<Col flex={1} style={{ textAlign: 'right' }}>
+                        <Popconfirm title="Confirm stop?" onConfirm={() => stopClick()} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                            <Button type='dashed' danger size='small'>Stop</Button>
+                        </Popconfirm>
+                    </Col>)
+                }
             </Row>
             <CodeLine tags={tags} ref={codeRef} style={{height: height}}/>
         </div>

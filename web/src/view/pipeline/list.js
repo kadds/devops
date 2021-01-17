@@ -41,6 +41,7 @@ const PipeLineList = props => {
     const [pagination, setPagination] = useState({ total: 0, current: 1, pageSize: 10 })
     const [loading, setLoading] = useState(false)
     const [needUpdate, setNeedUpdate] = useState(0)
+    const module_name = queryString.parse(props.location.search).module_name 
 
     const deleteClick = async (id) => {
         setIsDel(true)
@@ -140,15 +141,18 @@ const PipeLineList = props => {
     const [state, setState] = useState({ loading: false, visible: false })
     const [scriptName, setScriptName] = useState(null)
 
-    const addClick = async () => {
+    const addClick = async (_, name) => {
         setState({ loading: false, visible: true })
         setModuleList({ loading: true, list: [] })
         const list = await get_module_list()
         setModuleList({ loading: false, list })
+        if (name) {
+            await onModuleSelect(name)
+        }
     }
     useEffect(() => {
         if (queryString.parse(props.location.search).new) {
-            setTimeout(() => addClick())
+            setTimeout(() => addClick(null, module_name))
         }
     }, [props.location.search])
 
@@ -210,7 +214,7 @@ const PipeLineList = props => {
             fillDefaults(module_data.pipeline_params.source, obj)
             fillDefaults(module_data.pipeline_params.build, obj)
             fillDefaults(module_data.pipeline_params.deploy, obj)
-            form.setFieldsValue({ param: obj })
+            form.setFieldsValue({ param: obj, mode_name: name })
         }
         catch (e) {
         }

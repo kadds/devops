@@ -21,6 +21,13 @@ async function entry(request, param, opt) {
         }
         await exec(ssh, 'mkdir -p ' + base_dir, null, logger)
         ssh.base_dir = base_dir
+        if (param.pre_install_script) {
+            await logger.write('- do pre install script\n')
+            await exec_script(ssh, await get_script_content(param.pre_install_script), logger)
+        }
+        else {
+            await logger.write('- no need to execute pre install script\n')
+        }
         await logger.write('- installing deps\n')
         await install_deps(ssh, opt.deps, logger)
         if (param.post_install_script) {
@@ -62,9 +69,11 @@ async function entry(request, param, opt) {
 }
 
 const params = []
-const pipeline_params = [{ name: 'vm_name', label: 'Vm to run', description: 'Which virtual machine is ready to run the pipeline?', type: 'select VM' },
-{ name: 'base_dir', label: 'Base Directory', description: 'Directory for preparing environment and building source code. (Don\'t use ~)', type: 'string', default: '/tmp/' },
-{ name: 'post_install_script', label: 'Post-install script', description: 'The script is executed when environment is ready.', type: 'script' }]
+const pipeline_params = [
+    { name: 'vm_name', label: 'Vm to run', description: 'Which virtual machine is ready to run the pipeline?', type: 'select VM' },
+    { name: 'base_dir', label: 'Base Directory', description: 'Directory for preparing environment and building source code. (Don\'t use ~)', type: 'string', default: '/tmp/' },
+    { name: 'pre_install_script', label: 'Pre-install script', description: 'The script is executed when the environment is started.', type: 'script' },
+    { name: 'post_install_script', label: 'Post-install script', description: 'The script is executed when environment is ready.', type: 'script' }]
 
 module.exports = {
     entry, name: 'bare-env', description: 'virtual machine environment', tag: [], type: 'env',

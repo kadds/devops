@@ -283,6 +283,11 @@ pre.line > .tag {
   }
 }
 
+.blue_dash {
+    border: #1890ff 1px dashed;
+    margin: 5px;
+}
+
 .progress_hint {
     border-right: none;
     border-top: none;
@@ -329,4 +334,23 @@ span.ret_err {
 .full_fill {
     width: 100%;
     height: 100%;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: #EDEDED;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+    background: #bbbbbb;
+}
+
+::-webkit-scrollbar-track {
+    background: #EDEDED;
 }

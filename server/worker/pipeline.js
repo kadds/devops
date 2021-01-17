@@ -128,7 +128,28 @@ async function stop(id) {
     try {
         const pipeline = await m_pipeline.findByPk(id)
         const env_job = pipeline.content.jobs.env[0]
-        await clean_job(env_job.name, env_job.param, { id })
+        const logger = new LogStream()
+        logger.init_none()
+        await close_job(env_job.name, env_job.param, { id, logger })
+        await m_pipeline.update({ stage: FLAGS.PIPE_STAGE_ERR_UNKNOWN }, { where: { id, stage: [FLAGS.PIPE_STAGE_DEPLOY, FLAGS.PIPE_STAGE_BUILD, FLAGS.PIPE_STAGE_ENV, FLAGS.PIPE_STAGE_SOURCE] } })
+    }
+    catch (e) { console.error(e) }
+}
+
+async function rm(id) {
+    let v = pipes.get(id)
+    if (v) {
+        v.close = true
+        pipes.set(id, v)
+    }
+    // remove pipeline cache
+    try {
+        const pipeline = await m_pipeline.findByPk(id)
+        const env_job = pipeline.content.jobs.env[0]
+        const logger = new LogStream()
+        logger.init_none()
+        await clean_job(env_job.name, env_job.param, { id, logger })
+        await m_pipeline.destroy({ where: { id } })
     }
     catch (e) { console.error(e) }
 
@@ -199,8 +220,16 @@ async function listen_log(id, send, close) {
     let v = pipes.get(id)
     if (v === undefined || v === null) {
         // read log file
-        const path = log_path(id)
-        const file = await fs.open(path, 'r')
+        let file
+        try {
+            const path = log_path(id)
+            file = await fs.open(path, 'r')
+        }
+        catch (e) {
+            console.error('log file not found id ' + id)
+            close()
+            return
+        }
         let buf = Buffer.allocUnsafe(length)
         try {
             while (1) {
@@ -269,4 +298,4 @@ async function listen_log(id, send, close) {
     }
 }
 
-module.exports = { run, stop, listen_log, clean_cache }
+module.exports = { run, stop, listen_log, clean_cache, rm }

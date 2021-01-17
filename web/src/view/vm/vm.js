@@ -162,7 +162,7 @@ const VM = (props) => {
                     <Button type='link' disabled={isDel} icon={<FileSyncOutlined />} onClick={() => redoClick(r.name)}>Sync</Button>
                 </Col>
                 <Col>
-                    <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                    <Popconfirm title="Confirm delete this VM?" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
                         <Button danger type='link' icon={<DeleteOutlined />} loading={isDel}>Delete</Button>
                     </Popconfirm>
                 </Col>

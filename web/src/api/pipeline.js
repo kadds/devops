@@ -26,6 +26,10 @@ async function delete_pipeline(id) {
     return (await post('/pipeline/del', { id }))
 }
 
+async function stop_pipeline(id) {
+    return (await post('/pipeline/stop', { id }, { timeout: 60000 }))
+}
+
 async function get_pipeline(id) {
     return (await get('/pipeline?id=' + id)).data
 }
@@ -38,4 +42,4 @@ async function get_pipeline_stat() {
     return (await get('/pipeline/stat')).list
 }
 
-export { get_pipelines, get_jobs, jobs_valid, create_pipeline, delete_pipeline, get_pipeline, get_pipeline_log_id, get_pipeline_stat }
+export { get_pipelines, get_jobs, jobs_valid, create_pipeline, delete_pipeline, get_pipeline, get_pipeline_log_id, get_pipeline_stat, stop_pipeline }

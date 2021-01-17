@@ -162,7 +162,7 @@ function do_result(res, logger) {
         if (data[data.length - 1] === '\n') {
             data.length = data.length - 1
         }
-        throw new Error('!!! execute fail.')
+        throw new Error('!!! execute fail. \n' + data)
     }
     else {
         return res.stdout

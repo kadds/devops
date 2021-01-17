@@ -32,6 +32,7 @@ router.get('/list', async (req, rsp, next) => {
         if (pipe_data[i]) {
             data[i].pipeline_id = pipe_data[i].id
             data[i].pipeline_ctime = pipe_data[i].ctime.valueOf()
+            data[i].pipeline_stage = pipe_data[i].stage
         }
         else {
             data[i].pipeline_id = null

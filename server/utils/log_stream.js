@@ -36,7 +36,17 @@ class LogStream {
         this.closed = false
     }
 
+    async init_none() {
+        this.closed = false
+    }
+
     async flush() {
+        if (this.file === null) {
+            return
+        }
+        if (this.file === null) {
+            return
+        }
         if (this.closed || this.in_flush) return
         if (this.timer) {
             clearTimeout(this.timer)
@@ -49,6 +59,9 @@ class LogStream {
     }
 
     wake_up() {
+        if (this.file === null) {
+            return
+        }
         if (this.flush_funcs.next) {
             const node = this.flush_funcs.next
             this.flush_funcs.next = node.next
@@ -61,6 +74,9 @@ class LogStream {
     }
 
     async wait_flush() {
+        if (this.file === null) {
+            return
+        }
         return new Promise((resolve, reject) => {
             this.flush_funcs.back.next = { next: null, fn: resolve }
             this.flush_funcs.back = this.flush_funcs.back.next
@@ -68,6 +84,9 @@ class LogStream {
     }
 
     async write(str) {
+        if (this.file === null) {
+            return
+        }
         if (this.closed) return
         for (const fn of this.listener) {
             fn(str)
@@ -103,6 +122,9 @@ class LogStream {
     }
 
     async close() {
+        if (this.file === null) {
+            return
+        }
         await this.flush()
         this.closed = true
         for (const fn of this.listener) {
@@ -112,6 +134,9 @@ class LogStream {
     }
 
     get_current_buf() {
+        if (this.file === null) {
+            return ''
+        }
         return this.buf.toString('utf8', 0, this.pos)
     }
 
@@ -122,9 +147,9 @@ class LogStream {
         const idx = this.listener.findIndex((v) => { return v === fn })
         if (idx >= 0) {
             this.listener.splice(idx, 1)
-            return
+            return true
         }
-        throw new Error('not find fn')
+        return false
     }
 }
 

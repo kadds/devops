@@ -121,20 +121,6 @@ const m_vm = sequelize.define('vm', {
     updatedAt: 'mtime',
 })
 
-const update = vm => {
-    if (vm.changed('ip')) {
-        vm.ip = cipher(vm.ip, vm.salt, iv)
-    }
-    if (vm.changed('password')) {
-        vm.password = cipher(vm.password, vm.salt, iv)
-    }
-    if (vm.changed('private_key')) {
-        vm.private_key = cipher(vm.private_key, vm.salt, iv)
-    }
-}
-
-// m_vm.beforeUpdate(update)
-// m_vm.beforeCreate(update)
 
 // module
 const m_mode = sequelize.define('mode', {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Button, Popconfirm, Row, Select, Input, Form, Modal, message, Col, Card, Typography, Progress, Dropdown, Menu } from 'antd'
-import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, EllipsisOutlined, CloudServerOutlined, ForkOutlined, CodeSandboxOutlined } from '@ant-design/icons'
+import { QuestionCircleOutlined, EditOutlined, DeleteOutlined, EllipsisOutlined, CloudServerOutlined, ForkOutlined, CodeSandboxOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { add_module, get_module_list, update_module, delete_module, get_module } from '../../api/module'
 import { user_list } from '../../api/user'
 import Server from '../server/server'
@@ -80,6 +80,7 @@ const Module = (props) => {
     }
 
     const onChange = (e) => {
+        console.log(e)
         setJoblist(e)
     }
 
@@ -107,18 +108,36 @@ const Module = (props) => {
 
     const module_name = queryString.parse(props.location.search).name
 
-    const cardClick = (v) => {
-
+    const goPipeline = (v) => {
+        if (v.pipeline_id !== null) {
+            props.history.push({ pathname: '/pipeline/detail', search: '?id=' + v.pipeline_id })
+        }
     }
 
-    const onFork = (module) => {
+    const newPipeline = (module_name) => {
+        props.history.push({ pathname: '/pipeline/list', search: '?new=1&module_name=' + encodeURIComponent(module_name) })
+    }
 
+    const cardClick = (v) => {
+    }
+
+    const onFork = async (e) => {
+        const mode = await get_module(e.name)
+        form.setFieldsValue({
+            name: mode.name,
+            dev_user: mode.dev_user,
+            desc: mode.desc,
+            display_name: mode.display_name,
+        })
+        setState({ ...state, visible: true, type: 0, loading: false })
+        setJoblist(mode.jobs)
+        setUserlistData(await user_list())
     }
 
     const ButtonLinkPipeline = (props) => {
         if (props.module.pipeline_id) {
             return (
-                <Button type='link'>#{props.module.pipeline_id} {moment(props.module.pipeline_time).fromNow()}</Button>
+                <span><Button type='link' onClick={() => goPipeline(props.module)}>#{props.module.pipeline_id} </Button> {moment(props.module.pipeline_ctime).fromNow()}</span>
             )
         }
         else {
@@ -170,13 +189,14 @@ const Module = (props) => {
                     <Button type='primary' onClick={addModule}>Add</Button>
                 </Col>
             </Row>
-            <div style={{ textAlign: 'left' }}>
+            <div style={{ textAlign: 'left', display: 'flex' }}>
                 {
                     data.map(v => (
                         <div className='card' key={v.name} style={{ margin: '20px 20px 0 0', display: 'inline-block' }}>
-                            <Card className={{ 'item_blink': module_name === v.name, 'card_normal': true }} size='small' key={v.name} onClick={() => { cardClick(v) }}
+                            <Card className={{ 'item_blink': module_name === v.name, 'card_normal': true, 'card_readonly': true }} size='small' key={v.name} onClick={() => { cardClick(v) }}
                                 style={{ maxWidth: 300, width: 300 }}
                                 title={v.display_name}
+                                extra={<Button size='small' onClick={() => newPipeline(v.name)} icon={<ThunderboltOutlined />}></Button>}
                                 actions={[<EditOutlined key="editing" onClick={() => editClick(v)} />,
                                 <div><Dropdown trigger={['click']} overlay={<ServerMenu module={v} />}>
                                     <span style={{ display: 'inline-block' }} className='full_fill'><CloudServerOutlined /> {v.num}</span>
@@ -191,13 +211,14 @@ const Module = (props) => {
                                 </Menu>)}><EllipsisOutlined className='full_fill' /></Dropdown></div>,
                                 ]}
                             >
-                                <div>
+                                <div style={{ height: 100, overflowY: 'auto' }}>
                                     <Typography.Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ width: '100%', marginBottom: 0 }}>
                                         {v.desc}
                                     </Typography.Paragraph>
                                     <div style={{ textAlign: 'center', marginTop: 10 }}>
                                         <ButtonLinkPipeline module={v} />
-                                        <Progress />
+                                        <Progress status={v.pipeline_stage ? (v.pipeline_stage >= 0 ? (v.pipeline_stage > 4 ? "" : "active") : 'exception') : ''}
+                                            percent={v.pipeline_stage ? (v.pipeline_stage >= -4 && v.pipeline_stage <= 4 ? Math.abs(v.pipeline_stage * 20) : (100)) : 0} />
                                     </div>
                                 </div>
                             </Card >

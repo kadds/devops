@@ -81,19 +81,19 @@ const JobSelect = (props) => {
             setAvlJob({ list, loading: false })
         }
         run()
-    }, [])
+    }, [props.joblist])
 
     const pform = Form.useForm()[0]
 
     const cardClick = (item) => {
-        if (!props.editable || (selectMap.get(item.type).readonly && !selectMap.get(item.name))) {
+        if ((selectMap.get(item.type).readonly && !selectMap.get(item.name))) {
             return
         }
         setParam({ loading: false, visible: true, params: item.params, name: item.name, item: item })
         let val = {}
         if (selectMap.get(item.name)) {
             const job = props.joblist[item.type].find(v => { return v.name === item.name })
-            Object.entries(job.param).forEach((key, value) => { val[key] = value })
+            Object.entries(job.param).forEach(([key, value]) => { val[key] = value })
         }
         else {
             for (const p of item.params) {
@@ -174,7 +174,7 @@ const JobSelect = (props) => {
                         </div>
                     }
                 >
-                    <Typography.Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ width: '100%', marginBottom: 0 }}>
+                    <Typography.Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more', onExpand: e => { e.stopPropagation(); } }} style={{ width: '100%', marginBottom: 0 }}>
                         {props.item.description}
                     </Typography.Paragraph>
                 </Card >
@@ -184,8 +184,8 @@ const JobSelect = (props) => {
     }
 
     return (
-        <Row gutter={16} style={{ maxHeight: '70%', overflow: 'auto' }}>
-            <Col>
+        <Row gutter={16} style={{ maxHeight: '70%', overflow: 'auto', paddingLeft: 20 }}>
+            <Col className='blue_dash'>
                 <Typography.Text strong style={{ margin: '10 10', textAlign: 'center', display: 'block' }}>
                     Environment
                 </Typography.Text>
@@ -199,7 +199,7 @@ const JobSelect = (props) => {
                     }
                 </div>
             </Col>
-            <Col>
+            <Col className='blue_dash'>
                 <Typography.Text strong style={{ margin: '10 10', textAlign: 'center', display: 'block' }}>
                     Source Code
                 </Typography.Text>
@@ -213,7 +213,7 @@ const JobSelect = (props) => {
                     }
                 </div>
             </Col>
-            <Col>
+            <Col className='blue_dash'>
                 <Typography.Text strong style={{ margin: '10 10', textAlign: 'center', display: 'block' }}>
                     Build
                 </Typography.Text>
@@ -227,7 +227,7 @@ const JobSelect = (props) => {
                     }
                 </div>
             </Col>
-            <Col>
+            <Col className='blue_dash'>
                 <Typography.Text strong style={{ margin: '10 10', textAlign: 'center', display: 'block' }}>
                     Deploy
                 </Typography.Text>
@@ -271,7 +271,7 @@ const JobSelect = (props) => {
                                 <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
                                     </span>
                                 }>
-                                    <Input></Input>
+                                    <Input disabled={!props.editable}></Input>
                                 </Form.Item>
                             )
                         }
@@ -282,7 +282,7 @@ const JobSelect = (props) => {
                                 <Tooltip title={p.description}><QuestionCircleOutlined /></Tooltip>
                                     </span>
                                 }>
-                                    <Input.TextArea autoSize={{ minRows: 2, maxRows: 10 }}></Input.TextArea>
+                                    <Input.TextArea disabled={!props.editable} autoSize={{ minRows: 2, maxRows: 10 }}></Input.TextArea>
                                 </Form.Item>
                             )
                         }

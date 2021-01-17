@@ -19,6 +19,9 @@ async function post_task_server_op(op, name) {
         else if (op === 'destroy') {
             await server.destroy(name)
         }
+        else {
+            throw new Error('unknown op ' + op)
+        }
     }
     catch (e) {
         console.error(e)
@@ -33,6 +36,12 @@ async function post_pipeline_op(op, id) {
         else if (op === 'stop') {
             await pipeline.stop(id)
         }
+        else if (op === 'clean') {
+            await pipeline.rm(id)
+        } 
+        else {
+            throw new Error('unknown op ' + op)
+        }
     }
     catch (e) {
         console.error(e)
@@ -46,6 +55,9 @@ async function post_deploy_task_op(op, param) {
         }
         else if (op === 'stop') {
             await deploy.update_tasks(null)
+        }
+        else {
+            throw new Error('unknown op ' + op)
         }
     }
     catch (e) {
