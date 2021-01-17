@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Button, Badge, Table, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message, Spin } from 'antd'
-import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm, get_vm_config, update_vm_config } from '../../api/vm'
-import { LineChartOutlined, QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons'
-import moment from 'moment'
+import { Button, Badge, Card, Statistic, Progress, Dropdown, Menu, Typography, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message, Spin } from 'antd'
+import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm, get_vm_config, update_vm_config, vm_detail } from '../../api/vm'
+import { LineChartOutlined, QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined, CloudServerOutlined } from '@ant-design/icons'
 import { withRouter } from 'react-router'
 import queryString from 'query-string'
 
@@ -78,15 +77,12 @@ const VM = (props) => {
         setState({ ...state, visible: true, type: 1, loading: false })
     }
 
-    const [isDel, setIsDel] = useState(false)
     const deleteClick = async (e) => {
-        setIsDel(true)
         try {
             await delete_vm(e.name)
         }
         catch (e) {
         }
-        setIsDel(false)
         setState({ ...state, need_update: state.need_update + 1 })
     }
 
@@ -112,7 +108,8 @@ const VM = (props) => {
         setConfigState({ ...configState, visible: false, loading: false })
     }
 
-    const redoClick = async (name) => {
+    const redoClick = async (v) => {
+        const name = v.name
         setConfigState({ visible: true, loading: false, vm: name, dataLoading: true })
         const config = await get_vm_config(name)
         form2.setFieldsValue({
@@ -121,58 +118,9 @@ const VM = (props) => {
         setConfigState({ visible: true, loading: false, vm: name, dataLoading: false })
     }
 
-    const columns = [
-        {
-            title: 'Name',
-            dataIndex: 'name',
-            key: 'name',
-            render: (text, r) => <Badge status={r.flag !== 1 ? 'processing' : 'success'} text={text}></Badge>
-        },
-        {
-            title: 'IP/host',
-            dataIndex: 'ip',
-            key: 'ip',
-            render: text => <span>{text}</span>
-        },
-        {
-            title: 'Port',
-            dataIndex: 'port',
-            key: 'port',
-        },
-        {
-            title: 'Base directory',
-            dataIndex: 'base_dir',
-            key: 'base_dir',
-        },
-        {
-            title: 'Create time',
-            dataIndex: 'ctime',
-            key: 'ctime',
-            render: text => <span>{moment(text).format('lll')}</span>
-        },
-        {
-            title: 'Op',
-            dataIndex: 'name',
-            key: 'name',
-            render: (i, r) => (<Row gutter={[8, 8]}>
-                <Col>
-                    <Button type='link' disabled={isDel} icon={<EditOutlined />} onClick={() => editClick(r)}>Edit</Button>
-                </Col>
-                <Col>
-                    <Button type='link' disabled={isDel} icon={<FileSyncOutlined />} onClick={() => redoClick(r.name)}>Sync</Button>
-                </Col>
-                <Col>
-                    <Popconfirm title="Confirm delete this VM?" onConfirm={() => deleteClick(r)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                        <Button danger type='link' icon={<DeleteOutlined />} loading={isDel}>Delete</Button>
-                    </Popconfirm>
-                </Col>
-                <Col>
-                    <Button type='link' disabled={isDel} icon={<LineChartOutlined />} onClick={() => goMonitor(r.name)}>Monitor</Button>
-                </Col>
-            </Row>)
+    const cardClick = () => {
 
-        }
-    ]
+    }
 
     const vm_name = queryString.parse(props.location.search).name
 
@@ -180,22 +128,110 @@ const VM = (props) => {
         async function run() {
             const list = await get_all_vm()
             setData(list)
+            const new_list = []
+            for (let v of list) {
+                const d = await vm_detail(v.name)
+                console.log(d)
+                new_list.push({ ...v, ...d })
+            }
+            console.log(new_list)
+            setData(new_list)
         }
         run()
     }, [state.need_update, vm_name])
 
+    const onInfoMouseEnter = async (v) => {
+        const d = await vm_detail(v.name)
+        v = { ...v, ...d }
+        setData(data => {
+            const idx = data.findIndex(it => it.name === v.name)
+            if (idx >= 0) {
+                data[idx] = v
+                return [].concat(data)
+            }
+            else {
+                return data
+            }
+        })
+    }
+
+    const detailServerClick = (name) => {
+        props.history.push({ pathname: '/server', search: '?name=' + encodeURIComponent(name) })
+    }
+
+    const ServerMenu = (props) => {
+        return (<Menu {...props}>
+            {
+                props.vm.servers.map(server => (
+                    <Menu.Item key={server} onClick={() => detailServerClick(server)}>
+                        {server}
+                    </Menu.Item>
+                ))
+            }
+        </Menu>)
+    }
 
     return (
         <div className='page'>
-            <div style={{ textAlign: 'left' }}>
-                <Button type='primary' onClick={addVm}>Add</Button>
-            </div>
-            <Table rowClassName={(record, index) => {
-                if (record.name === vm_name) {
-                    return 'item_blink'
+            <Row>
+                <Col>
+                    <Button type='primary' onClick={addVm}>Add</Button>
+                </Col>
+            </Row>
+
+            <div style={{ textAlign: 'left', display: 'flex' }}>
+                {
+                    data.map(v => (
+                        <div className='card' key={v.name} style={{ margin: '20px 20px 0 0', display: 'inline-block' }}>
+                            <Card className={{ 'item_blink': vm_name === v.name, 'card_normal': true, 'card_readonly': true }} size='small'
+                                key={v.name} onClick={() => { cardClick(v) }}
+                                style={{ maxWidth: 340, width: 340 }}
+                                extra={<Row gutter={6}>
+                                    <Col>
+                                        <Button icon={<LineChartOutlined />} size='small' onClick={() => goMonitor(v.name)} />
+                                    </Col>
+                                    <Col>
+                                        <Badge status={v.flag !== 1 ? 'processing' : 'success'}></Badge>
+                                    </Col>
+                                </Row>}
+                                title={v.name}
+                                actions={
+                                    [<EditOutlined key="editing" onClick={() => editClick(v)} />,
+                                    <FileSyncOutlined key="editing" onClick={() => redoClick(v)} />,
+                                    <div><Dropdown trigger={['click']} overlay={<ServerMenu vm={v} />}>
+                                        <span style={{ display: 'inline-block' }} className='full_fill'><CloudServerOutlined /> {v.servers.length}</span>
+                                    </Dropdown></div>,
+                                    <div>
+                                        <Popconfirm title="Confirm delete this VM?" onConfirm={() => deleteClick(v)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                                            <DeleteOutlined className='full_fill' />
+                                        </Popconfirm>
+                                    </div>
+                                    ]}
+                            >
+                                <div style={{ height: 77, overflowY: 'auto' }}>
+                                    <Spin spinning={v.cpu_num === undefined}>
+                                        <Row gutter={0}>
+                                            <Col span={6}>
+                                                <Statistic title="CPU" value={v.cpu_num} />
+                                            </Col>
+                                            <Col span={12}>
+                                                <Statistic title="Memory (All) " value={v.mem_total} suffix='MiB' precision={0} />
+                                            </Col>
+                                            <Col span={6}>
+                                                <Statistic prefix={
+                                                    <Progress onMouseEnter={() => onInfoMouseEnter(v)} size='small' type="circle" width={40}
+                                                        percent={Math.floor((v.mem_total - v.mem_avl) / v.mem_total * 100)}></Progress>
+                                                } title="Memory %" value='' className='statistic' />
+                                            </Col>
+                                        </Row>
+                                    </Spin>
+                                </div>
+                            </Card >
+                        </div>
+                    ))
                 }
-                return 'table_item_noraml'
-            }} pagination={false} rowKey={'name'} dataSource={data} columns={columns}></Table>
+            </div>
+
             <Modal
                 visible={state.visible}
                 title='Create/Edit VM'
@@ -240,6 +276,7 @@ const VM = (props) => {
                 onCancel={onConfigModalCancel}
                 confirmLoading={configState.loading || configState.dataLoading}
                 centered
+                width='80%'
             >
                 <Spin spinning={configState.dataLoading}>
 

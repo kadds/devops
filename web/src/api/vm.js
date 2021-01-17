@@ -29,4 +29,8 @@ async function update_vm_config(name, config) {
     return (await post('vm/config', { name, config }))
 }
 
-export { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm, get_vm_config, update_vm_config }
+async function vm_detail(name) {
+    return (await get('vm/detail?name=' + encodeURIComponent(name), { timeout: 20000 })).data
+}
+
+export { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm, get_vm_config, update_vm_config, vm_detail }

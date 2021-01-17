@@ -154,7 +154,7 @@ const PipeLineList = props => {
         if (queryString.parse(props.location.search).new) {
             setTimeout(() => addClick(null, module_name))
         }
-    }, [props.location.search])
+    }, [props.location.search, module_name])
 
 
     const onModalOk = async () => {

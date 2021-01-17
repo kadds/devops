@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { conn, m_vm, m_server } = require('../data')
-const { copy_to_vm, update_vm_servers, clear_vm, get_vm_config, update_vm_config, connect_shell } = require('../utils/vmutils')
+const { copy_to_vm, update_vm_servers, clear_vm, get_vm_config, update_vm_config, connect_shell, get_vm_detail } = require('../utils/vmutils')
 const { VM_FLAG_READY } = require('../flags')
 const { post_clean_task } = require('../worker/index')
 const { random_salt } = require('../utils/str')
@@ -114,6 +114,9 @@ router.post('/update', async (req, rsp, next) => {
 
 router.get('/list', async (req, rsp, next) => {
     let data = await m_vm.findAll()
+    const servers = await m_server.findAll({})
+    let map = new Map()
+
     let list = []
     for (let it of data) {
         let v = {}
@@ -124,9 +127,24 @@ router.get('/list', async (req, rsp, next) => {
         v.port = it.port
         v.user = it.user
         v.flag = it.flag
+        v.servers = []
+        map.set(v.name, v)
         list.push(v)
     }
+    for (let it of servers) {
+        if (map.has(it.vm_name)) {
+            map.get(it.vm_name).servers.push(it.name)
+        }
+    }
+
     rsp.json({ err: 0, list: list });
+})
+
+router.get('/detail', async (req, rsp, next) => {
+    const name = req.query.name
+    const vm = await m_vm.findByPk(name)
+    const data = await get_vm_detail(vm)
+    rsp.json({ err: 0, data })
 })
 
 router.post('/del', async (req, rsp, next) => {

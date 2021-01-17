@@ -11,6 +11,14 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', Courier, monospace;
 }
 
+.statistic .ant-statistic-content > span.ant-statistic-content-value {
+    display: none;
+}
+
+.statistic .ant-statistic-content > span.ant-statistic-content-prefix {
+    transform: translate(50%, -8px);
+}
+
 .card_normal {
     border: 1px solid #ccc;
     cursor: pointer;

@@ -1,5 +1,6 @@
 const express = require('express')
 const chalk = require('chalk')
+const slowDown = require("express-slow-down")
 const mode = require('./routers/mode')
 const pipeline = require('./routers/pipeline')
 const server = require('./routers/server')
@@ -30,6 +31,16 @@ let static_web_pages = [path.join(__dirname + '/dist'), path.join(__dirname + '/
 
 function start() {
     const app = express()
+    const speedLimiter = slowDown({
+        windowMs: 1 * 60 * 1000,
+        delayAfter: 100,
+        delayMs: 200,
+        maxDelayMs: 1500,
+        headers: true,
+    });
+
+    //  apply to all requests
+    app.use(speedLimiter);
     let router = new express.Router()
     app.use('/api', router)
     router.use(express.json())

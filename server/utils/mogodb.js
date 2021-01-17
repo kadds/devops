@@ -5,7 +5,7 @@ const MongoClient = require('mongodb').MongoClient
 let db = null
 let cli = null
 let is_try_connect = false
-let time_out = 5000
+let time_out = 30000
 let time_out_id = null
 let promise_list = []
 

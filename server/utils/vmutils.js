@@ -162,7 +162,7 @@ function do_result(res, logger) {
         if (data[data.length - 1] === '\n') {
             data.length = data.length - 1
         }
-        throw new Error('!!! execute fail. \n' + data)
+        throw new Error('!!! execute fail. ')
     }
     else {
         return res.stdout
@@ -257,8 +257,24 @@ async function build_docker_image(ssh, dir, docker_file, tag, version, logger) {
     return do_result(res, logger)
 }
 
+async function get_vm_detail(vm) {
+    let ssh = await connect_shell(vm)
+    let res
+    res = await ssh.execCommand('cat /proc/cpuinfo | grep processor | wc -l')
+    const cpu_num = parseInt(res.stdout)
+    res = await ssh.execCommand('cat /proc/meminfo | grep MemTotal')
+    const mem_total = Math.floor(parseInt(res.stdout.substr(res.stdout.indexOf(":") + 1)) / 1024)
+    res = await ssh.execCommand('cat /proc/meminfo | grep MemAvailable')
+    if (!res.stdout.startsWith("MemAvailable")) {
+        res = await ssh.execCommand('cat /proc/meminfo | grep MemFree')
+    }
+    const mem_avl = Math.floor(parseInt(res.stdout.substr(res.stdout.indexOf(":") + 1)) / 1024)
+
+    return { cpu_num, mem_total, mem_avl }
+}
+
 module.exports = {
     copy_to_vm, restart_agent, clear_vm, connect_shell, exec_script,
     update_vm_servers, exec, copy, build_docker_image, get_vm_config, update_vm_config,
-    reload_agent,
+    reload_agent, get_vm_detail
 }
