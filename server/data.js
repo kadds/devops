@@ -382,6 +382,60 @@ const m_variable = sequelize.define('variable_tb', {
     indexes: [{ fields: ['name', 'user'] }]
 })
 
+const m_blacklist = sequelize.define('black_list', {
+    address: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+    }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+})
+
+const m_script = sequelize.define('script_tbl', {
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+    },
+    content: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    tags: {
+        type: DataTypes.JSON,
+        allowNull: false,
+    }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+})
+
+const m_tokens = sequelize.define('token_tbl', {
+    token: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+    },
+    content: {
+        type: DataTypes.JSON,
+        allowNull: false,
+    }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+})
+
 const conn = sequelize
 
 async function init() {
@@ -394,9 +448,16 @@ async function init() {
     await m_docker_cache.sync()
     await m_deploy_stream.sync()
     await m_variable.sync()
+    await m_blacklist.sync()
+    await m_tokens.sync()
+    await m_script.sync()
+
     if (await m_user.findByPk('admin') === null) {
         await m_user.create({ username: 'admin', password: '123', content: {} })
     }
 }
 
-module.exports = { conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, m_docker_cache, m_deploy_stream, m_variable, init }
+module.exports = {
+    conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, m_docker_cache, m_deploy_stream, m_variable, m_blacklist, m_tokens, m_script,
+    init
+}

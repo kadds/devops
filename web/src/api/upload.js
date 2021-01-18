@@ -6,7 +6,7 @@ async function get_scripts() {
 }
 
 async function get_script(name) {
-    return (await get('/upload/' + name)).data
+    return (await get('/upload/?name=' + encodeURIComponent(name))).data
 }
 
 async function upload_script(name, data) {

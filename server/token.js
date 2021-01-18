@@ -1,78 +1,45 @@
-const fs = require('fs')
-const process = require('process')
+const { m_tokens } = require('./data')
 
 let tokens = new Map()
 
-function replacer(key, value) {
-    const originalObject = this[key];
-    if (originalObject instanceof Map) {
-        return {
-            dataType: 'Map',
-            value: Array.from(originalObject.entries()), // or with spread: value: [...originalObject]
-        };
-    } else {
-        return value;
-    }
-}
+const TOKEN_TIME = 1000 * 60 * 60 * 24
 
-function reviver(key, value) {
-    if (typeof value === 'object' && value !== null) {
-        if (value.dataType === 'Map') {
-            return new Map(value.value);
-        }
-    }
-    return value;
-}
-
-function save() {
-    const str = JSON.stringify(tokens, replacer)
+async function read_tokens() {
     try {
-        if (!fs.existsSync('./temp'))
-            fs.mkdirSync('./temp')
-        fs.writeFileSync('./temp/loginInfo.json', str)
+        const res = await m_tokens.findAll()
+        const now = Date.now().valueOf()
+        for (const val of res) {
+            if (now - val.content.time <= TOKEN_TIME) {
+                tokens.set(val.token, val.content)
+            }
+        }
+        await update_all_tokens_db()
     }
-    catch (e) {
-        console.log(e)
-    }
+    catch (e) { }
 }
 
-if (process.platform === "win32") {
-    var rl = require("readline").createInterface({
-        input: process.stdin,
-        output: process.stdout
-    })
-
-    rl.on("SIGINT", function () {
-        save()
-        process.exit()
-    })
-}
-
-
-// a string like session
-
-
-process.on("SIGINT", function () {
-    //graceful shutdown
-    save()
-    process.exit()
-})
-
-try {
-    const json = fs.readFileSync('./temp/loginInfo.json')
-    if (json !== undefined && json !== null) {
-        tokens = new Map(JSON.parse(json, reviver))
+(async () => {
+    try {
+        await read_tokens()
     }
-}
-catch (e) {
-    console.log(e)
+    catch (e) { }
+})()
+
+function update_all_tokens_db() {
+    (async () => {
+        try {
+            const dt = Date.now().valueOf() - TOKEN_TIME
+            await m_tokens.destroy({ where: { mtime: { $less: dt } } })
+        }
+        catch (e) { }
+    })()
 }
 
 function maketoken() {
     let text = ""
     const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*.%=@!~`"
 
-    const len = Math.floor(Math.random() * 10) + 60;
+    const len = Math.floor(Math.random() * 10) + 180;
 
     for (var i = 0; i < len; i++)
         text += possible.charAt(Math.floor(Math.random() * possible.length))
@@ -83,7 +50,7 @@ function maketoken() {
 function valid_token(token) {
     const t = tokens.get(token)
     if (t === undefined) return null
-    if (Date.now().valueOf() - t.time.valueOf() > 1000 * 60 * 60 * 24 * 2) {
+    if (Date.now().valueOf() - t.time.valueOf() > TOKEN_TIME) {
         delete_token(token)
         return null
     }
@@ -92,12 +59,16 @@ function valid_token(token) {
 
 function create_token(data) {
     for (; ;) {
-
         const key = maketoken()
         if (tokens.has(key)) {
             continue
         }
-        tokens.set(key, { time: Date.now(), data })
+        const obj = { time: Date.now(), data }
+
+        m_tokens.create({ token: key, content: obj }).then(_ => { console.log('new token') }).catch(e => { console.error(e) })
+        update_all_tokens_db()
+
+        tokens.set(key, obj)
         return key
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Button, Badge, Card, Statistic, Progress, Dropdown, Menu, Typography, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message, Spin } from 'antd'
+import { Button, Badge, Card, Statistic, Progress, Dropdown, Menu, Input, Row, Col, Popconfirm, Form, Modal, InputNumber, message, Spin } from 'antd'
 import { add_vm, get_all_vm, update_vm, delete_vm, do_prepare_vm, get_vm_config, update_vm_config, vm_detail } from '../../api/vm'
 import { LineChartOutlined, QuestionCircleOutlined, EditOutlined, DeleteOutlined, FileSyncOutlined, CloudServerOutlined } from '@ant-design/icons'
 import { withRouter } from 'react-router'

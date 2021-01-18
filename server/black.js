@@ -1,53 +1,28 @@
-const fs = require('fs')
-const readline = require('readline')
-const process = require('process')
-let map = new Map()
+const { m_blacklist } = require('./data')
 
+let map = new Map()
 let black_list_map = new Map()
 
 async function read_black_list() {
     try {
-        const stream = fs.createReadStream('./temp/blackList.txt')
-        const rl = readline.createInterface({
-            input: stream,
-            crlfDelay: Infinity
-        })
-
-        for await (const line of rl) {
-            black_list_map.set(line, null)
+        const res = await m_blacklist.findAll()
+        for (const obj of res) {
+            black_list_map.set(obj.address, null)
         }
     }
     catch (e) { }
 }
 
-async function save_black_list() {
-    let data = ''
-    for (const m of black_list_map) {
-        data = data + m[0] + '\n'
+(async () => {
+    try {
+        await read_black_list()
     }
-    fs.writeFileSync('./temp/blackList.txt', data)
-}
-
-process.on("SIGINT", function () {
-    save_black_list().then(v => {
-        process.exit()
-    }).catch(e => {
-        process.exit()
-    })
-})
-
-setTimeout(() => save_black_list(), 1000 * 60 * 60)
-
-function do_read() {
-    read_black_list().then(e => { }).catch(e => { })
-}
-
-do_read()
-
+    catch (e) { }
+})()
 
 function add_black_list(address) {
-    console.log("black address " + address)
     black_list_map.set(address, null)
+    m_blacklist.create({ address }).then(_ => { }).catch(e => { console.error(e) })
 }
 
 function enqueue(address) {
