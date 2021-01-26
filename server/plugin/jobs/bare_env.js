@@ -28,8 +28,8 @@ async function entry(request, param, opt) {
         else {
             await logger.write('- no need to execute pre install script\n')
         }
-        await logger.write('- installing deps\n')
-        await install_deps(ssh, opt.deps, logger)
+        await logger.write('- checking deps\n')
+        await check_deps(ssh, opt.deps, logger)
         if (param.post_install_script) {
             await logger.write('- do post install script\n')
             await exec_script(ssh, await get_script_content(param.post_install_script), logger)

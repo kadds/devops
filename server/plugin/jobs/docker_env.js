@@ -1,6 +1,6 @@
 const { connect_shell, exec, exec_script } = require('./../../utils/vmutils')
 const { m_vm, m_docker_cache, m_pipeline } = require('../../data')
-const { install_deps } = require('./comm/install')
+const { install_deps, check_deps } = require('./comm/install')
 const { get_script_content } = require('./../../utils/script')
 
 async function entry(request, param, opt) {
@@ -85,8 +85,8 @@ async function entry(request, param, opt) {
             else {
                 await logger.write('- no need to execute pre install script\n')
             }
-            await logger.write('- installing deps\n')
-            await install_deps(ssh, opt.deps, logger)
+            await logger.write('- checking deps\n')
+            await check_deps(ssh, opt.deps, logger)
             if (param.post_install_script) {
                 await logger.write('- do post install script\n')
                 await exec_script(ssh, await get_script_content(param.post_install_script), logger)
@@ -199,7 +199,7 @@ async function entry(request, param, opt) {
 }
 
 
-const params = [{ name: 'dockerimg', label: 'docker image name', type: 'string', default: 'archlinux:latest', description: 'Docket base image for environment.' }]
+const params = [{ name: 'dockerimg', label: 'docker image name', type: 'string', default: '', description: 'Docket base image for environment.' }]
 const pipeline_params = [
     { name: 'vm_name', label: 'Vm to run', description: 'Which virtual machine is ready to run the pipeline?', type: 'select VM' },
     { name: 'pre_install_script', label: 'Pre-install script', description: 'The script is executed when the environment is started.', type: 'script' },

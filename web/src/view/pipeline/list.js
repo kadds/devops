@@ -64,7 +64,7 @@ const PipeLineList = props => {
             key: 'id',
             render: (id, r) => (
                 <Button type='link' onClick={() => goClick(id)}>
-                    {id}
+                    #{id}
                 </Button>
             )
         },
@@ -96,10 +96,7 @@ const PipeLineList = props => {
             title: 'Operation',
             dataIndex: 'id',
             key: 'id',
-            render: (id, r) => (<Row gutter={[8, 8]}> <Col>
-                <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(id)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
-                    <Button danger type='link' icon={<DeleteOutlined />} loading={isDel}>Delete</Button></Popconfirm>
-            </Col>
+            render: (id, r) => (<Row gutter={[8, 8]}> 
                 <Col>
                     <Button type='link' icon={<FundViewOutlined />} onClick={() => goClick(id)} >View Detail</Button>
                 </Col>
@@ -111,6 +108,10 @@ const PipeLineList = props => {
                         </Col>
                     )
                 }
+                <Col>
+                    <Popconfirm title="Are you sure？" onConfirm={() => deleteClick(id)} icon={<QuestionCircleOutlined style={{ color: 'red' }} />}>
+                        <Button danger type='link' icon={<DeleteOutlined />} loading={isDel}>Delete</Button></Popconfirm>
+                </Col>
             </Row>
             )
         }
@@ -330,13 +331,13 @@ const PipeLineList = props => {
 
     return (
         <div className='page'>
-            <Row><Col>
-                <Button onClick={addClick} type='primary'>New ...</Button></Col> </Row>
+            <Row gutter={[16, 16]}><Col>
+                <Button onClick={addClick} type='primary'>New</Button></Col> </Row>
             <Table loading={loading} rowKey='id' onChange={handleTableChange} dataSource={data} pagination={pagination} columns={columns}>
             </Table>
             <Modal
                 visible={state.visible}
-                title='Select module to execute pipeline'
+                title='Pipeline target'
                 okText='Create'
                 cancelText='Cancel'
                 onOk={onModalOk}

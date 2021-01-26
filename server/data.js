@@ -436,6 +436,22 @@ const m_tokens = sequelize.define('token_tbl', {
     updatedAt: 'mtime',
 })
 
+const m_logs = sequelize.define('log_tbl', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+    },
+    content: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    }
+}, {
+    sequelize,
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: 'mtime',
+})
+
 const conn = sequelize
 
 async function init() {
@@ -451,6 +467,7 @@ async function init() {
     await m_blacklist.sync()
     await m_tokens.sync()
     await m_script.sync()
+    await m_logs.sync()
 
     if (await m_user.findByPk('admin') === null) {
         await m_user.create({ username: 'admin', password: '123', content: {} })
@@ -458,6 +475,6 @@ async function init() {
 }
 
 module.exports = {
-    conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, m_docker_cache, m_deploy_stream, m_variable, m_blacklist, m_tokens, m_script,
+    conn, m_vm, m_mode, m_server, m_pipeline, m_deploy, m_user, m_docker_cache, m_deploy_stream, m_variable, m_blacklist, m_tokens, m_script, m_logs,
     init
 }

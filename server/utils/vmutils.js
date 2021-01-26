@@ -240,7 +240,13 @@ async function copy(ssh, remote, local, logger) {
     await logger.write(cmd)
     await logger.write('\n')
 
-    const res = await ssh.execCommand(cmd)
+    const res = await ssh.execCommand(cmd, {
+        onStdout: v => {
+            logger && logger.write(v.toString())
+        }
+        , onStderr: v => { logger && logger.write(v.toString()) }
+    })
+
     return do_result(res, logger)
 }
 
@@ -253,7 +259,13 @@ async function build_docker_image(ssh, dir, docker_file, tag, version, logger) {
     await logger.write(cmd)
     await logger.write('\n')
 
-    const res = await ssh.execCommand(cmd)
+    const res = await ssh.execCommand(cmd, {
+        onStdout: v => {
+            logger && logger.write(v.toString())
+        }
+        , onStderr: v => { logger && logger.write(v.toString()) }
+    })
+
     return do_result(res, logger)
 }
 

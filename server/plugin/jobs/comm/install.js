@@ -46,4 +46,10 @@ async function install_deps(ssh, deps, logger) {
         await install_deps_apk(ssh, deps, logger)
 }
 
-module.exports = { install_deps }
+async function check_deps(ssh, deps, logger) {
+    for (const dep of deps) {
+        await exec(ssh, dep + ' --version', null, logger)
+    }
+}
+
+module.exports = { install_deps, check_deps }

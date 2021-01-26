@@ -1,4 +1,5 @@
-const { conn, m_pipeline, m_docker_cache } = require('../data')
+const { Sequelize } = require('sequelize')
+const { conn, m_pipeline, m_docker_cache, m_logs } = require('../data')
 const { run_job, get_job_deps, close_job, clean_job } = require('../plugin/index')
 const { LogStream, remove, log_path } = require('../utils/log_stream')
 const fs = require('fs').promises
@@ -111,8 +112,17 @@ async function run(id) {
         }
         catch (e) { console.error(e) }
         try {
+                        await logger.close()
+        }
+        catch (e) { console.error(e) }
+        try {
+            let content = await fs.readFile(logger.path)
+            content = content.toString('utf-8')
+            await m_logs.create({ id, content })
+        }
+        catch (e) { console.error(e) }
+        try {
             pipes.delete(id)
-            await logger.close()
         }
         catch (e) { console.error(e) }
     }
@@ -149,13 +159,21 @@ async function rm(id) {
         const logger = new LogStream()
         logger.init_none()
         await clean_job(env_job.name, env_job.param, { id, logger })
+    }
+    catch (e) { console.error(e) }
+    try {
         await m_pipeline.destroy({ where: { id } })
     }
     catch (e) { console.error(e) }
 
+    // remove log file
     try {
-        // remove log file
         await remove(id)
+    }
+    catch (e) { console.error(e) }
+
+    try {
+        await m_logs.destroy({ where: { id } })
     }
     catch (e) { console.error(e) }
 }
@@ -217,6 +235,19 @@ function do_ws_send(send, msg) {
 
 const length = 4096
 async function listen_log(id, send, close) {
+    const data = await m_logs.findByPk(id)
+    if (data !== null) {
+        try {
+            await do_ws_send(send, data.content)
+        }
+        catch (e) {
+            console.error(e)
+        }
+        finally {
+            close()
+        }
+        return
+    }
     let v = pipes.get(id)
     if (v === undefined || v === null) {
         // read log file
